@@ -2,7 +2,7 @@
 
 //
 //// Teensy pins
-#define CS_ADC 10
+#define ADC_CS 10
 
 #define WSFL 28 // Digital input pullup
 #define WSFR 29 // Digital input pullup
@@ -28,7 +28,3 @@ const int analog_pin_list[] = {VSENSE_SDC, ISENSE_SDC, BSPDSENSE, VSENSE_GLV,
 #define ADC_BRAKE_1_CHANNEL 2
 #define ADC_ACCEL_1_CHANNEL 1
 #define ADC_ACCEL_2_CHANNEL 0
-
-//
-//// Other config things
-#define DEFAULT_SPI_SPEED 1000000
