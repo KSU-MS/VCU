@@ -1,7 +1,7 @@
 #include "can_tools.hpp"
 #include "settings.hpp"
 
-void can_man::setup_can(can_controller target_can_controller, int target_baud) {
+canMan::canMan(can_controller target_can_controller, int target_baud) {
   switch (target_can_controller) {
   case TEENSY_CAN1:
     init_flexcan_1(target_baud);

@@ -1,6 +1,6 @@
 #include "logger.hpp"
 
-void logger::init(logger_type target_logger) {
+Logger::Logger(logger_type target_logger) {
   switch (target_logger) {
   case serial:
     init_serial_port();
@@ -24,6 +24,8 @@ void logger::init(logger_type target_logger) {
 }
 
 #ifdef ARDUINO_TEENSY41
+File sd_logger;
+
 void init_microsd_log(bool is_date_time_named) {
   if (is_date_time_named) {
     SD.begin(BUILTIN_SDCARD);
@@ -51,4 +53,6 @@ void init_microsd_log(bool is_date_time_named) {
     sd_logger = SD.open(filename, (uint8_t)O_WRITE | (uint8_t)O_CREAT);
   }
 }
+
+inline void sd_print(const char *output) { sd_logger.print(output); };
 #endif

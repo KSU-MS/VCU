@@ -10,13 +10,13 @@ enum logger_type {
 typedef void (*print_fucntion)(const char *format);
 typedef void (*printf_fucntion)(const char *format, ...);
 
-class logger {
+class Logger {
 private:
   print_fucntion print;
   printf_fucntion printf;
 
 public:
-  void init(logger_type target_logger);
+  Logger(logger_type target_logger);
 
   inline void log(char *input) { this->print(input); };
 
@@ -47,8 +47,6 @@ inline void serial_print(const char *output) { Serial.print(output); }
 #include <SD.h>
 #include <TimeLib.h>
 
-File sd_logger;
-
 void init_microsd_log(bool is_date_time_named);
-inline void sd_print(const char *output) { sd_logger.print(output); }
+void sd_print(const char *output);
 #endif

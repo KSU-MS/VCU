@@ -12,7 +12,7 @@ struct can_message {
 };
 
 // TODO: Make this a template function type beat
-class can_man {
+class canMan {
 private:
   bool (*controller_has_new_msg)(can_message *);
   void (*send_controller_new_msg)(can_message *);
@@ -20,7 +20,7 @@ private:
   can_message controller_message;
 
 public:
-  void setup_can(can_controller target_controller, int target_baud);
+  canMan(can_controller target_controller, int target_baud);
 
   inline bool check_controller_message() {
     return this->controller_has_new_msg(&controller_message);
