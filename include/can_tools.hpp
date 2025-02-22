@@ -1,15 +1,17 @@
 #pragma once
 #include <stdint.h>
 
+// TODO: Add in the MCP2515 CAN fella
 enum can_controller { TEENSY_CAN1 = 0, TEENSY_CAN2 = 1, TEENSY_CAN3 = 2 };
 
+// TODO: Maybe add more of the CAN message settings to this fella
 struct can_message {
   uint16_t id;
   uint8_t length;
   uint8_t *buffer;
 };
 
-// TODO: Rework this
+// TODO: Make this a template function type beat
 class can_man {
 private:
   bool (*controller_has_new_msg)(can_message *);
@@ -33,35 +35,19 @@ public:
   }
 };
 
+// TODO: Sadge
 #ifdef TEENSYDUINO
 #include <FlexCAN_T4.h>
 
-class flexcan_controller {
-private:
-  // void *controller;
-  CAN_message_t msg;
+void init_flexcan_1(int target_baud);
+void init_flexcan_2(int target_baud);
+void init_flexcan_3(int target_baud);
 
-public:
-  template <typename CAN_DEVICE>
-  void init(CAN_DEVICE &target_controller, int target_baud);
+bool flexcan_1_has_new_msg(can_message *message_out);
+bool flexcan_2_has_new_msg(can_message *message_out);
+bool flexcan_3_has_new_msg(can_message *message_out);
 
-  bool has_new_message(can_message *message);
-  void send_message(can_message *message);
-};
-
-CAN_message_t msg1;
-CAN_message_t msg2;
-CAN_message_t msg3;
-
-void init_can1(int target_baud);
-void init_can2(int target_baud);
-void init_can3(int target_baud);
-
-bool can1_has_new_msg(can_message *message_out);
-bool can2_has_new_msg(can_message *message_out);
-bool can3_has_new_msg(can_message *message_out);
-
-void can1_send_msg(can_message *message_out);
-void can2_send_msg(can_message *message_out);
-void can3_send_msg(can_message *message_out);
+void flexcan_1_send_msg(can_message *message_out);
+void flexcan_2_send_msg(can_message *message_out);
+void flexcan_3_send_msg(can_message *message_out);
 #endif
