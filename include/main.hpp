@@ -27,6 +27,8 @@ adc pedal_5v(mcp, ADC_ACCEL_2_CHANNEL);
 adc brake_pedal(mcp, ADC_BSE_CHANNEL);
 adc steering_angle(mcp, ADC_STEERING_CHANNEL);
 
+adc pots[] = {pedal_3v, pedal_5v, brake_pedal, steering_angle};
+
 // Voltage / Current sense lines
 adc vsense_bspd(avr, BSPD_SENSE);
 adc vsense_sdc(avr, VSENSE_SDC);
