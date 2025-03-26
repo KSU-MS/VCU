@@ -26,4 +26,8 @@ public:
 
   inline uint16_t get_bool_code() { return this->bool_code; };
   inline uint16_t get_error_code() { return this->error_code; };
+
+  bool try_ts_energized();
+  bool try_ts_enabled();
+  bool ts_safe();
 };

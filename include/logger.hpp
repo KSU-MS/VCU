@@ -1,5 +1,5 @@
 #pragma once
-#include <stdarg.h>
+#include <Arduino.h>
 
 enum logger_type {
   serial,
@@ -7,18 +7,18 @@ enum logger_type {
   teensy_microsd_date_log
 };
 
-typedef void (*print_fucntion)(const char *format);
-typedef void (*printf_fucntion)(const char *format, ...);
+typedef void (*print_fucntion)(String format);
+// typedef void (*printf_fucntion)(string format, ...);
 
 class Logger {
 private:
   print_fucntion print;
-  printf_fucntion printf;
+  // printf_fucntion printf;
 
 public:
   Logger(logger_type target_logger);
 
-  inline void log(char *input) { this->print(input); };
+  inline void log(String input) { this->print(input); };
 
   // TODO: Implement printf
   // void logf(char *input, ...) {
@@ -29,7 +29,7 @@ public:
   //   this->printf(input);
   // };
 
-  void logln(const char *input) {
+  void logln(String input) {
     this->print(input);
     this->print("\r\n");
   };
@@ -39,7 +39,7 @@ public:
 #include <Arduino.h>
 
 inline void init_serial_port() { Serial.begin(9600); }
-inline void serial_print(const char *output) { Serial.print(output); }
+inline void serial_print(String output) { Serial.print(output); }
 // inline void serial_printf(const char *output, ...) { Serial.printf(output); }
 #endif
 
@@ -48,5 +48,5 @@ inline void serial_print(const char *output) { Serial.print(output); }
 #include <TimeLib.h>
 
 void init_microsd_log(bool is_date_time_named);
-void sd_print(const char *output);
+void sd_print(String output);
 #endif

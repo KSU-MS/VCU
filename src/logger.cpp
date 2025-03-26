@@ -54,5 +54,5 @@ void init_microsd_log(bool is_date_time_named) {
   }
 }
 
-inline void sd_print(const char *output) { sd_logger.print(output); };
+inline void sd_print(String output) { sd_logger.print(output); };
 #endif
