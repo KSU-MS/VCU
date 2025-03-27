@@ -62,7 +62,7 @@ void loop() {
 
   case READY_TO_DRIVE:
     if (vcu.ts_safe()) {
-      inverter.send_torque(pedals.get_requested_torque());
+      // inverter.send_torque(pedals.get_requested_torque());
     } else {
       consol.log("Something isn't safe, ERROR: ");
       consol.logln(vcu.get_error_code());

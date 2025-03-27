@@ -1,4 +1,10 @@
-#include "state_machine.hpp"
+#include "vcu.hpp"
+
+bool VCU::try_ts_energized() { return false; }
+
+bool VCU::try_ts_enabled() { return false; }
+
+bool VCU::ts_safe() { return false; }
 
 bool VCU::set_state(state target_state) {
   switch (current_state) {

@@ -4,14 +4,15 @@
 #include <Arduino.h>
 #endif
 
+// Local
 #include "Pin_Defs.hpp"
-#include "can_tools.hpp"
 #include "logger.hpp"
 #include "settings.hpp"
-#include "state_machine.hpp"
+#include "vcu.hpp"
 
-#include <KSUCAN.hpp>
+// ksu-fw-common
 #include <adc.hpp>
+#include <can_tools.hpp>
 
 VCU vcu;
 
