@@ -1,4 +1,7 @@
 #pragma once
+#ifndef logger_hpp
+#define logger_hpp
+
 #include <Arduino.h>
 
 enum logger_type {
@@ -50,3 +53,5 @@ inline void serial_print(String output) { Serial.print(output); }
 void init_microsd_log(bool is_date_time_named);
 void sd_print(String output);
 #endif
+
+#endif // logger_hpp

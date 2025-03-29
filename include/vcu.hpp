@@ -1,4 +1,8 @@
 #pragma once
+
+#ifndef vcu_hpp
+#define vcu_hpp
+
 #include <stdint.h>
 
 enum state {
@@ -31,3 +35,5 @@ public:
   bool try_ts_enabled();
   bool ts_safe();
 };
+
+#endif // vcu_hpp

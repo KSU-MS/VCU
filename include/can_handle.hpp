@@ -1,4 +1,6 @@
 #pragma once
+#ifndef can_handle_hpp
+#define can_handle_hpp
 
 // TODO: I need to find all the random scatered messages the KS6e firmware was
 // messing with, and figure out what it was doing with them, so some features
@@ -18,11 +20,6 @@
 //  VCU_FIRMWARE_VERSION
 //  BMS_CURRENT_LIMIT
 //  M192_COMMAND_MESSAGE
-
-#include "car.h"
-#include <can_tools.hpp>
-
-can_obj_car_h_t kms_can;
 
 void unpack_acu_shutdown_message(uint64_t msg, uint8_t length, uint32_t time,
                                  bool *imd_ok_hs, bool *bms_ok_hs) {
@@ -250,3 +247,5 @@ can_message pack_status_message(uint16_t time) {
 
   return out_msg;
 }
+
+#endif // can_handle_hpp
