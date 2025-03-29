@@ -1,6 +1,4 @@
 #pragma once
-#ifndef main_hpp
-#define main_hpp
 
 // ksu-fw-common
 #include <adc.hpp>
@@ -13,6 +11,7 @@ can_obj_car_h_t kms_can;
 // Local
 #include "cm200.hpp"
 #include "logger.hpp"
+#include "pedal_handeler.hpp"
 #include "pin_defs.hpp"
 #include "vcu.hpp"
 
@@ -33,17 +32,19 @@ inline bool wrapped_200hz() { return bool(timer_200hz.check()); }
 inline bool wrapped_100hz() { return bool(timer_100hz.check()); }
 #endif
 
+//
+//// Comms
 Logger consol(serial);
 
-// canMan daq_can(TEENSY_CAN3, DAQ_CAN_BAUD_RATE);
-// canMan inv_can(TEENSY_CAN2, INVERTER_CAN_BAUD_RATE);
-// canMan acc_can(TEENSY_CAN1, ACCUMULATOR_CAN_BAUD_RATE);
+canMan daq_can(TEENSY_CAN3, DAQ_CAN_BAUD_RATE);
+canMan inv_can(TEENSY_CAN2, INVERTER_CAN_BAUD_RATE);
+canMan acc_can(TEENSY_CAN1, ACCUMULATOR_CAN_BAUD_RATE);
 
-// Critical components
-VCU vcu;
-// cm200 fella(&wrapped_20hz, &wrapped_2s, &wrapped_100hz, &wrapped_200hz, true,
-//             &inv_can);
-// Accumulator accumulator();
+//
+//// Critical components
+VCU vcu(&acc_can, &inv_can, &daq_can, &kms_can);
+cm200 fella(&wrapped_20hz, &wrapped_2s, &wrapped_100hz, &wrapped_200hz, true,
+            &inv_can, &kms_can);
 
 // Pots
 adc pedal_3v(mcp, ADC_ACCEL_1_CHANNEL);
@@ -53,6 +54,8 @@ adc steering_angle(mcp, ADC_STEERING_CHANNEL);
 
 adc pots[] = {pedal_3v, pedal_5v, brake_pedal, steering_angle};
 
+//
+//// Gizmos
 // Voltage / Current sense lines
 adc vsense_bspd(avr, BSPD_SENSE);
 adc vsense_sdc(avr, VSENSE_SDC);
@@ -63,5 +66,3 @@ adc vsense_5v(avr, VSENSE_5V);
 
 adc sense_lines[] = {vsense_bspd, vsense_sdc, isense_sdc,
                      vsense_12v,  isense_12v, vsense_5v};
-
-#endif // main_hpp

@@ -1,8 +1,5 @@
 #pragma once
 
-#ifndef pedal_handeler_hpp
-#define pedal_handeler_hpp
-
 #include <cmath.h>
 #include <stdint.h>
 
@@ -99,5 +96,3 @@ public:
   inline bool get_apps_fault_ok_low() { return apps_fault; }
   inline bool get_apps_bse_fault_ok_low() { return apps_bse_fault; }
 };
-
-#endif
