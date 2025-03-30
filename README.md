@@ -60,11 +60,11 @@ Not making a RTOS based system yet, I don't think I am going to be doing too muc
 - ``vcu.cpp``
   - He is what actually checks to make sure you can go to the next state, and if you cant he gives you the error.
 
+- ``cm200.cpp``
+  - Has the logic to make the motor spin
+
 - ``logger.cpp``
   - A platform agnostic way of doing debug info, tho it currently really only supports AVR things
-
-- ``settings.cpp``
-  - Provides logic to configure diffrent parameters of the VCU (major WIP)
 
 ### include
 - ``main.hpp``
@@ -73,13 +73,16 @@ Not making a RTOS based system yet, I don't think I am going to be doing too muc
 - ``vcu.hpp``
   - He defines what all the states are, and functions that let you change around
 
+- ``cm200.hpp``
+  - Defines the class that manages all the things to make the inverter spin
+
+- ``pedal_handeler.hpp``
+  - Defines and implements all the logic needed for the pedals as required by FSAE rules
+
 - ``logger.cpp``
   - The class defs and inits for platform agnostic debug prints
 
-- ``settings.hpp``
-  - All the defs needed for parameter configuration of the VCU (major WIP)
-
-- ``Pin_Defs.hpp``
+- ``pin_defs.hpp``
   - Contains all of the defines for what pins are connected to what for all the micro/pcb specific stuff.
 
 
@@ -94,3 +97,24 @@ Not making a RTOS based system yet, I don't think I am going to be doing too muc
 - [ ] Get distance tracking back with EEPROM memory (maybe add to the logger implementation)
 - [ ] Finish settings lib
 - [ ] Get can_tools.hpp, logger.hpp, and maybe settings.hpp all pushed to ksu-fw-common
+
+## CAN DOC
+We currently handel these messages
+  Unpack
+  - ACU_SHUTDOWN_STATUS
+  - PRECHARGE_STATUS
+  - DASH_BUTTONS
+  Pack
+  - VCU_PEDALS_TRAVEL
+  - VCU_STATUS
+  - VCU_FIRMWARE_VERSION
+  - BMS_CURRENT_LIMIT
+  - M192_COMMAND_MESSAGE
+
+I need to add
+  Unpack
+  - VectorNav things
+  Pack
+  - VCU_PEDAL_READINGS
+  - VCU_BOARD_READINGS_ONE
+  - VCU_BOARD_READINGS_TWO

@@ -33,6 +33,9 @@ public:
         bool (*timer_motor_controller_send)(), bool spin_direction, canMan *can,
         can_obj_car_h_t *dbc);
 
+  inline uint8_t get_torque_limit() { return uint8_t(torque_limit); }
+  inline bool get_inverter_enable() { return inverter_enable; }
+
   void ping();
   void command_torque(double torque_request);
   void command_speed(int16_t speed_request);

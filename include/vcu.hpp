@@ -1,7 +1,10 @@
 #pragma once
-
 #include <can_tools.hpp>
 #include <car.h>
+
+#include "accumulator.hpp"
+#include "cm200.hpp"
+#include "pedal_handeler.hpp"
 
 enum state {
   STARTUP = 0, // This is a catch for when the VCU is powering on
@@ -15,20 +18,28 @@ enum state {
 class VCU {
 private:
   state current_state;
+  uint8_t torque_mode;
 
   uint16_t bool_code; // Encode all the possible gateing factors into a uint16_t
   uint16_t error_code; // So that we can get "error codes" when transitions fail
 
+  PEDALS *pedals;
+  CM200 *inverter;
+  ACCUMULATOR *accumulator;
+  bool buzzer_active;
+  bool bspd_brake_high;
+  bool bspd_current_high;
+
+  can_obj_car_h_t *dbc;
   canMan *acc_can;
   canMan *inv_can;
   canMan *daq_can;
 
-  can_obj_car_h_t *dbc;
-
   bool (*timer_status_message)();
 
 public:
-  VCU(canMan *acc_can, canMan *inv_can, canMan *daq_can, can_obj_car_h_t *dbc,
+  VCU(PEDALS *pedals, CM200 *inverter, ACCUMULATOR *accumulator,
+      can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can, canMan *daq_can,
       bool (*timer_status_message)());
 
   inline void init_state_machine() { this->current_state = STARTUP; }
@@ -44,6 +55,9 @@ public:
   bool try_ts_enabled();
   bool ts_safe();
 
+  void send_pedal_message();
   void send_status_message();
   void send_firmware_status_message();
+
+  bool is_bspd_chill();
 };

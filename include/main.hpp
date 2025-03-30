@@ -9,6 +9,7 @@
 can_obj_car_h_t kms_can;
 
 // Local
+#include "accumulator.hpp"
 #include "cm200.hpp"
 #include "logger.hpp"
 #include "pedal_handeler.hpp"
@@ -22,11 +23,13 @@ can_obj_car_h_t kms_can;
 #include <Metro.h>
 
 Metro timer_1s = Metro(1000, 1);  // Used for VCU status message
+Metro timer_2hz = Metro(500, 1);  // Used for ACU and Precharge messages
 Metro timer_20hz = Metro(50, 1);  // Used for inverter timeout
 Metro timer_100hz = Metro(10, 1); // Used for inverter current limit
 Metro timer_200hz = Metro(5, 1);  // Used for inverter command message
 
 inline bool wrapped_1s() { return bool(timer_1s.check()); }
+inline bool wrapped_2hz() { return bool(timer_2hz.check()); }
 inline bool wrapped_20hz() { return bool(timer_20hz.check()); }
 inline bool wrapped_200hz() { return bool(timer_200hz.check()); }
 inline bool wrapped_100hz() { return bool(timer_100hz.check()); }
@@ -43,21 +46,21 @@ canMan inv_can(TEENSY_CAN2, INVERTER_CAN_BAUD_RATE);
 canMan acc_can(TEENSY_CAN1, ACCUMULATOR_CAN_BAUD_RATE);
 
 // Pots
-adc pedal_3v(mcp, ADC_ACCEL_1_CHANNEL);
-adc pedal_5v(mcp, ADC_ACCEL_2_CHANNEL);
-adc brake_pedal(mcp, ADC_BSE_CHANNEL);
+adc apps1_3v(mcp, ADC_ACCEL_1_CHANNEL);
+adc apps2_5v(mcp, ADC_ACCEL_2_CHANNEL);
+adc bse_5v(mcp, ADC_BSE_CHANNEL);
 
 //
 //// Critical components
-VCU vcu(&acc_can, &inv_can, &daq_can, &kms_can, &wrapped_1s);
-
 PEDALS pedals(MIN_BRAKE_PEDAL, START_BRAKE_PEDAL, END_BRAKE_PEDAL,
               MAX_BRAKE_PEDAL, START_ACCELERATOR_PEDAL_1,
               END_ACCELERATOR_PEDAL_1, START_ACCELERATOR_PEDAL_2,
               END_ACCELERATOR_PEDAL_2);
-
 CM200 inverter(&wrapped_20hz, &wrapped_100hz, &wrapped_200hz, true, &inv_can,
                &kms_can);
+ACCUMULATOR accumulator(&kms_can, &acc_can, &wrapped_2hz);
+VCU vcu(&pedals, &inverter, &accumulator, &kms_can, &acc_can, &inv_can,
+        &daq_can, &wrapped_1s);
 
 //
 //// Gizmos
