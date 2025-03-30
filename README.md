@@ -100,11 +100,11 @@ Not making a RTOS based system yet, I don't think I am going to be doing too muc
 
 ## CAN DOC
 We currently handel these messages
-  Unpack
+##### Unpack
   - ACU_SHUTDOWN_STATUS
   - PRECHARGE_STATUS
   - DASH_BUTTONS
-  Pack
+##### Pack
   - VCU_PEDALS_TRAVEL
   - VCU_STATUS
   - VCU_FIRMWARE_VERSION
@@ -112,9 +112,9 @@ We currently handel these messages
   - M192_COMMAND_MESSAGE
 
 I need to add
-  Unpack
+##### Unpack
   - VectorNav things
-  Pack
+##### Pack
   - VCU_PEDAL_READINGS
   - VCU_BOARD_READINGS_ONE
   - VCU_BOARD_READINGS_TWO

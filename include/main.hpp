@@ -46,9 +46,9 @@ canMan inv_can(TEENSY_CAN2, INVERTER_CAN_BAUD_RATE);
 canMan acc_can(TEENSY_CAN1, ACCUMULATOR_CAN_BAUD_RATE);
 
 // Pots
-adc apps1_3v(mcp, ADC_ACCEL_1_CHANNEL);
-adc apps2_5v(mcp, ADC_ACCEL_2_CHANNEL);
-adc bse_5v(mcp, ADC_BSE_CHANNEL);
+adc apps1(mcp, ADC_ACCEL_1_CHANNEL);
+adc apps2(mcp, ADC_ACCEL_2_CHANNEL);
+adc bse(mcp, ADC_BSE_CHANNEL);
 
 //
 //// Critical components

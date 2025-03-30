@@ -1,6 +1,5 @@
 #pragma once
 
-// #include <cmath.h>
 #include <stdint.h>
 
 class PEDALS {

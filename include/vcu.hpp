@@ -22,22 +22,23 @@ private:
 
   uint16_t bool_code; // Encode all the possible gateing factors into a uint16_t
   uint16_t error_code; // So that we can get "error codes" when transitions fail
+  bool buzzer_active;
+  bool RTD_button_pressed;
+  bool bspd_brake_high;
+  bool bspd_current_high;
 
+  bool (*timer_status_message)();
+
+public:
   PEDALS *pedals;
   CM200 *inverter;
   ACCUMULATOR *accumulator;
-  bool buzzer_active;
-  bool bspd_brake_high;
-  bool bspd_current_high;
 
   can_obj_car_h_t *dbc;
   canMan *acc_can;
   canMan *inv_can;
   canMan *daq_can;
 
-  bool (*timer_status_message)();
-
-public:
   VCU(PEDALS *pedals, CM200 *inverter, ACCUMULATOR *accumulator,
       can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can, canMan *daq_can,
       bool (*timer_status_message)());
@@ -51,13 +52,15 @@ public:
   inline uint16_t get_bool_code() { return this->bool_code; };
   inline uint16_t get_error_code() { return this->error_code; };
 
+  bool is_bspd_chill();
+
   bool try_ts_energized();
   bool try_ts_enabled();
   bool ts_safe();
 
+  void update_dash_buttons(uint64_t msg, uint8_t length);
+
   void send_pedal_message();
   void send_status_message();
   void send_firmware_status_message();
-
-  bool is_bspd_chill();
 };

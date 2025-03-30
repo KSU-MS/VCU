@@ -9,6 +9,55 @@ void setup() {
 }
 
 void loop() {
+  //
+  //// ADC Stage
+  apps1.update();
+  apps2.update();
+  bse.update();
+  vcu.pedals->update_travel(apps1.value.in, apps2.value.in, bse.value.in);
+
+  //
+  //// CAN Stage
+  if (vcu.acc_can->check_controller_message()) {
+    can_message msg_in = vcu.acc_can->get_controller_message();
+
+    switch (msg_in.id) {
+    case CAN_ID_ACU_SHUTDOWN_STATUS:
+      vcu.accumulator->update_acu_status(msg_in.buf.val, msg_in.length);
+      vcu.daq_can->send_controller_message(msg_in);
+      break;
+
+    case CAN_ID_PRECHARGE_STATUS:
+      vcu.accumulator->update_precharge_status(msg_in.buf.val, msg_in.length);
+      vcu.daq_can->send_controller_message(msg_in);
+      break;
+
+      // We forward everything to the DAQ bus for loggin n telemetry, but I
+      // should move this logic to the eveLogger so that it doesn't make
+      // duplicate messages on it and frees up some power on this fella
+    default:
+      vcu.daq_can->send_controller_message(msg_in);
+      break;
+    }
+  }
+
+  if (vcu.inv_can->check_controller_message()) {
+    can_message msg_in = vcu.inv_can->get_controller_message();
+
+    switch (msg_in.id) {
+    case CAN_ID_DASH_BUTTONS:
+      vcu.update_dash_buttons(msg_in.buf.val, msg_in.length);
+      vcu.daq_can->send_controller_message(msg_in);
+      break;
+
+    default:
+      vcu.daq_can->send_controller_message(msg_in);
+      break;
+    }
+  }
+
+  //
+  //// State machine Stage
   switch (vcu.get_current_state()) {
   case STARTUP:
     if (vcu.set_state(TRACTIVE_SYSTEM_DISABLED)) {
