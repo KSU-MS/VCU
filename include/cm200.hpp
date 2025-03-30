@@ -3,7 +3,7 @@
 #include <can_tools.hpp>
 #include <car.h>
 
-class cm200 {
+class CM200 {
 private:
   bool spin_forward = true;
   bool inverter_enable = false;
@@ -20,7 +20,6 @@ private:
 
   bool (*timer_mc_kick)();
   bool (*timer_current_limit)();
-  bool (*timer_inverter_enable)();
   bool (*timer_motor_controller_send)();
 
   void disable();
@@ -30,9 +29,11 @@ private:
   can_obj_car_h_t *dbc;
 
 public:
-  cm200(bool (*timer_mc_kick)(), bool (*timer_current_limit)(),
-        bool (*timer_inverter_enable)(), bool (*timer_motor_controller_send)(),
-        bool spin_direction, canMan *can, can_obj_car_h_t *dbc);
+  CM200(bool (*timer_mc_kick)(), bool (*timer_current_limit)(),
+        bool (*timer_motor_controller_send)(), bool spin_direction, canMan *can,
+        can_obj_car_h_t *dbc);
 
   void ping();
+  void command_torque(double torque_request);
+  void command_speed(int16_t speed_request);
 };

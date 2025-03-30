@@ -1,9 +1,7 @@
 #pragma once
 
-#ifndef vcu_hpp
-#define vcu_hpp
-
-#include <stdint.h>
+#include <can_tools.hpp>
+#include <car.h>
 
 enum state {
   STARTUP = 0, // This is a catch for when the VCU is powering on
@@ -21,7 +19,18 @@ private:
   uint16_t bool_code; // Encode all the possible gateing factors into a uint16_t
   uint16_t error_code; // So that we can get "error codes" when transitions fail
 
+  canMan *acc_can;
+  canMan *inv_can;
+  canMan *daq_can;
+
+  can_obj_car_h_t *dbc;
+
+  bool (*timer_status_message)();
+
 public:
+  VCU(canMan *acc_can, canMan *inv_can, canMan *daq_can, can_obj_car_h_t *dbc,
+      bool (*timer_status_message)());
+
   inline void init_state_machine() { this->current_state = STARTUP; }
 
   inline state get_current_state() { return this->current_state; }
@@ -34,6 +43,7 @@ public:
   bool try_ts_energized();
   bool try_ts_enabled();
   bool ts_safe();
-};
 
-#endif // vcu_hpp
+  void send_status_message();
+  void send_firmware_status_message();
+};

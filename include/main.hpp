@@ -21,41 +21,49 @@ can_obj_car_h_t kms_can;
 // TODO: Make the timer stuff into its own utility, maybe a part of the logger?
 #include <Metro.h>
 
-Metro timer_20hz = Metro(50, 1);
-Metro timer_2s = Metro(2000, 1);
-Metro timer_200hz = Metro(5, 1);
-Metro timer_100hz = Metro(10, 1);
+Metro timer_1s = Metro(1000, 1);  // Used for VCU status message
+Metro timer_20hz = Metro(50, 1);  // Used for inverter timeout
+Metro timer_100hz = Metro(10, 1); // Used for inverter current limit
+Metro timer_200hz = Metro(5, 1);  // Used for inverter command message
 
+inline bool wrapped_1s() { return bool(timer_1s.check()); }
 inline bool wrapped_20hz() { return bool(timer_20hz.check()); }
-inline bool wrapped_2s() { return bool(timer_2s.check()); }
 inline bool wrapped_200hz() { return bool(timer_200hz.check()); }
 inline bool wrapped_100hz() { return bool(timer_100hz.check()); }
 #endif
 
 //
 //// Comms
+// loggers
 Logger consol(serial);
 
+// CAN controllers
 canMan daq_can(TEENSY_CAN3, DAQ_CAN_BAUD_RATE);
 canMan inv_can(TEENSY_CAN2, INVERTER_CAN_BAUD_RATE);
 canMan acc_can(TEENSY_CAN1, ACCUMULATOR_CAN_BAUD_RATE);
-
-//
-//// Critical components
-VCU vcu(&acc_can, &inv_can, &daq_can, &kms_can);
-cm200 fella(&wrapped_20hz, &wrapped_2s, &wrapped_100hz, &wrapped_200hz, true,
-            &inv_can, &kms_can);
 
 // Pots
 adc pedal_3v(mcp, ADC_ACCEL_1_CHANNEL);
 adc pedal_5v(mcp, ADC_ACCEL_2_CHANNEL);
 adc brake_pedal(mcp, ADC_BSE_CHANNEL);
-adc steering_angle(mcp, ADC_STEERING_CHANNEL);
 
-adc pots[] = {pedal_3v, pedal_5v, brake_pedal, steering_angle};
+//
+//// Critical components
+VCU vcu(&acc_can, &inv_can, &daq_can, &kms_can, &wrapped_1s);
+
+PEDALS pedals(MIN_BRAKE_PEDAL, START_BRAKE_PEDAL, END_BRAKE_PEDAL,
+              MAX_BRAKE_PEDAL, START_ACCELERATOR_PEDAL_1,
+              END_ACCELERATOR_PEDAL_1, START_ACCELERATOR_PEDAL_2,
+              END_ACCELERATOR_PEDAL_2);
+
+CM200 inverter(&wrapped_20hz, &wrapped_100hz, &wrapped_200hz, true, &inv_can,
+               &kms_can);
 
 //
 //// Gizmos
+// Aditional ADC chanels
+adc steering_angle(mcp, ADC_STEERING_CHANNEL);
+
 // Voltage / Current sense lines
 adc vsense_bspd(avr, BSPD_SENSE);
 adc vsense_sdc(avr, VSENSE_SDC);

@@ -1,8 +1,5 @@
 #pragma once
 
-#ifndef pin_defs_hpp
-#define pin_defs_hpp
-
 //
 //// Teensy pins
 #define ADC_CS 10
@@ -40,4 +37,15 @@
 //// Default SPI settings
 #define DEFAULT_SPI_SPEED 1000000
 
-#endif // pin_defs_hpp
+//
+//// Hardcoded pedal values
+#define MIN_BRAKE_PEDAL 2400
+#define START_BRAKE_PEDAL 2600
+#define END_BRAKE_PEDAL 3200
+#define MAX_BRAKE_PEDAL 3400
+
+#define START_ACCELERATOR_PEDAL_1 600
+#define END_ACCELERATOR_PEDAL_1 1900
+
+#define START_ACCELERATOR_PEDAL_2 2870
+#define END_ACCELERATOR_PEDAL_2 3500
