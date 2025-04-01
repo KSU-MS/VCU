@@ -3,6 +3,7 @@
 // ksu-fw-common
 #include <adc.hpp>
 #include <can_tools.hpp>
+#include <logger.hpp>
 
 // CAN lib stuff
 #include <car.h>
@@ -11,7 +12,6 @@ can_obj_car_h_t kms_can;
 // Local
 #include "accumulator.hpp"
 #include "cm200.hpp"
-#include "logger.hpp"
 #include "pedal_handeler.hpp"
 #include "pin_defs.hpp"
 #include "vcu.hpp"

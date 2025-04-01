@@ -95,16 +95,16 @@ The control logic for our electric car's vehicle control unit, the thing that co
 - [x] Get the inverter class goin
 - [x] Pack things into CAN messages, ideally use the auto generated lib
 - [x] Test can_tools.hpp and logger.hpp
+- [ ] Make the BSPD fella real
+- [ ] Finish wheel speed implementation
 - [ ] Drop in the launch control algo
 - [ ] Overhall the dash->vcu message system to seperate the two more
-- [ ] Make the BSPD fella real
-- [ ] Add support for digitalWrite to ADC.hpp or find some way to wrap it that isn't aids, same thing with the one delay
-- [ ] Make pretty flow charts for everything
-- [ ] Finish wheel speed implementation
 - [ ] Get power effeciency math back in there
 - [ ] Get distance tracking back with EEPROM memory (maybe add to the logger implementation)
+- [ ] Add support for digitalWrite to ADC.hpp or find some way to wrap it that isn't aids, same thing with the one delay
+- [ ] Make pretty flow charts for everything
 - [ ] Finish settings lib
-- [ ] Get can_tools.hpp, logger.hpp, and maybe settings.hpp all pushed to ksu-fw-common
+- [x] Get can_tools.hpp and logger.hpp pushed to ksu-fw-common
 
 ## CAN DOC
 We currently handel these messages
