@@ -18,6 +18,7 @@ private:
   double brake_travel;
   double apps1_travel;
   double apps2_travel;
+  double travel;
 
   // EV.4.7
   bool bse_fault;      // BSE is reading too high or too low
@@ -47,8 +48,8 @@ public:
   };
 
   // TODO: Make the release and apps_bse values confgiurable
-  inline double update_travel(uint16_t raw_apps1, uint16_t raw_apps2,
-                              uint16_t raw_brake) {
+  void update_travel(uint16_t raw_apps1, uint16_t raw_apps2,
+                     uint16_t raw_brake) {
     // Get the pedal percentage in its throw from 0 to 1
     apps1_travel = (raw_apps1 - apps1_start) * apps1_ratio;
     apps2_travel = (raw_apps2 - apps2_start) * apps2_ratio;
@@ -77,17 +78,17 @@ public:
 
         // Check that the driver isn't using both pedals at once
         if ((apps1_travel * apps2_travel) / 2 > 0.3 && brake_travel > 0.3) {
-          return (apps1_travel * apps2_travel) / 2;
+          travel = (apps1_travel * apps2_travel) / 2;
         } else {
           apps_bse_fault = true;
-          return 0;
+          travel = 0;
         }
       } else {
         apps_fault = true;
-        return 0;
+        travel = 0;
       }
     } else {
-      return 0;
+      travel = 0;
     }
   }
 
@@ -98,4 +99,5 @@ public:
   inline double get_apps1_travel() { return apps1_travel; }
   inline double get_apps2_travel() { return apps2_travel; }
   inline double get_brake_travel() { return brake_travel; }
+  inline double get_travel() { return travel; }
 };

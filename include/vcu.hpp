@@ -28,6 +28,7 @@ private:
   bool bspd_current_high;
 
   bool (*timer_status_message)();
+  bool (*timer_pedal_message)();
 
 public:
   PEDALS *pedals;
@@ -41,7 +42,7 @@ public:
 
   VCU(PEDALS *pedals, CM200 *inverter, ACCUMULATOR *accumulator,
       can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can, canMan *daq_can,
-      bool (*timer_status_message)());
+      bool (*timer_status_message)(), bool (*timer_pedal_message)());
 
   inline void init_state_machine() { this->current_state = STARTUP; }
 
@@ -51,6 +52,7 @@ public:
 
   inline uint16_t get_bool_code() { return this->bool_code; };
   inline uint16_t get_error_code() { return this->error_code; };
+  inline bool get_buzzer_state() { return this->buzzer_active; };
 
   bool is_bspd_chill();
 

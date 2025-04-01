@@ -8,6 +8,8 @@ void setup() {
   consol.logln("Booted");
 }
 
+uint8_t last_state = 9;
+
 void loop() {
   //
   //// ADC Stage
@@ -16,8 +18,15 @@ void loop() {
   bse.update();
   vcu.pedals->update_travel(apps1.value.in, apps2.value.in, bse.value.in);
 
+  // TODO: Abstract this arduino call
+  digitalWrite(BUZZER, vcu.get_buzzer_state());
+
   //
   //// CAN Stage
+  vcu.send_firmware_status_message();
+  vcu.send_status_message();
+  vcu.send_pedal_message();
+
   if (vcu.acc_can->check_controller_message()) {
     can_message msg_in = vcu.acc_can->get_controller_message();
 
@@ -32,9 +41,15 @@ void loop() {
       vcu.daq_can->send_controller_message(msg_in);
       break;
 
-      // We forward everything to the DAQ bus for loggin n telemetry, but I
-      // should move this logic to the eveLogger so that it doesn't make
-      // duplicate messages on it and frees up some power on this fella
+    // We foward this to the inverter bus for the dash
+    case CAN_ID_MSGID_0X6B3:
+      vcu.inv_can->send_controller_message(msg_in);
+      vcu.daq_can->send_controller_message(msg_in);
+      break;
+
+    // We forward everything to the DAQ bus for loggin n telemetry, but I
+    // should move this logic to the eveLogger so that it doesn't make
+    // duplicate messages on it and frees up some power on this fella
     default:
       vcu.daq_can->send_controller_message(msg_in);
       break;
@@ -90,6 +105,8 @@ void loop() {
     break;
 
   case TRACTIVE_SYSTEM_ENERGIZED:
+    vcu.inverter->ping(); // Get the inverter prepped
+
     if (vcu.try_ts_enabled()) {
       if (vcu.set_state(TRACTIVE_SYSTEM_ENABLED)) {
         consol.logln("Entering TRACTIVE_SYSTEM_ENABLED");
@@ -101,6 +118,8 @@ void loop() {
     break;
 
   case TRACTIVE_SYSTEM_ENABLED:
+    vcu.inverter->ping(); // Keep the inverter prepped
+
     if (vcu.set_state(READY_TO_DRIVE)) {
       consol.logln("Ready to Rip");
     } else {
@@ -111,7 +130,8 @@ void loop() {
 
   case READY_TO_DRIVE:
     if (vcu.ts_safe()) {
-      // inverter.send_torque(pedals.get_requested_torque());
+      vcu.inverter->command_torque(vcu.pedals->get_torque_request(
+          vcu.pedals->get_travel(), vcu.inverter->get_torque_limit()));
     } else {
       consol.log("Something isn't safe, ERROR: ");
       consol.logln(vcu.get_error_code());

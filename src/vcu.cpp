@@ -4,7 +4,8 @@
 
 VCU::VCU(PEDALS *pedals, CM200 *inverter, ACCUMULATOR *accumulator,
          can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can,
-         canMan *daq_can, bool (*timer_status_message)()) {
+         canMan *daq_can, bool (*timer_status_message)(),
+         bool (*timer_pedal_message)()) {
   this->pedals = pedals;
   this->inverter = inverter;
   this->accumulator = accumulator;
@@ -16,60 +17,120 @@ VCU::VCU(PEDALS *pedals, CM200 *inverter, ACCUMULATOR *accumulator,
   this->dbc = dbc;
 
   this->timer_status_message = timer_status_message;
+  this->timer_pedal_message = timer_pedal_message;
 }
 
 bool VCU::is_bspd_chill() { return true; }
 
-bool VCU::try_ts_energized() { return false; }
+bool VCU::try_ts_energized() {
+  switch (accumulator->get_precharge_state()) {
+  case 0: // TCU is not trying to precharge
+    return false;
+    break;
 
-bool VCU::try_ts_enabled() { return false; }
+  case 1: // TCU is actively trying to precharge
+    return true;
+    break;
 
-bool VCU::ts_safe() { return false; }
+  case 2: // TCU has precharged
+    return true;
+    break;
+
+  default: // TCU is doing some fucked shit
+    return false;
+    break;
+  }
+}
+
+bool VCU::try_ts_enabled() {
+  if (RTD_button_pressed && (pedals->get_brake_travel() > 0.3)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool VCU::ts_safe() {
+  if (accumulator->get_precharge_state() == 2 && accumulator->get_bms_ok_hs() &&
+      accumulator->get_imd_ok_hs()) {
+    return true;
+  } else {
+    return false;
+  }
+}
 
 bool VCU::set_state(state target_state) {
   switch (current_state) {
   case STARTUP: // This is just a catch for evil starts
     if (target_state == TRACTIVE_SYSTEM_DISABLED) {
-      this->current_state = TRACTIVE_SYSTEM_DISABLED;
+      current_state = TRACTIVE_SYSTEM_DISABLED;
       return true;
     } else {
-      this->error_code = this->bool_code;
-      this->current_state = STARTUP;
+      error_code = bool_code;
+      current_state = STARTUP;
       return false;
     }
     break;
 
   case TRACTIVE_SYSTEM_DISABLED:
-    return false;
+    if (target_state == TRACTIVE_SYSTEM_PRECHARGING) {
+      current_state = TRACTIVE_SYSTEM_PRECHARGING;
+      return true;
+    } else {
+      error_code = bool_code;
+      current_state = TRACTIVE_SYSTEM_DISABLED;
+      return false;
+    }
     break;
 
   case TRACTIVE_SYSTEM_PRECHARGING:
-    return false;
+    if (target_state == TRACTIVE_SYSTEM_ENERGIZED &&
+        accumulator->get_precharge_state() == 2 &&
+        accumulator->get_bms_ok_hs() && accumulator->get_imd_ok_hs()) {
+      current_state = TRACTIVE_SYSTEM_ENERGIZED;
+      return true;
+    } else {
+      error_code = bool_code;
+      current_state = TRACTIVE_SYSTEM_DISABLED;
+      return false;
+    }
     break;
 
   case TRACTIVE_SYSTEM_ENERGIZED:
-    return false;
+    if (target_state == TRACTIVE_SYSTEM_ENABLED &&
+        accumulator->get_precharge_state() == 2 &&
+        accumulator->get_bms_ok_hs() && accumulator->get_imd_ok_hs()) {
+      current_state = TRACTIVE_SYSTEM_ENABLED;
+      buzzer_active = true;
+      return true;
+    } else {
+      error_code = bool_code;
+      current_state = TRACTIVE_SYSTEM_DISABLED;
+      return false;
+    }
     break;
 
   case TRACTIVE_SYSTEM_ENABLED:
+    // Using the timer_status_message guy here to make sure buzzer stays on lol
     if (target_state == READY_TO_DRIVE) {
-      // Check to make sure we can actually enter READY_TO_DRIVE
-
+      current_state = READY_TO_DRIVE;
+      delay(1000); // BUG: Get rid of this for the buzzer 1s rule
+      buzzer_active = false;
+      inverter->set_inverter_enable(true);
       return true;
     } else {
-      this->error_code = this->bool_code;
-
-      // Disable everything and go back to TRACTIVE_SYSTEM_DISABLED
-
-      this->current_state = TRACTIVE_SYSTEM_DISABLED;
+      buzzer_active = false;
+      error_code = bool_code;
+      current_state = TRACTIVE_SYSTEM_DISABLED;
       return false;
     }
     break;
 
   case READY_TO_DRIVE: // We want to be able to leave no matter what
-    this->error_code = this->bool_code;
+    error_code = bool_code;
 
-    // Disable everything
+    inverter->set_inverter_enable(false);
+    buzzer_active = false;
 
     this->current_state = TRACTIVE_SYSTEM_DISABLED;
     return true;
@@ -93,17 +154,19 @@ void VCU::update_dash_buttons(uint64_t msg, uint8_t length) {
 }
 
 void VCU::send_pedal_message() {
-  encode_can_0x0cc_vcu_apps1_travel(dbc, pedals->get_apps1_travel());
-  encode_can_0x0cc_vcu_apps2_travel(dbc, pedals->get_apps2_travel());
-  encode_can_0x0cc_vcu_bse1_travel(dbc, pedals->get_brake_travel());
+  if (timer_pedal_message) {
+    encode_can_0x0cc_vcu_apps1_travel(dbc, pedals->get_apps1_travel());
+    encode_can_0x0cc_vcu_apps2_travel(dbc, pedals->get_apps2_travel());
+    encode_can_0x0cc_vcu_bse1_travel(dbc, pedals->get_brake_travel());
 
-  // Init and pack the message
-  can_message out_msg;
-  out_msg.id = CAN_ID_VCU_PEDALS_TRAVEL;
-  out_msg.length =
-      pack_message(dbc, CAN_ID_VCU_PEDALS_TRAVEL, &out_msg.buf.val);
+    // Init and pack the message
+    can_message out_msg;
+    out_msg.id = CAN_ID_VCU_PEDALS_TRAVEL;
+    out_msg.length =
+        pack_message(dbc, CAN_ID_VCU_PEDALS_TRAVEL, &out_msg.buf.val);
 
-  daq_can->send_controller_message(out_msg);
+    daq_can->send_controller_message(out_msg);
+  }
 }
 
 void VCU::send_status_message() {
@@ -163,7 +226,7 @@ void VCU::send_status_message() {
 
 void VCU::send_firmware_status_message() {
   if (timer_status_message) {
-    // BUG: Get rid of this arduino call for time
+    // TODO: Abstract this arduino call
     encode_can_0x0c8_vcu_on_time_seconds(dbc, millis() / 1000);
     encode_can_0x0c8_vcu_fw_version(dbc, AUTO_VERSION);
     encode_can_0x0c8_vcu_project_is_dirty(dbc, FW_PROJECT_IS_DIRTY);

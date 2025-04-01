@@ -12,7 +12,6 @@ CM200::CM200(bool (*timer_mc_kick)(), bool (*timer_current_limit)(),
   this->can = can;
   this->dbc = dbc;
 
-  this->inverter_enable = true;
   this->ping();
 }
 

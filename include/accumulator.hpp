@@ -11,10 +11,10 @@ private:
   uint16_t charge_limit;
   uint16_t discharge_limit;
 
-  uint8_t precharge_state;
+  uint8_t precharge_state = 0;
 
-  bool imd_ok_hs;
-  bool bms_ok_hs;
+  bool imd_ok_hs = false;
+  bool bms_ok_hs = false;
 
   bool (*can_message_check)();
 
@@ -31,7 +31,7 @@ public:
 
   inline uint16_t get_charge_limit() { return this->charge_limit; }
   inline uint16_t get_discharge_limit() { return this->discharge_limit; }
-
+  inline uint8_t get_precharge_state() { return this->precharge_state; }
   inline bool get_imd_ok_hs() { return this->imd_ok_hs; }
   inline bool get_bms_ok_hs() { return this->bms_ok_hs; }
 };
