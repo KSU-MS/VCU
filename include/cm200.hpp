@@ -33,6 +33,7 @@ public:
   inline uint8_t get_torque_limit() { return uint8_t(torque_limit); }
   inline bool get_inverter_enable() { return inverter_enable; }
 
+  inline void set_torque_limit(double limit) { torque_limit = limit; }
   inline void set_inverter_enable(bool enable) { inverter_enable = enable; }
 
   void ping();

@@ -114,9 +114,14 @@ bool VCU::set_state(state target_state) {
     // Using the timer_status_message guy here to make sure buzzer stays on lol
     if (target_state == READY_TO_DRIVE) {
       current_state = READY_TO_DRIVE;
-      delay(1000); // BUG: Get rid of this for the buzzer 1s rule
+
+      delay(1000); // BUG: Get rid of this aids arduino call
       buzzer_active = false;
+
+      // TODO: Make this torque limit easier to configure
       inverter->set_inverter_enable(true);
+      inverter->set_torque_limit(10);
+
       return true;
     } else {
       buzzer_active = false;
@@ -151,6 +156,52 @@ void VCU::update_dash_buttons(uint64_t msg, uint8_t length) {
   decode_can_0x0eb_dash_button3status(dbc, &button_val);
 
   RTD_button_pressed = button_val;
+}
+
+void VCU::set_parameter(uint64_t msg, uint8_t length) {
+  unpack_message(dbc, CAN_ID_VCU_SET_PARAMETER, msg, length, 0);
+
+  uint8_t target_parameter;
+  uint32_t parameter_value;
+  decode_can_0x0d6_vcu_target_parameter(dbc, &target_parameter);
+  decode_can_0x0d6_vcu_parameter_value(dbc, &parameter_value);
+
+  switch (parameter(target_parameter)) {
+  case POWER_LIMIT:
+    // Not real yet
+    break;
+
+  case TORQUE_LIMIT:
+    inverter->set_torque_limit(parameter_value);
+    break;
+
+  case SPEED_MODE:
+    // Not real yet
+    break;
+
+  case SPEED_LIMIT:
+    // Not real yet
+    break;
+
+  case BMS_CHARGE_LIMIT:
+    accumulator->set_charge_limit(parameter_value);
+    break;
+
+  case BMS_DISCHARGE_LIMIT:
+    accumulator->set_discharge_limit(parameter_value);
+    break;
+
+  case LAUNCH_MODE:
+    // Not real yet
+    break;
+
+  case TRACTION_MODE:
+    // Not real yet
+    break;
+
+  default:
+    break;
+  }
 }
 
 void VCU::send_pedal_message() {
