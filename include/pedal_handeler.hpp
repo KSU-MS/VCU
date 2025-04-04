@@ -52,7 +52,16 @@ public:
                      uint16_t raw_brake) {
     // Get the pedal percentage in its throw from 0 to 1
     apps1_travel = (raw_apps1 - apps1_start) * apps1_ratio;
+    if (apps1_travel < 0)
+      apps1_travel = 0;
+    else if (apps1_travel > 1)
+      apps1_travel = 1;
+
     apps2_travel = (raw_apps2 - apps2_start) * apps2_ratio;
+    if (apps2_travel < 0)
+      apps2_travel = 0;
+    else if (apps2_travel > 1)
+      apps2_travel = 1;
 
     // T.4.3.4
     // BSE check to make sure its not shorting
@@ -61,6 +70,10 @@ public:
     } else {
       bse_fault = false;
       brake_travel = (raw_brake - brake_start) * brake_ratio;
+      if (brake_travel < 0)
+        brake_travel = 0;
+      else if (brake_travel > 1)
+        brake_travel = 1;
     }
 
     // Reset if the pedals are released
@@ -75,11 +88,10 @@ public:
 
       // Check that the pedals are reading within 10%
       if ((fabs(apps1_travel - apps2_travel) < 0.1)) {
+        travel = (apps1_travel + apps2_travel) / 2;
 
         // Check that the driver isn't using both pedals at once
-        if ((apps1_travel * apps2_travel) / 2 > 0.3 && brake_travel > 0.3) {
-          travel = (apps1_travel * apps2_travel) / 2;
-        } else {
+        if ((travel > 0.3) && (brake_travel > 0.3)) {
           apps_bse_fault = true;
           travel = 0;
         }

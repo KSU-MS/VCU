@@ -22,13 +22,13 @@ void ACCUMULATOR::send_bms_current_limit() {
 void ACCUMULATOR::update_acu_status(uint64_t msg, uint8_t length) {
   unpack_message(dbc, CAN_ID_ACU_SHUTDOWN_STATUS, msg, length, 0);
 
-  uint8_t imd_gpio_val, bms_gpio_val;
+  uint8_t imd_relay_val, bms_relay_val;
 
-  decode_can_0x258_acu_imd_gpio_state(dbc, &imd_gpio_val);
-  decode_can_0x258_acu_bms_gpio_state(dbc, &bms_gpio_val);
+  decode_can_0x258_acu_imd_relay_state(dbc, &imd_relay_val);
+  decode_can_0x258_acu_bms_relay_state(dbc, &bms_relay_val);
 
-  imd_ok_hs = bool(imd_gpio_val);
-  bms_ok_hs = bool(bms_gpio_val);
+  imd_ok_hs = bool(imd_relay_val);
+  bms_ok_hs = bool(bms_relay_val);
 }
 
 void ACCUMULATOR::update_precharge_status(uint64_t msg, uint8_t length) {

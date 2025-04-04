@@ -20,8 +20,6 @@ VCU::VCU(PEDALS *pedals, CM200 *inverter, ACCUMULATOR *accumulator,
   this->timer_pedal_message = timer_pedal_message;
 }
 
-bool VCU::is_bspd_chill() { return true; }
-
 bool VCU::try_ts_energized() {
   switch (accumulator->get_precharge_state()) {
   case 0: // TCU is not trying to precharge
@@ -101,7 +99,13 @@ bool VCU::set_state(state target_state) {
         accumulator->get_precharge_state() == 2 &&
         accumulator->get_bms_ok_hs() && accumulator->get_imd_ok_hs()) {
       current_state = TRACTIVE_SYSTEM_ENABLED;
+
       buzzer_active = true;
+
+      // Get the inverter prepped
+      inverter->set_inverter_enable(true);
+      inverter->set_torque_limit(0);
+
       return true;
     } else {
       error_code = bool_code;
@@ -115,7 +119,6 @@ bool VCU::set_state(state target_state) {
     if (target_state == READY_TO_DRIVE) {
       current_state = READY_TO_DRIVE;
 
-      delay(1000); // BUG: Get rid of this aids arduino call
       buzzer_active = false;
 
       // TODO: Make this torque limit easier to configure
@@ -125,6 +128,8 @@ bool VCU::set_state(state target_state) {
       return true;
     } else {
       buzzer_active = false;
+      // TODO: Abstract this arduino call
+      digitalWrite(4, buzzer_active);
       error_code = bool_code;
       current_state = TRACTIVE_SYSTEM_DISABLED;
       return false;
@@ -136,6 +141,8 @@ bool VCU::set_state(state target_state) {
 
     inverter->set_inverter_enable(false);
     buzzer_active = false;
+    // TODO: Abstract this arduino call
+    digitalWrite(4, buzzer_active);
 
     this->current_state = TRACTIVE_SYSTEM_DISABLED;
     return true;
@@ -147,6 +154,18 @@ bool VCU::set_state(state target_state) {
     return false;
     break;
   }
+}
+
+void VCU::update_bspd(uint16_t raw_relay, uint16_t raw_current,
+                      uint16_t raw_brake) {
+  if (raw_relay > 500)
+    bspd_ok_hs = true;
+  else
+    bspd_ok_hs = false;
+
+  // TODO: Make the bspd_brake_high and bspd_current_high real
+  bspd_brake_high = true;
+  bspd_current_high = true;
 }
 
 void VCU::update_dash_buttons(uint64_t msg, uint8_t length) {
@@ -217,6 +236,7 @@ void VCU::send_pedal_message() {
         pack_message(dbc, CAN_ID_VCU_PEDALS_TRAVEL, &out_msg.buf.val);
 
     daq_can->send_controller_message(out_msg);
+    inv_can->send_controller_message(out_msg);
   }
 }
 
@@ -231,7 +251,7 @@ void VCU::send_status_message() {
                                       bool(pedals->get_brake_travel() > 0.3));
     encode_can_0x0c3_VCU_BSPD_BRAKE_HIGH(dbc, bspd_brake_high);
     encode_can_0x0c3_VCU_BSPD_CURRENT_HIGH(dbc, bspd_current_high);
-    encode_can_0x0c3_VCU_BSPD_OK_HIGH(dbc, is_bspd_chill());
+    encode_can_0x0c3_VCU_BSPD_OK_HIGH(dbc, bspd_ok_hs);
     encode_can_0x0c3_VCU_BMS_OK_HIGH(dbc, accumulator->get_bms_ok_hs());
     encode_can_0x0c3_VCU_IMD_OK_HIGH(dbc, accumulator->get_imd_ok_hs());
     encode_can_0x0c3_VCU_SHUTDOWN_B_OK_HIGH(dbc, 0.0); // What
@@ -255,6 +275,7 @@ void VCU::send_status_message() {
     out_msg.length = pack_message(dbc, CAN_ID_VCU_STATUS, &out_msg.buf.val);
 
     daq_can->send_controller_message(out_msg);
+    inv_can->send_controller_message(out_msg);
   }
 }
 
@@ -277,6 +298,8 @@ void VCU::send_status_message() {
 
 void VCU::send_firmware_status_message() {
   if (timer_status_message) {
+    Serial.println("fella");
+
     // TODO: Abstract this arduino call
     encode_can_0x0c8_vcu_on_time_seconds(dbc, millis() / 1000);
     encode_can_0x0c8_vcu_fw_version(dbc, AUTO_VERSION);
@@ -289,5 +312,6 @@ void VCU::send_firmware_status_message() {
         pack_message(dbc, CAN_ID_VCU_FIRMWARE_VERSION, &out_msg.buf.val);
 
     daq_can->send_controller_message(out_msg);
+    inv_can->send_controller_message(out_msg);
   }
 }

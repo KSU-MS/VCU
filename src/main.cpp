@@ -5,6 +5,9 @@ void setup() {
 
   vcu.init_state_machine();
 
+  // TODO: Get rid of these evil arduino calls for the buzzer
+  pinMode(BUZZER, OUTPUT);
+
   consol.logln("Booted");
 }
 
@@ -18,14 +21,29 @@ void loop() {
   bse.update();
   vcu.pedals->update_travel(apps1.value.in, apps2.value.in, bse.value.in);
 
-  // TODO: Abstract this arduino call
-  digitalWrite(BUZZER, vcu.get_buzzer_state());
+  vsense_bspd.update();
+  vcu.update_bspd(vsense_bspd.value.in, 0, 0);
+
+  // consol.log("apps1: ");
+  // consol.log(vcu.pedals->get_apps1_travel());
+  // consol.log("\t");
+  // consol.logln(apps1.value.in);
+  // consol.log("apps2: ");
+  // consol.log(vcu.pedals->get_apps2_travel());
+  // consol.log("\t");
+  // consol.logln(apps2.value.in);
+  // consol.log("apps: ");
+  // consol.logln(vcu.pedals->get_travel());
+  // consol.log("brake: ");
+  // consol.logln(vcu.pedals->get_brake_travel());
+  // consol.log("\t");
+  // consol.logln(bse.value.in);
 
   //
   //// CAN Stage
-  vcu.send_firmware_status_message();
-  vcu.send_status_message();
-  vcu.send_pedal_message();
+  // vcu.send_firmware_status_message();
+  // vcu.send_status_message();
+  // vcu.send_pedal_message();
 
   if (vcu.acc_can->check_controller_message()) {
     can_message msg_in = vcu.acc_can->get_controller_message();
@@ -107,6 +125,9 @@ void loop() {
   case TRACTIVE_SYSTEM_ENERGIZED:
     vcu.inverter->ping(); // Get the inverter prepped
 
+    consol.logln(vcu.pedals->get_brake_travel());
+    consol.logln(vcu.get_rtd_fella());
+
     if (vcu.try_ts_enabled()) {
       if (vcu.set_state(TRACTIVE_SYSTEM_ENABLED)) {
         consol.logln("Entering TRACTIVE_SYSTEM_ENABLED");
@@ -119,6 +140,9 @@ void loop() {
 
   case TRACTIVE_SYSTEM_ENABLED:
     vcu.inverter->ping(); // Keep the inverter prepped
+
+    digitalWrite(BUZZER, vcu.get_buzzer_state());
+    delay(1000); // BUG: Get rid of this aids arduino call
 
     if (vcu.set_state(READY_TO_DRIVE)) {
       consol.logln("Ready to Rip");
