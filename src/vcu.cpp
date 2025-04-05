@@ -1,6 +1,5 @@
 #include "vcu.hpp"
 #include "car.h"
-#include "core_pins.h"
 
 VCU::VCU(PEDALS *pedals, CM200 *inverter, ACCUMULATOR *accumulator,
          can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can,
@@ -82,9 +81,7 @@ bool VCU::set_state(state target_state) {
     break;
 
   case TRACTIVE_SYSTEM_PRECHARGING:
-    if (target_state == TRACTIVE_SYSTEM_ENERGIZED &&
-        accumulator->get_precharge_state() == 2 &&
-        accumulator->get_bms_ok_hs() && accumulator->get_imd_ok_hs()) {
+    if (target_state == TRACTIVE_SYSTEM_ENERGIZED && ts_safe()) {
       current_state = TRACTIVE_SYSTEM_ENERGIZED;
       return true;
     } else {
@@ -95,9 +92,7 @@ bool VCU::set_state(state target_state) {
     break;
 
   case TRACTIVE_SYSTEM_ENERGIZED:
-    if (target_state == TRACTIVE_SYSTEM_ENABLED &&
-        accumulator->get_precharge_state() == 2 &&
-        accumulator->get_bms_ok_hs() && accumulator->get_imd_ok_hs()) {
+    if (target_state == TRACTIVE_SYSTEM_ENABLED && ts_safe()) {
       current_state = TRACTIVE_SYSTEM_ENABLED;
 
       buzzer_active = true;
@@ -115,7 +110,6 @@ bool VCU::set_state(state target_state) {
     break;
 
   case TRACTIVE_SYSTEM_ENABLED:
-    // Using the timer_status_message guy here to make sure buzzer stays on lol
     if (target_state == READY_TO_DRIVE) {
       current_state = READY_TO_DRIVE;
 
@@ -128,8 +122,7 @@ bool VCU::set_state(state target_state) {
       return true;
     } else {
       buzzer_active = false;
-      // TODO: Abstract this arduino call
-      digitalWrite(4, buzzer_active);
+
       error_code = bool_code;
       current_state = TRACTIVE_SYSTEM_DISABLED;
       return false;
@@ -141,8 +134,6 @@ bool VCU::set_state(state target_state) {
 
     inverter->set_inverter_enable(false);
     buzzer_active = false;
-    // TODO: Abstract this arduino call
-    digitalWrite(4, buzzer_active);
 
     this->current_state = TRACTIVE_SYSTEM_DISABLED;
     return true;

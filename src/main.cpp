@@ -142,13 +142,17 @@ void loop() {
     vcu.inverter->ping(); // Keep the inverter prepped
 
     digitalWrite(BUZZER, vcu.get_buzzer_state());
-    delay(1000); // BUG: Get rid of this aids arduino call
+    delay(2215); // BUG: Get rid of this aids arduino call
 
     if (vcu.set_state(READY_TO_DRIVE)) {
       consol.logln("Ready to Rip");
+
+      digitalWrite(BUZZER, vcu.get_buzzer_state());
     } else {
       consol.log("Failed to enter READY_TO_DRIVE, ERROR: ");
       consol.logln(vcu.get_error_code());
+
+      digitalWrite(BUZZER, vcu.get_buzzer_state());
     }
     break;
 
