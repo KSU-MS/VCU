@@ -41,9 +41,9 @@ void loop() {
 
   //
   //// CAN Stage
-  // vcu.send_firmware_status_message();
-  // vcu.send_status_message();
-  // vcu.send_pedal_message();
+  vcu.send_firmware_status_message();
+  vcu.send_status_message();
+  vcu.send_pedal_message();
 
   if (vcu.acc_can->check_controller_message()) {
     can_message msg_in = vcu.acc_can->get_controller_message();
@@ -125,9 +125,6 @@ void loop() {
   case TRACTIVE_SYSTEM_ENERGIZED:
     vcu.inverter->ping(); // Get the inverter prepped
 
-    consol.logln(vcu.pedals->get_brake_travel());
-    consol.logln(vcu.get_rtd_fella());
-
     if (vcu.try_ts_enabled()) {
       if (vcu.set_state(TRACTIVE_SYSTEM_ENABLED)) {
         consol.logln("Entering TRACTIVE_SYSTEM_ENABLED");
@@ -142,7 +139,8 @@ void loop() {
     vcu.inverter->ping(); // Keep the inverter prepped
 
     digitalWrite(BUZZER, vcu.get_buzzer_state());
-    delay(2215); // BUG: Get rid of this aids arduino call
+
+    // delay(2215); // BUG: Get rid of this aids arduino call
 
     if (vcu.set_state(READY_TO_DRIVE)) {
       consol.logln("Ready to Rip");

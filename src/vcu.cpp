@@ -4,19 +4,19 @@
 VCU::VCU(PEDALS *pedals, CM200 *inverter, ACCUMULATOR *accumulator,
          can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can,
          canMan *daq_can, bool (*timer_status_message)(),
-         bool (*timer_pedal_message)()) {
+         bool (*timer_pedal_message)(), bool (*timer_RTD_buzzer)()) {
   this->pedals = pedals;
   this->inverter = inverter;
   this->accumulator = accumulator;
 
+  this->dbc = dbc;
   this->acc_can = acc_can;
   this->inv_can = inv_can;
   this->daq_can = daq_can;
 
-  this->dbc = dbc;
-
   this->timer_status_message = timer_status_message;
   this->timer_pedal_message = timer_pedal_message;
+  this->timer_RTD_buzzer = timer_RTD_buzzer;
 }
 
 bool VCU::try_ts_energized() {
@@ -110,7 +110,7 @@ bool VCU::set_state(state target_state) {
     break;
 
   case TRACTIVE_SYSTEM_ENABLED:
-    if (target_state == READY_TO_DRIVE) {
+    if (target_state == READY_TO_DRIVE && timer_RTD_buzzer) {
       current_state = READY_TO_DRIVE;
 
       buzzer_active = false;

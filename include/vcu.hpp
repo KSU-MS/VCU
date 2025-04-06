@@ -47,6 +47,7 @@ private:
 
   bool (*timer_status_message)();
   bool (*timer_pedal_message)();
+  bool (*timer_RTD_buzzer)();
 
 public:
   PEDALS *pedals;
@@ -60,7 +61,8 @@ public:
 
   VCU(PEDALS *pedals, CM200 *inverter, ACCUMULATOR *accumulator,
       can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can, canMan *daq_can,
-      bool (*timer_status_message)(), bool (*timer_pedal_message)());
+      bool (*timer_status_message)(), bool (*timer_pedal_message)(),
+      bool (*timer_RTD_buzzer)());
 
   inline void init_state_machine() { this->current_state = STARTUP; }
 

@@ -22,13 +22,15 @@ can_obj_car_h_t kms_can;
 // TODO: Make the timer stuff into its own utility, maybe a part of the logger?
 #include <Metro.h>
 
-Metro timer_1s = Metro(1000, 1);  // Used for VCU status message
-Metro timer_2hz = Metro(500, 1);  // Used for ACU and Precharge messages
-Metro timer_10hz = Metro(100, 1); // Used for VCU pedals message
-Metro timer_20hz = Metro(50, 1);  // Used for inverter timeout
-Metro timer_100hz = Metro(10, 1); // Used for inverter current limit
-Metro timer_200hz = Metro(5, 1);  // Used for inverter command message
+Metro timer_2s = Metro(2215);
+Metro timer_1s = Metro(1000);  // Used for VCU status message
+Metro timer_2hz = Metro(500);  // Used for ACU and Precharge messages
+Metro timer_10hz = Metro(100); // Used for VCU pedals message
+Metro timer_20hz = Metro(50);  // Used for inverter timeout
+Metro timer_100hz = Metro(10); // Used for inverter current limit
+Metro timer_200hz = Metro(5);  // Used for inverter command message
 
+inline bool wrapped_2s() { return bool(timer_2s.check()); }
 inline bool wrapped_1s() { return bool(timer_1s.check()); }
 inline bool wrapped_2hz() { return bool(timer_2hz.check()); }
 inline bool wrapped_10hz() { return bool(timer_10hz.check()); }
@@ -62,7 +64,7 @@ CM200 inverter(&wrapped_20hz, &wrapped_100hz, &wrapped_200hz, true, &inv_can,
                &kms_can);
 ACCUMULATOR accumulator(&kms_can, &acc_can, &wrapped_2hz);
 VCU vcu(&pedals, &inverter, &accumulator, &kms_can, &acc_can, &inv_can,
-        &daq_can, &wrapped_1s, &wrapped_10hz);
+        &daq_can, &wrapped_1s, &wrapped_10hz, &wrapped_2s);
 
 //
 //// Gizmos
