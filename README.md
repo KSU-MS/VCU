@@ -1,6 +1,9 @@
 # VCU
 The control logic for our electric car's vehicle control unit, the thing that commands the inverter to spin the motor
 
+## Experimental Branch
+Going to start droppping updates in here and merging once they are tested on the car so that I don't nuke any working code
+
 ## States
 - ``STARTUP = 0`` <- Transient
   - This is when the VCU is trying to initialize everything, if something fails here its either the code on this guy or this specific board most likely
