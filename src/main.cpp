@@ -83,6 +83,16 @@ void loop() {
       vcu.daq_can->send_controller_message(msg_in);
       break;
 
+    case CAN_ID_M166_CURRENT_INFO:
+      vcu.inverter->update_bus_current(msg_in.buf.val, msg_in.length);
+      vcu.daq_can->send_controller_message(msg_in);
+      break;
+
+    case CAN_ID_M167_VOLTAGE_INFO:
+      vcu.inverter->update_bus_voltage(msg_in.buf.val, msg_in.length);
+      vcu.daq_can->send_controller_message(msg_in);
+      break;
+
     default:
       vcu.daq_can->send_controller_message(msg_in);
       break;

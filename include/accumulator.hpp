@@ -32,7 +32,7 @@ public:
   void set_charge_limit(uint16_t limit) { this->charge_limit = limit; };
   void set_discharge_limit(uint16_t limit) { this->discharge_limit = limit; };
 
-  void send_bms_current_limit();
   void update_acu_status(uint64_t msg, uint8_t length);
   void update_precharge_status(uint64_t msg, uint8_t length);
+  void send_bms_current_limit();
 };

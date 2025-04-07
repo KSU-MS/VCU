@@ -61,7 +61,7 @@ PEDALS pedals(MIN_BRAKE_PEDAL, START_BRAKE_PEDAL, END_BRAKE_PEDAL,
               END_ACCELERATOR_PEDAL_1, START_ACCELERATOR_PEDAL_2,
               END_ACCELERATOR_PEDAL_2);
 CM200 inverter(&wrapped_20hz, &wrapped_100hz, &wrapped_200hz, true, &inv_can,
-               &kms_can);
+               &kms_can, -0.69314718056);
 ACCUMULATOR accumulator(&kms_can, &acc_can, &wrapped_2hz);
 VCU vcu(&pedals, &inverter, &accumulator, &kms_can, &acc_can, &inv_can,
         &daq_can, &wrapped_1s, &wrapped_10hz, &wrapped_2s);

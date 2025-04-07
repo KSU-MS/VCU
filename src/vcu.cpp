@@ -178,7 +178,7 @@ void VCU::set_parameter(uint64_t msg, uint8_t length) {
 
   switch (parameter(target_parameter)) {
   case POWER_LIMIT:
-    // Not real yet
+    inverter->set_power_limit(parameter_value);
     break;
 
   case TORQUE_LIMIT:
