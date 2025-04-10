@@ -41,9 +41,11 @@ void loop() {
 
   //
   //// CAN Stage
-  vcu.send_firmware_status_message();
-  vcu.send_status_message();
-  vcu.send_pedal_message();
+  // vcu.send_firmware_status_message();
+  if (timer_1s.check()) {
+    vcu.send_status_message();
+  }
+  // vcu.send_pedal_message();
 
   if (vcu.acc_can->check_controller_message()) {
     can_message msg_in = vcu.acc_can->get_controller_message();
@@ -133,7 +135,8 @@ void loop() {
     break;
 
   case TRACTIVE_SYSTEM_ENERGIZED:
-    vcu.inverter->ping(); // Get the inverter prepped
+    if (timer_20hz.check())
+      vcu.inverter->ping(); // Get the inverter prepped
 
     if (vcu.try_ts_enabled()) {
       if (vcu.set_state(TRACTIVE_SYSTEM_ENABLED)) {
@@ -146,11 +149,12 @@ void loop() {
     break;
 
   case TRACTIVE_SYSTEM_ENABLED:
-    vcu.inverter->ping(); // Keep the inverter prepped
+    if (timer_20hz.check())
+      vcu.inverter->ping(); // Keep the inverter prepped
 
     digitalWrite(BUZZER, vcu.get_buzzer_state());
 
-    // delay(2215); // BUG: Get rid of this aids arduino call
+    delay(2215); // BUG: Get rid of this aids arduino call
 
     if (vcu.set_state(READY_TO_DRIVE)) {
       consol.logln("Ready to Rip");
@@ -166,8 +170,10 @@ void loop() {
 
   case READY_TO_DRIVE:
     if (vcu.ts_safe()) {
-      vcu.inverter->command_torque(vcu.pedals->get_torque_request(
-          vcu.pedals->get_travel(), vcu.inverter->get_torque_limit()));
+      if (timer_200hz.check()) {
+        vcu.inverter->command_torque(vcu.pedals->get_torque_request(
+            vcu.pedals->get_travel(), vcu.inverter->get_torque_limit()));
+      }
     } else {
       consol.log("Something isn't safe, ERROR: ");
       consol.logln(vcu.get_error_code());

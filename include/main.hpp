@@ -22,21 +22,76 @@ can_obj_car_h_t kms_can;
 // TODO: Make the timer stuff into its own utility, maybe a part of the logger?
 #include <Metro.h>
 
-Metro timer_2s = Metro(2215);
-Metro timer_1s = Metro(1000);  // Used for VCU status message
-Metro timer_2hz = Metro(500);  // Used for ACU and Precharge messages
-Metro timer_10hz = Metro(100); // Used for VCU pedals message
-Metro timer_20hz = Metro(50);  // Used for inverter timeout
-Metro timer_100hz = Metro(10); // Used for inverter current limit
-Metro timer_200hz = Metro(5);  // Used for inverter command message
+Metro timer_2s = Metro(2215, true);
+Metro timer_1s = Metro(1000, true);  // Used for VCU status message
+Metro timer_2hz = Metro(500, true);  // Used for ACU and Precharge messages
+Metro timer_10hz = Metro(100, true); // Used for VCU pedals message
+Metro timer_20hz = Metro(50, true);  // Used for inverter timeout
+Metro timer_100hz = Metro(10, true); // Used for inverter current limit
+Metro timer_200hz = Metro(5, true);  // Used for inverter command message
 
-inline bool wrapped_2s() { return bool(timer_2s.check()); }
-inline bool wrapped_1s() { return bool(timer_1s.check()); }
-inline bool wrapped_2hz() { return bool(timer_2hz.check()); }
-inline bool wrapped_10hz() { return bool(timer_10hz.check()); }
-inline bool wrapped_20hz() { return bool(timer_20hz.check()); }
-inline bool wrapped_200hz() { return bool(timer_200hz.check()); }
-inline bool wrapped_100hz() { return bool(timer_100hz.check()); }
+bool wrapped_2s() {
+  if (timer_2s.check()) {
+    return true;
+    timer_2s.reset();
+  } else {
+    return false;
+  }
+}
+
+bool wrapped_1s() {
+  if (timer_1s.check()) {
+    return true;
+    timer_1s.reset();
+  } else {
+    return false;
+  }
+}
+
+bool wrapped_2hz() {
+  if (timer_2hz.check()) {
+    return true;
+    timer_2hz.reset();
+  } else {
+    return false;
+  }
+}
+
+bool wrapped_10hz() {
+  if (timer_10hz.check()) {
+    return true;
+    timer_10hz.reset();
+  } else {
+    return false;
+  }
+}
+
+bool wrapped_20hz() {
+  if (timer_20hz.check()) {
+    return true;
+    timer_20hz.reset();
+  } else {
+    return false;
+  }
+}
+
+bool wrapped_100hz() {
+  if (timer_100hz.check()) {
+    return true;
+    timer_100hz.reset();
+  } else {
+    return false;
+  }
+}
+
+bool wrapped_200hz() {
+  if (timer_200hz.check()) {
+    return true;
+    timer_200hz.reset();
+  } else {
+    return false;
+  }
+}
 #endif
 
 //
