@@ -3,7 +3,7 @@
 #include <can_tools.hpp>
 #include <car.h>
 
-class ACCUMULATOR {
+class Accumulator {
 private:
   canMan *can;
   can_obj_car_h_t *dbc;
@@ -19,13 +19,13 @@ private:
   bool (*can_message_check)();
 
 public:
-  ACCUMULATOR(can_obj_car_h_t *dbc, canMan *acc_can,
+  Accumulator(can_obj_car_h_t *dbc, canMan *acc_can,
               bool (*can_message_check)());
 
   // HACK: If you want the VCU to try to enter RTD regardless of acc state...
   inline uint16_t get_charge_limit() { return this->charge_limit; }
   inline uint16_t get_discharge_limit() { return this->discharge_limit; }
-  inline uint8_t get_precharge_state() { return 2; }
+  inline uint8_t get_precharge_state() { return this->precharge_state; }
   inline bool get_imd_ok_hs() { return imd_ok_hs; }
   inline bool get_bms_ok_hs() { return bms_ok_hs; }
 

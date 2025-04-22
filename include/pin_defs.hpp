@@ -1,6 +1,25 @@
 #pragma once
 
 //
+//// Hardcoded pedal values
+#define MIN_BRAKE_PEDAL 2000
+#define START_BRAKE_PEDAL 2751
+#define END_BRAKE_PEDAL 2988
+#define MAX_BRAKE_PEDAL 4000
+
+#define START_ACCELERATOR_PEDAL_1 2862
+#define END_ACCELERATOR_PEDAL_1 3484
+
+#define START_ACCELERATOR_PEDAL_2 585
+#define END_ACCELERATOR_PEDAL_2 1816
+
+//
+//// Default CAN settings
+#define ACCUMULATOR_CAN_BAUD_RATE 500000
+#define INVERTER_CAN_BAUD_RATE 500000
+#define DAQ_CAN_BAUD_RATE 1000000
+
+//
 //// Teensy pins
 #define ADC_CS 10
 
@@ -28,24 +47,5 @@
 #define ADC_STEERING_CHANNEL 3
 
 //
-//// Default CAN settings
-#define ACCUMULATOR_CAN_BAUD_RATE 500000
-#define INVERTER_CAN_BAUD_RATE 500000
-#define DAQ_CAN_BAUD_RATE 1000000
-
-//
 //// Default SPI settings
 #define DEFAULT_SPI_SPEED 1000000
-
-//
-//// Hardcoded pedal values
-#define MIN_BRAKE_PEDAL 2000
-#define START_BRAKE_PEDAL 2800
-#define END_BRAKE_PEDAL 3200
-#define MAX_BRAKE_PEDAL 4000
-
-#define START_ACCELERATOR_PEDAL_1 2850
-#define END_ACCELERATOR_PEDAL_1 3575
-
-#define START_ACCELERATOR_PEDAL_2 550
-#define END_ACCELERATOR_PEDAL_2 2000

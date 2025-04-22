@@ -5,52 +5,56 @@ The control logic for our electric car's vehicle control unit, the thing that co
 Going to start droppping updates in here and merging once they are tested on the car so that I don't nuke any working code
 
 ## States
-- ``STARTUP = 0`` <- Transient
+### ``STARTUP = 0`` <- Transient
   - This is when the VCU is trying to initialize everything, if something fails here its either the code on this guy or this specific board most likely
-  ### List of gates
-  - The setup function
 
   Next state -> TRACTIVE_SYSTEM_DISABLED
+  #### List of gates
+  - The setup function
 
-- ``TRACTIVE_SYSTEM_DISABLED = 1`` <- Gate
+### ``TRACTIVE_SYSTEM_DISABLED = 1`` <- Gate
   - GLV is on, but not TSV, we are waiting for the reset button and the SDC to be closed, which we get over CAN from the TCU
-  ### List of gates
+
+  Next state -> TRACTIVE_SYSTEM_PRECHARGING
+  #### List of gates
   - Reset button hit
   - CAN message from the TCU
 
-  Next state -> TRACTIVE_SYSTEM_PRECHARGING
-
-- ``TRACTIVE_SYSTEM_PRECHARGING = 2`` <- Transient
+### ``TRACTIVE_SYSTEM_PRECHARGING = 2`` <- Transient
   - TSV is comin', and assuming the TCU doesn't explode we should be good
-  ### List of gates
-  - CAN message from the TCU saying its good
-  - CAN message from the 8CU saying its good
 
   Next state -> TRACTIVE_SYSTEM_ENERGIZED
-
-- ``TRACTIVE_SYSTEM_ENERGIZED = 3`` <- Gate
-  - TSV is up, but RTD button isn't pressed, waiting for the message from the dash to start sending torque requests
-  ### List of gates
+  #### List of gates
   - CAN message from the TCU saying its good
   - CAN message from the 8CU saying its good
+
+### ``TRACTIVE_SYSTEM_ENERGIZED = 3`` <- Gate
+  - TSV is up, but RTD button isn't pressed, waiting for the message from the dash to start sending torque requests
+
+  Next state -> TRACTIVE_SYSTEM_ENABLED
+  #### List of gates
+  - CAN message from the TCU saying its good
+  - CAN message from the 8CU saying its good
+  - DC bus voltage > 60
   - Dash sends RTD button is high
   - Brake pedal is depressed
 
-  Next state -> TRACTIVE_SYSTEM_ENABLED
-
-- ``TRACTIVE_SYSTEM_ENABLED = 4`` <- Transient
+### ``TRACTIVE_SYSTEM_ENABLED = 4`` <- Transient
   - We've enabled everything required to go fast, and got the green light from the driver, now we play the buzzer and setup anything else to go
-  ### List of gates
-  - CAN message from the TCU saying its good
-  - CAN message from the 8CU saying its good
-  - Buzzer goes high
 
-- ``READY_TO_DRIVE = 5`` <- Gate
-  - Hot 2 Go
-  ### List of gates
+  Next state -> READY_TO_DRIVE
+  #### List of gates
   - CAN message from the TCU saying its good
   - CAN message from the 8CU saying its good
-  - Buzzer goes low
+  - DC bus voltage > 60
+
+### ``READY_TO_DRIVE = 5`` <- Gate
+  - Hot 2 Go
+
+  #### List of gates
+  - CAN message from the TCU saying its bad
+  - CAN message from the 8CU saying its bad 
+  - DC bus voltage < 60
 
 
 ## Some structure things

@@ -1,9 +1,10 @@
-#include "cm200.hpp"
+#include "inverter.hpp"
 #include "car.h"
 
-CM200::CM200(bool (*timer_mc_kick)(), bool (*timer_current_limit)(),
-             bool (*timer_motor_controller_send)(), bool spin_direction,
-             canMan *can, can_obj_car_h_t *dbc, float over_power_decay_factor) {
+Inverter::Inverter(bool (*timer_mc_kick)(), bool (*timer_current_limit)(),
+                   bool (*timer_motor_controller_send)(), bool spin_direction,
+                   canMan *can, can_obj_car_h_t *dbc,
+                   float over_power_decay_factor) {
   this->timer_mc_kick = timer_mc_kick;
   this->timer_current_limit = timer_current_limit;
   this->timer_motor_controller_send = timer_motor_controller_send;
@@ -18,19 +19,19 @@ CM200::CM200(bool (*timer_mc_kick)(), bool (*timer_current_limit)(),
   this->ping();
 }
 
-void CM200::update_bus_current(uint64_t msg_in, uint8_t length) {
+void Inverter::update_bus_current(uint64_t msg_in, uint8_t length) {
   unpack_message(dbc, CAN_ID_M166_CURRENT_INFO, msg_in, length, 0);
 
   decode_can_0x0a6_D4_DC_Bus_Current(dbc, &bus_current);
 }
 
-void CM200::update_bus_voltage(uint64_t msg_in, uint8_t length) {
+void Inverter::update_bus_voltage(uint64_t msg_in, uint8_t length) {
   unpack_message(dbc, CAN_ID_M167_VOLTAGE_INFO, msg_in, length, 0);
 
   decode_can_0x0a7_D1_DC_Bus_Voltage(dbc, &bus_voltage);
 }
 
-void CM200::ping() {
+void Inverter::ping() {
   // if (timer_mc_kick()) {
   encode_can_0x0c0_Torque_Command(dbc, 0.0);
   encode_can_0x0c0_Torque_Limit_Command(dbc, 0.0);
@@ -49,7 +50,19 @@ void CM200::ping() {
   // }
 }
 
-void CM200::command_torque(double torque_request) {
+void Inverter::send_clear_faults() {
+  encode_can_0x0c1_D1_Parameter_Address_Command(dbc, 20);
+  encode_can_0x0c1_D2_Read_Write_Command(dbc, 1);
+  encode_can_0x0c1_D3_Data_Command(dbc, 0);
+
+  can_message out_msg;
+  out_msg.length =
+      pack_message(dbc, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
+
+  can->send_controller_message(out_msg);
+}
+
+void Inverter::command_torque(double torque_request) {
   double torque_target = torque_request;
 
   // TODO: Get rid of these arduino calls
@@ -89,7 +102,7 @@ void CM200::command_torque(double torque_request) {
   // }
 }
 
-void CM200::command_speed(int16_t speed_request) {
+void Inverter::command_speed(int16_t speed_request) {
   // if (timer_motor_controller_send()) {
   encode_can_0x0c0_Torque_Command(dbc, 0.0);
   encode_can_0x0c0_Torque_Limit_Command(dbc, torque_limit);

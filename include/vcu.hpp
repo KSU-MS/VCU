@@ -3,7 +3,7 @@
 #include <car.h>
 
 #include "accumulator.hpp"
-#include "cm200.hpp"
+#include "inverter.hpp"
 #include "pedal_handeler.hpp"
 
 enum state {
@@ -50,19 +50,18 @@ private:
   bool (*timer_RTD_buzzer)();
 
 public:
-  PEDALS *pedals;
-  CM200 *inverter;
-  ACCUMULATOR *accumulator;
+  Pedals *pedals;
+  Inverter *inverter;
+  Accumulator *accumulator;
 
   can_obj_car_h_t *dbc;
   canMan *acc_can;
   canMan *inv_can;
   canMan *daq_can;
 
-  VCU(PEDALS *pedals, CM200 *inverter, ACCUMULATOR *accumulator,
+  VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator,
       can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can, canMan *daq_can,
-      bool (*timer_status_message)(), bool (*timer_pedal_message)(),
-      bool (*timer_RTD_buzzer)());
+      bool (*timer_status_message)(), bool (*timer_pedal_message)());
 
   inline void init_state_machine() { this->current_state = STARTUP; }
 
@@ -83,7 +82,9 @@ public:
   void update_bspd(uint16_t raw_relay, uint16_t raw_current,
                    uint16_t raw_brake);
 
-  void send_pedal_message();
   void send_status_message();
+  void send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
+                              uint16_t raw_brake);
+  void send_pedal_travel_message();
   void send_firmware_status_message();
 };

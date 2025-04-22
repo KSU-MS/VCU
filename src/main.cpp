@@ -1,4 +1,5 @@
 #include "main.hpp"
+#include "car.h"
 
 void setup() {
   consol.logln("Booting...");
@@ -9,9 +10,10 @@ void setup() {
   pinMode(BUZZER, OUTPUT);
 
   consol.logln("Booted");
-}
 
-uint8_t last_state = 9;
+  vcu.accumulator->set_charge_limit(10);
+  vcu.accumulator->set_discharge_limit(200);
+}
 
 void loop() {
   //
@@ -35,68 +37,70 @@ void loop() {
   // consol.log("apps: ");
   // consol.logln(vcu.pedals->get_travel());
   // consol.log("brake: ");
-  // consol.logln(vcu.pedals->get_brake_travel());
+  // consol.log(vcu.pedals->get_brake_travel());
   // consol.log("\t");
   // consol.logln(bse.value.in);
 
   //
   //// CAN Stage
-  // vcu.send_firmware_status_message();
   if (timer_1s.check()) {
+    vcu.send_firmware_status_message();
     vcu.send_status_message();
+    // vcu.accumulator->send_bms_current_limit();
   }
-  // vcu.send_pedal_message();
+
+  if (timer_20hz.check()) {
+    vcu.send_pedal_travel_message();
+    vcu.send_pedal_raw_message(apps1.value.in, apps2.value.in, bse.value.in);
+
+    print_message(&kms_can, CAN_ID_VCU_PEDALS_TRAVEL, &std_out_wrap);
+    print_message(&kms_can, CAN_ID_VCU_PEDAL_READINGS, &std_out_wrap);
+  }
 
   if (vcu.acc_can->check_controller_message()) {
     can_message msg_in = vcu.acc_can->get_controller_message();
+    vcu.inv_can->send_controller_message(msg_in);
+    // vcu.daq_can->send_controller_message(msg_in);
 
     switch (msg_in.id) {
     case CAN_ID_ACU_SHUTDOWN_STATUS:
       vcu.accumulator->update_acu_status(msg_in.buf.val, msg_in.length);
-      vcu.daq_can->send_controller_message(msg_in);
       break;
 
     case CAN_ID_PRECHARGE_STATUS:
       vcu.accumulator->update_precharge_status(msg_in.buf.val, msg_in.length);
-      vcu.daq_can->send_controller_message(msg_in);
       break;
 
-    // We foward this to the inverter bus for the dash
-    case CAN_ID_MSGID_0X6B3:
-      vcu.inv_can->send_controller_message(msg_in);
-      vcu.daq_can->send_controller_message(msg_in);
-      break;
+      // NOTE: Commented out for now as we are already fowarding everything from
+      // the accumulator bus to the inverter bus
 
-    // We forward everything to the DAQ bus for loggin n telemetry, but I
-    // should move this logic to the eveLogger so that it doesn't make
-    // duplicate messages on it and frees up some power on this fella
-    default:
-      vcu.daq_can->send_controller_message(msg_in);
-      break;
+      // We foward this to the inverter bus for the dash
+
+      // case CAN_ID_MSGID_0X6B3:
+      //   vcu.inv_can->send_controller_message(msg_in);
+      //   break;
     }
   }
 
   if (vcu.inv_can->check_controller_message()) {
     can_message msg_in = vcu.inv_can->get_controller_message();
+    // vcu.daq_can->send_controller_message(msg_in);
 
     switch (msg_in.id) {
     case CAN_ID_DASH_BUTTONS:
       vcu.update_dash_buttons(msg_in.buf.val, msg_in.length);
-      vcu.daq_can->send_controller_message(msg_in);
       break;
 
     case CAN_ID_M166_CURRENT_INFO:
       vcu.inverter->update_bus_current(msg_in.buf.val, msg_in.length);
-      vcu.daq_can->send_controller_message(msg_in);
       break;
 
     case CAN_ID_M167_VOLTAGE_INFO:
       vcu.inverter->update_bus_voltage(msg_in.buf.val, msg_in.length);
-      vcu.daq_can->send_controller_message(msg_in);
       break;
 
-    default:
-      vcu.daq_can->send_controller_message(msg_in);
+    case CAN_ID_VCU_SET_PARAMETER:
+      vcu.set_parameter(msg_in.buf.val, msg_in.length);
       break;
     }
   }
@@ -117,7 +121,7 @@ void loop() {
     if (vcu.try_ts_energized()) {
       if (vcu.set_state(TRACTIVE_SYSTEM_PRECHARGING)) {
         consol.logln("Entering TRACTIVE_SYSTEM_PRECHARGING");
-        consol.logln("Trying to precharge...");
+        consol.logln("TCU is trying to precharge...");
       } else {
         consol.log("Failed to enter TRACTIVE_SYSTEM_PRECHARGING, ERROR: ");
         consol.logln(vcu.get_error_code());
@@ -138,6 +142,7 @@ void loop() {
     if (timer_20hz.check())
       vcu.inverter->ping(); // Get the inverter prepped
 
+    // try_ts_enabled is just looking for the brake and RTD button
     if (vcu.try_ts_enabled()) {
       if (vcu.set_state(TRACTIVE_SYSTEM_ENABLED)) {
         consol.logln("Entering TRACTIVE_SYSTEM_ENABLED");
@@ -145,6 +150,12 @@ void loop() {
         consol.log("Failed to enter TRACTIVE_SYSTEM_ENABLED, ERROR: ");
         consol.logln(vcu.get_error_code());
       }
+    }
+
+    // Catch for if we unlatch
+    if (!vcu.ts_safe()) {
+      consol.log("Something isn't safe, ERROR: ");
+      consol.logln(vcu.get_error_code());
     }
     break;
 
@@ -173,6 +184,10 @@ void loop() {
       if (timer_200hz.check()) {
         vcu.inverter->command_torque(vcu.pedals->get_torque_request(
             vcu.pedals->get_travel(), vcu.inverter->get_torque_limit()));
+      }
+
+      if (timer_10hz.check()) {
+        vcu.inverter->send_clear_faults();
       }
     } else {
       consol.log("Something isn't safe, ERROR: ");

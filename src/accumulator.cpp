@@ -1,25 +1,26 @@
 #include "accumulator.hpp"
+#include "car.h"
 
-ACCUMULATOR::ACCUMULATOR(can_obj_car_h_t *dbc, canMan *can,
+Accumulator::Accumulator(can_obj_car_h_t *dbc, canMan *can,
                          bool (*can_message_check)()) {
   this->dbc = dbc;
   this->can = can;
   this->can_message_check = can_message_check;
 }
 
-void ACCUMULATOR::send_bms_current_limit() {
-  encode_can_0x202_D2_Max_Charge_Current(dbc, charge_limit);
-  encode_can_0x202_D1_Max_Discharge_Current(dbc, discharge_limit);
-
-  can_message out_msg;
-  out_msg.id = CAN_ID_BMS_CURRENT_LIMIT;
-  out_msg.length =
-      pack_message(dbc, CAN_ID_BMS_CURRENT_LIMIT, &out_msg.buf.val);
-
-  can->send_controller_message(out_msg);
+// TODO: Make this real
+void Accumulator::send_bms_current_limit() {
+  // encode_can_0x6b1_Pack_CCL(dbc, charge_limit);
+  // encode_can_0x6b1_Pack_DCL(dbc, discharge_limit);
+  //
+  // can_message out_msg;
+  // out_msg.id = CAN_ID_MSGID_0X6B1;
+  // out_msg.length = pack_message(dbc, CAN_ID_MSGID_0X6B1, &out_msg.buf.val);
+  //
+  // can->send_controller_message(out_msg);
 }
 
-void ACCUMULATOR::update_acu_status(uint64_t msg, uint8_t length) {
+void Accumulator::update_acu_status(uint64_t msg, uint8_t length) {
   unpack_message(dbc, CAN_ID_ACU_SHUTDOWN_STATUS, msg, length, 0);
 
   uint8_t imd_relay_val, bms_relay_val;
@@ -31,7 +32,7 @@ void ACCUMULATOR::update_acu_status(uint64_t msg, uint8_t length) {
   bms_ok_hs = bool(bms_relay_val);
 }
 
-void ACCUMULATOR::update_precharge_status(uint64_t msg, uint8_t length) {
+void Accumulator::update_precharge_status(uint64_t msg, uint8_t length) {
   unpack_message(dbc, CAN_ID_PRECHARGE_STATUS, msg, length, 0);
 
   decode_can_0x069_precharge_state(dbc, &precharge_state);

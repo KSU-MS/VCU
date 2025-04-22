@@ -1,10 +1,10 @@
 #include "vcu.hpp"
 #include "car.h"
 
-VCU::VCU(PEDALS *pedals, CM200 *inverter, ACCUMULATOR *accumulator,
+VCU::VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator,
          can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can,
          canMan *daq_can, bool (*timer_status_message)(),
-         bool (*timer_pedal_message)(), bool (*timer_RTD_buzzer)()) {
+         bool (*timer_pedal_message)()) {
   this->pedals = pedals;
   this->inverter = inverter;
   this->accumulator = accumulator;
@@ -16,26 +16,16 @@ VCU::VCU(PEDALS *pedals, CM200 *inverter, ACCUMULATOR *accumulator,
 
   this->timer_status_message = timer_status_message;
   this->timer_pedal_message = timer_pedal_message;
-  this->timer_RTD_buzzer = timer_RTD_buzzer;
 }
 
+// Fix this by fixing the TCU
 bool VCU::try_ts_energized() {
-  switch (accumulator->get_precharge_state()) {
-  case 0: // TCU is not trying to precharge
-    return false;
-    break;
-
-  case 1: // TCU is actively trying to precharge
+  if (inverter->get_bus_voltage() > 390.0 &&
+      (accumulator->get_precharge_state() == 1 ||
+       accumulator->get_precharge_state() == 2)) {
     return true;
-    break;
-
-  case 2: // TCU has precharged
-    return true;
-    break;
-
-  default: // TCU is doing some fucked shit
+  } else {
     return false;
-    break;
   }
 }
 
@@ -49,16 +39,19 @@ bool VCU::try_ts_enabled() {
 
 bool VCU::ts_safe() {
   if (accumulator->get_precharge_state() == 2 && accumulator->get_bms_ok_hs() &&
-      accumulator->get_imd_ok_hs()) {
+      accumulator->get_imd_ok_hs() && inverter->get_bus_voltage() > 390.0) {
     return true;
   } else {
+    set_state(TRACTIVE_SYSTEM_DISABLED);
     return false;
   }
 }
 
 bool VCU::set_state(state target_state) {
   switch (current_state) {
-  case STARTUP: // This is just a catch for evil starts
+
+  // This is just a catch for evil starts
+  case STARTUP:
     if (target_state == TRACTIVE_SYSTEM_DISABLED) {
       current_state = TRACTIVE_SYSTEM_DISABLED;
       return true;
@@ -117,7 +110,7 @@ bool VCU::set_state(state target_state) {
 
       // TODO: Make this torque limit easier to configure
       inverter->set_inverter_enable(true);
-      inverter->set_torque_limit(120);
+      inverter->set_torque_limit(10);
 
       return true;
     } else {
@@ -214,25 +207,35 @@ void VCU::set_parameter(uint64_t msg, uint8_t length) {
   }
 }
 
-void VCU::send_pedal_message() {
-  if (timer_pedal_message) {
-    encode_can_0x0cc_vcu_apps1_travel(dbc, pedals->get_apps1_travel());
-    encode_can_0x0cc_vcu_apps2_travel(dbc, pedals->get_apps2_travel());
-    encode_can_0x0cc_vcu_bse1_travel(dbc, pedals->get_brake_travel());
+void VCU::send_pedal_travel_message() {
+  encode_can_0x0cc_vcu_apps1_travel(dbc, pedals->get_apps1_travel() * 100);
+  encode_can_0x0cc_vcu_apps2_travel(dbc, pedals->get_apps2_travel() * 100);
+  encode_can_0x0cc_vcu_bse1_travel(dbc, pedals->get_brake_travel() * 100);
 
-    // Init and pack the message
-    can_message out_msg;
-    out_msg.id = CAN_ID_VCU_PEDALS_TRAVEL;
-    out_msg.length =
-        pack_message(dbc, CAN_ID_VCU_PEDALS_TRAVEL, &out_msg.buf.val);
+  // Init and pack the message
+  can_message out_msg;
+  out_msg.id = CAN_ID_VCU_PEDALS_TRAVEL;
+  out_msg.length =
+      pack_message(dbc, CAN_ID_VCU_PEDALS_TRAVEL, &out_msg.buf.val);
 
-    daq_can->send_controller_message(out_msg);
-    inv_can->send_controller_message(out_msg);
-  }
+  inv_can->send_controller_message(out_msg);
+}
+
+void VCU::send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
+                                 uint16_t raw_brake) {
+  encode_can_0x0c4_APPS1(dbc, raw_apps1);
+  encode_can_0x0c4_APPS2(dbc, raw_apps2);
+  encode_can_0x0c4_BSE1(dbc, raw_brake);
+
+  can_message out_msg;
+  out_msg.id = CAN_ID_VCU_PEDAL_READINGS;
+  out_msg.length =
+      pack_message(dbc, CAN_ID_VCU_PEDAL_READINGS, &out_msg.buf.val);
+
+  inv_can->send_controller_message(out_msg);
 }
 
 void VCU::send_status_message() {
-  // if (timer_status_message) {
   encode_can_0x0c3_VCU_ACCEL_BRAKE_IMPLAUSIBLE(
       dbc, pedals->get_apps_bse_fault_ok_low());
   encode_can_0x0c3_VCU_ACCEL_IMPLAUSIBLE(dbc, pedals->get_apps_fault_ok_low());
@@ -264,9 +267,7 @@ void VCU::send_status_message() {
   out_msg.id = CAN_ID_VCU_STATUS;
   out_msg.length = pack_message(dbc, CAN_ID_VCU_STATUS, &out_msg.buf.val);
 
-  daq_can->send_controller_message(out_msg);
   inv_can->send_controller_message(out_msg);
-  // }
 }
 
 // These values are provided by the python script ran by the lib_dep
@@ -287,21 +288,16 @@ void VCU::send_status_message() {
 #endif
 
 void VCU::send_firmware_status_message() {
-  if (timer_status_message) {
-    Serial.println("fella");
+  // TODO: Abstract this arduino call
+  encode_can_0x0c8_vcu_on_time_seconds(dbc, millis() / 1000);
+  encode_can_0x0c8_vcu_fw_version(dbc, AUTO_VERSION);
+  encode_can_0x0c8_vcu_project_is_dirty(dbc, FW_PROJECT_IS_DIRTY);
+  encode_can_0x0c8_vcu_project_on_main(dbc, FW_PROJECT_IS_MAIN_OR_MASTER);
 
-    // TODO: Abstract this arduino call
-    encode_can_0x0c8_vcu_on_time_seconds(dbc, millis() / 1000);
-    encode_can_0x0c8_vcu_fw_version(dbc, AUTO_VERSION);
-    encode_can_0x0c8_vcu_project_is_dirty(dbc, FW_PROJECT_IS_DIRTY);
-    encode_can_0x0c8_vcu_project_on_main(dbc, FW_PROJECT_IS_MAIN_OR_MASTER);
+  can_message out_msg;
+  out_msg.id = CAN_ID_VCU_FIRMWARE_VERSION;
+  out_msg.length =
+      pack_message(dbc, CAN_ID_VCU_FIRMWARE_VERSION, &out_msg.buf.val);
 
-    can_message out_msg;
-    out_msg.id = CAN_ID_VCU_FIRMWARE_VERSION;
-    out_msg.length =
-        pack_message(dbc, CAN_ID_VCU_FIRMWARE_VERSION, &out_msg.buf.val);
-
-    daq_can->send_controller_message(out_msg);
-    inv_can->send_controller_message(out_msg);
-  }
+  inv_can->send_controller_message(out_msg);
 }
