@@ -60,19 +60,19 @@ Going to start droppping updates in here and merging once they are tested on the
 ## Some structure things
 ### src
 - ``main.cpp``
-  - This guy is all of the top level logic, where all the overall systems are tying together to make the thing function
+  - This guy is all of the top level logic, where all the overall systems are tying together to make the thing function.
+    - The ADC stage updates all the readings the board needs
+    - The CAN stage handles all the incoming messages, updating paramenters and forwarding etc.
+    - The State machine stage is executing all the logic specific to our current state, and tries to change states
 
 - ``vcu.cpp``
-  - He is what actually checks to make sure you can go to the next state, and if you cant he gives you the error.
+  - He is what actually checks to make sure you can go to the next state. If he says you can't then you won't.
 
-- ``cm200.cpp``
-  - Has the logic to make the motor spin
+- ``inverter.cpp``
+  - Has the logic to make the motor spin, including sending messages and ensuring the power limit.
 
 - ``accumulator.cpp``
   - The more or less just packing/unpacking messages for the acc
-
-- ``logger.cpp``
-  - A platform agnostic way of doing debug info, tho it currently really only supports AVR things
 
 ### include
 - ``main.hpp``
@@ -81,37 +81,29 @@ Going to start droppping updates in here and merging once they are tested on the
 - ``vcu.hpp``
   - He defines what all the states are, and functions that let you change around
 
+- ``inverter.hpp``
+  - Defines the class that manages all the things to make the inverter spin
+
+- ``accumulator.hpp``
+  - A class to hold all the important info from the accumulator that gets used
+
 - ``pedal_handeler.hpp``
   - Defines and implements all the logic needed for the pedals as required by FSAE rules
 
-- ``cm200.hpp``
-  - Defines the class that manages all the things to make the inverter spin
-
-- ``accumulator.cpp``
-  - A class to hold all the important info from the accumulator that gets used
-
-- ``logger.cpp``
-  - The class defs and inits for platform agnostic debug prints
-
-- ``pin_defs.hpp``
+- ``parameters.hpp``
   - Contains all of the defines for what pins are connected to what for all the micro/pcb specific stuff.
 
 
 ## Things to do
-- [x] Make the pedal handeler
-- [x] Get the inverter class goin
-- [x] Pack things into CAN messages, ideally use the auto generated lib
-- [x] Test can_tools.hpp and logger.hpp
-- [ ] Make the BSPD fella real
+- [ ] Overhall the dash->vcu message system to seperate the two more
+- [ ] Get distance tracking back with EEPROM memory (maybe add to the logger implementation)
+- [ ] Make the BSPD fella more real
 - [ ] Finish wheel speed implementation
 - [ ] Drop in the launch control algo
-- [ ] Overhall the dash->vcu message system to seperate the two more
 - [ ] Get power effeciency math back in there
-- [ ] Get distance tracking back with EEPROM memory (maybe add to the logger implementation)
 - [ ] Add support for digitalWrite to ADC.hpp or find some way to wrap it that isn't aids, same thing with the one delay
 - [ ] Make pretty flow charts for everything
 - [ ] Finish settings lib
-- [x] Get can_tools.hpp and logger.hpp pushed to ksu-fw-common
 
 ## CAN DOC
 We currently handel these messages
@@ -121,6 +113,7 @@ We currently handel these messages
   - DASH_BUTTONS
 ##### Pack
   - VCU_PEDALS_TRAVEL
+  - VCU_PEDAL_READINGS
   - VCU_STATUS
   - VCU_FIRMWARE_VERSION
   - BMS_CURRENT_LIMIT
@@ -131,7 +124,6 @@ I need to add
   - VectorNav things
   - Torque mode setting stuff
 ##### Pack
-  - VCU_PEDAL_READINGS
   - VCU_BOARD_READINGS_ONE
   - VCU_BOARD_READINGS_TWO
   - Launch control stuff

@@ -12,8 +12,8 @@ can_obj_car_h_t kms_can;
 // Local
 #include "accumulator.hpp"
 #include "inverter.hpp"
+#include "parameters.hpp"
 #include "pedal_handeler.hpp"
-#include "pin_defs.hpp"
 #include "vcu.hpp"
 
 #ifdef ARDUINO

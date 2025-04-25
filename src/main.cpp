@@ -11,7 +11,7 @@ void setup() {
 
   consol.logln("Booted");
 
-  vcu.accumulator->set_charge_limit(10);
+  vcu.accumulator->set_charge_limit(15);
   vcu.accumulator->set_discharge_limit(200);
 }
 
@@ -46,15 +46,17 @@ void loop() {
   if (timer_1s.check()) {
     vcu.send_firmware_status_message();
     vcu.send_status_message();
-    // vcu.accumulator->send_bms_current_limit();
+    vcu.accumulator->send_bms_current_limit();
   }
 
   if (timer_20hz.check()) {
     vcu.send_pedal_travel_message();
-    vcu.send_pedal_raw_message(apps1.value.in, apps2.value.in, bse.value.in);
+    vcu.send_pedal_raw_message(vcu.pedals->get_apps1_raw(),
+                               vcu.pedals->get_apps2_raw(),
+                               vcu.pedals->get_brake_raw());
 
-    print_message(&kms_can, CAN_ID_VCU_PEDALS_TRAVEL, &std_out_wrap);
-    print_message(&kms_can, CAN_ID_VCU_PEDAL_READINGS, &std_out_wrap);
+    // print_message(&kms_can, CAN_ID_VCU_PEDALS_TRAVEL, &std_out_wrap);
+    // print_message(&kms_can, CAN_ID_VCU_PEDAL_READINGS, &std_out_wrap);
   }
 
   if (vcu.acc_can->check_controller_message()) {
@@ -118,7 +120,10 @@ void loop() {
     break;
 
   case TRACTIVE_SYSTEM_DISABLED:
-    if (vcu.try_ts_energized()) {
+    if (timer_20hz.check())
+      vcu.inverter->ping();
+
+    if (vcu.ts_safe()) {
       if (vcu.set_state(TRACTIVE_SYSTEM_PRECHARGING)) {
         consol.logln("Entering TRACTIVE_SYSTEM_PRECHARGING");
         consol.logln("TCU is trying to precharge...");
@@ -130,6 +135,9 @@ void loop() {
     break;
 
   case TRACTIVE_SYSTEM_PRECHARGING:
+    if (timer_20hz.check())
+      vcu.inverter->ping();
+
     if (vcu.set_state(TRACTIVE_SYSTEM_ENERGIZED)) {
       consol.logln("Tractive system energized, waiting on driver...");
     } else {
@@ -140,7 +148,7 @@ void loop() {
 
   case TRACTIVE_SYSTEM_ENERGIZED:
     if (timer_20hz.check())
-      vcu.inverter->ping(); // Get the inverter prepped
+      vcu.inverter->ping();
 
     // try_ts_enabled is just looking for the brake and RTD button
     if (vcu.try_ts_enabled()) {
@@ -154,14 +162,15 @@ void loop() {
 
     // Catch for if we unlatch
     if (!vcu.ts_safe()) {
-      consol.log("Something isn't safe, ERROR: ");
+      consol.log("Something isn't safe, leaving ENERGIZED, ERROR: ");
       consol.logln(vcu.get_error_code());
+      vcu.set_state(TRACTIVE_SYSTEM_DISABLED);
     }
     break;
 
   case TRACTIVE_SYSTEM_ENABLED:
     if (timer_20hz.check())
-      vcu.inverter->ping(); // Keep the inverter prepped
+      vcu.inverter->ping();
 
     digitalWrite(BUZZER, vcu.get_buzzer_state());
 
@@ -186,12 +195,13 @@ void loop() {
             vcu.pedals->get_travel(), vcu.inverter->get_torque_limit()));
       }
 
-      if (timer_10hz.check()) {
-        vcu.inverter->send_clear_faults();
-      }
+      // if (timer_10hz.check()) {
+      //   vcu.inverter->send_clear_faults();
+      // }
     } else {
-      consol.log("Something isn't safe, ERROR: ");
+      consol.log("Something isn't safe, leaving RTD, ERROR: ");
       consol.logln(vcu.get_error_code());
+      vcu.set_state(TRACTIVE_SYSTEM_DISABLED);
     }
     break;
   }

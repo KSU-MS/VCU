@@ -32,7 +32,6 @@ void Inverter::update_bus_voltage(uint64_t msg_in, uint8_t length) {
 }
 
 void Inverter::ping() {
-  // if (timer_mc_kick()) {
   encode_can_0x0c0_Torque_Command(dbc, 0.0);
   encode_can_0x0c0_Torque_Limit_Command(dbc, 0.0);
   encode_can_0x0c0_Speed_Command(dbc, 0.0);
@@ -47,7 +46,6 @@ void Inverter::ping() {
       pack_message(dbc, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
 
   can->send_controller_message(out_msg);
-  // }
 }
 
 void Inverter::send_clear_faults() {
@@ -84,7 +82,6 @@ void Inverter::command_torque(double torque_request) {
   //   torque_target = 0;
   // }
 
-  // if (timer_motor_controller_send()) {
   encode_can_0x0c0_Torque_Command(dbc, torque_target);
   encode_can_0x0c0_Torque_Limit_Command(dbc, torque_limit);
   encode_can_0x0c0_Speed_Command(dbc, 0.0);
@@ -99,11 +96,9 @@ void Inverter::command_torque(double torque_request) {
       pack_message(dbc, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
 
   can->send_controller_message(out_msg);
-  // }
 }
 
 void Inverter::command_speed(int16_t speed_request) {
-  // if (timer_motor_controller_send()) {
   encode_can_0x0c0_Torque_Command(dbc, 0.0);
   encode_can_0x0c0_Torque_Limit_Command(dbc, torque_limit);
   encode_can_0x0c0_Speed_Command(dbc, speed_request);
@@ -118,5 +113,4 @@ void Inverter::command_speed(int16_t speed_request) {
       pack_message(dbc, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
 
   can->send_controller_message(out_msg);
-  // }
 }

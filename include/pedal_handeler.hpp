@@ -95,8 +95,7 @@ public:
     if (apps_fault == false && bse_fault == false && apps_bse_fault == false) {
 
       // Check that the pedals are reading within 10%
-      // HACK: Changing this till I figure out the transient BS
-      if ((fabs(apps1_travel - apps2_travel) < 0.3)) {
+      if ((fabs(apps1_travel - apps2_travel) < 0.1)) {
         travel = (apps1_travel + apps2_travel) / 2;
 
         // Check that the driver isn't using both pedals at once
@@ -117,6 +116,9 @@ public:
   inline bool get_apps_fault_ok_low() { return apps_fault; }
   inline bool get_apps_bse_fault_ok_low() { return apps_bse_fault; }
 
+  inline uint16_t get_apps1_raw() { return raw_apps1; }
+  inline uint16_t get_apps2_raw() { return raw_apps2; }
+  inline uint16_t get_brake_raw() { return raw_brake; }
   inline double get_apps1_travel() { return apps1_travel; }
   inline double get_apps2_travel() { return apps2_travel; }
   inline double get_brake_travel() { return brake_travel; }

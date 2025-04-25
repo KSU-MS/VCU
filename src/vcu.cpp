@@ -20,7 +20,7 @@ VCU::VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator,
 
 // Fix this by fixing the TCU
 bool VCU::try_ts_energized() {
-  if (inverter->get_bus_voltage() > 390.0 &&
+  if (inverter->get_bus_voltage() > 60.0 &&
       (accumulator->get_precharge_state() == 1 ||
        accumulator->get_precharge_state() == 2)) {
     return true;
@@ -39,7 +39,7 @@ bool VCU::try_ts_enabled() {
 
 bool VCU::ts_safe() {
   if (accumulator->get_precharge_state() == 2 && accumulator->get_bms_ok_hs() &&
-      accumulator->get_imd_ok_hs() && inverter->get_bus_voltage() > 390.0) {
+      accumulator->get_imd_ok_hs() && inverter->get_bus_voltage() > 60.0) {
     return true;
   } else {
     set_state(TRACTIVE_SYSTEM_DISABLED);
@@ -103,7 +103,7 @@ bool VCU::set_state(state target_state) {
     break;
 
   case TRACTIVE_SYSTEM_ENABLED:
-    if (target_state == READY_TO_DRIVE) {
+    if (target_state == READY_TO_DRIVE && ts_safe()) {
       current_state = READY_TO_DRIVE;
 
       buzzer_active = false;
@@ -123,9 +123,9 @@ bool VCU::set_state(state target_state) {
     break;
 
   case READY_TO_DRIVE: // We want to be able to leave no matter what
-    error_code = bool_code;
-
     inverter->set_inverter_enable(false);
+    inverter->set_torque_limit(0);
+
     buzzer_active = false;
 
     this->current_state = TRACTIVE_SYSTEM_DISABLED;
