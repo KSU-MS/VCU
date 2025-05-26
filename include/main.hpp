@@ -29,6 +29,8 @@ Metro timer_20hz = Metro(50, true);  // Used for inverter timeout
 Metro timer_100hz = Metro(10, true); // Used for inverter current limit
 Metro timer_200hz = Metro(5, true);  // Used for inverter command message
 
+Metro buzzer_timer = Metro(2215, false);
+
 bool wrapped_1s() {
   if (timer_1s.check()) {
     return true;

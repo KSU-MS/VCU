@@ -113,6 +113,34 @@ bool VCU::set_state(state target_state) {
     return true;
     break;
 
+  case LAUNCH_WAIT:
+    if (target_state == READY_TO_DRIVE && ts_safe()) {
+
+      // TODO: Figure out what needs to get turned off
+      this->current_state = READY_TO_DRIVE;
+    } else if (target_state == LAUNCH && ts_safe()) {
+
+      // TODO: Get some pre-lim logic goin
+      this->current_state = LAUNCH;
+    } else {
+      inverter->set_inverter_enable(false);
+      inverter->set_torque_limit(0);
+
+      buzzer_active = false;
+
+      this->current_state = TRACTIVE_SYSTEM_DISABLED;
+      return false;
+    }
+    break;
+
+  case LAUNCH:
+    if (target_state == READY_TO_DRIVE && ts_safe() && !launch_state) {
+
+    } else {
+      this->current_state = TRACTIVE_SYSTEM_DISABLED;
+    }
+    break;
+
   default:
     inverter->set_inverter_enable(false);
     inverter->set_torque_limit(0);
@@ -192,6 +220,60 @@ void VCU::set_parameter(uint64_t msg, uint8_t length) {
   }
 }
 
+//
+//// CAN stage
+void VCU::update_acc_can() {
+  if (acc_can->check_controller_message()) {
+    can_message msg_in = acc_can->get_controller_message();
+    inv_can->send_controller_message(msg_in);
+    // vcu.daq_can->send_controller_message(msg_in);
+
+    switch (msg_in.id) {
+    case CAN_ID_ACU_SHUTDOWN_STATUS:
+      accumulator->update_acu_status(msg_in.buf.val, msg_in.length);
+      break;
+
+    case CAN_ID_PRECHARGE_STATUS:
+      accumulator->update_precharge_status(msg_in.buf.val, msg_in.length);
+      break;
+
+      // NOTE: Commented out for now as we are already fowarding everything from
+      // the accumulator bus to the inverter bus
+
+      // We foward this to the inverter bus for the dash
+
+      // case CAN_ID_MSGID_0X6B3:
+      //   vcu.inv_can->send_controller_message(msg_in);
+      //   break;
+    }
+  }
+}
+
+void VCU::update_inv_can() {
+  if (inv_can->check_controller_message()) {
+    can_message msg_in = inv_can->get_controller_message();
+    // vcu.daq_can->send_controller_message(msg_in);
+
+    switch (msg_in.id) {
+    case CAN_ID_DASH_BUTTONS:
+      update_dash_buttons(msg_in.buf.val, msg_in.length);
+      break;
+
+    case CAN_ID_M166_CURRENT_INFO:
+      inverter->update_bus_current(msg_in.buf.val, msg_in.length);
+      break;
+
+    case CAN_ID_M167_VOLTAGE_INFO:
+      inverter->update_bus_voltage(msg_in.buf.val, msg_in.length);
+      break;
+
+    case CAN_ID_VCU_SET_PARAMETER:
+      set_parameter(msg_in.buf.val, msg_in.length);
+      break;
+    }
+  }
+}
+
 void VCU::send_pedal_travel_message() {
   encode_can_0x0cc_vcu_apps1_travel(dbc, pedals->get_apps1_travel() * 100);
   encode_can_0x0cc_vcu_apps2_travel(dbc, pedals->get_apps2_travel() * 100);
@@ -266,6 +348,20 @@ void VCU::send_firmware_status_message() {
   out_msg.id = CAN_ID_VCU_FIRMWARE_VERSION;
   out_msg.length =
       pack_message(dbc, CAN_ID_VCU_FIRMWARE_VERSION, &out_msg.buf.val);
+
+  inv_can->send_controller_message(out_msg);
+}
+
+void VCU::send_launch_control_status_message() {
+  encode_can_0x0cb_vcu_launchcontrol_elapsed_time(dbc, 0);
+  encode_can_0x0cb_vcu_launchcontrol_outputtorqueco(dbc, 0);
+  encode_can_0x0cb_vcu_launchcontrol_state(dbc, launch_state);
+  encode_can_0x0cb_vcu_launchcontrol_type(dbc, launch_mode);
+
+  can_message out_msg;
+  out_msg.id = CAN_ID_VCU_LAUNCHCONTROL_DIAGDATA;
+  out_msg.length =
+      pack_message(dbc, CAN_ID_VCU_LAUNCHCONTROL_DIAGDATA, &out_msg.buf.val);
 
   inv_can->send_controller_message(out_msg);
 }

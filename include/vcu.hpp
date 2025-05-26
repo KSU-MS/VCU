@@ -5,6 +5,7 @@
 #include "accumulator.hpp"
 #include "inverter.hpp"
 #include "pedal_handeler.hpp"
+#include "traction_control.hpp"
 
 enum state {
   STARTUP = 0,                   // VCU is powering on
@@ -48,10 +49,14 @@ private:
   bool (*timer_pedal_message)();
   bool (*timer_RTD_buzzer)();
 
+  bool launch_state;
+  uint8_t launch_mode = 0;
+
 public:
   Pedals *pedals;
   Inverter *inverter;
   Accumulator *accumulator;
+  TractionController *tc;
 
   can_obj_car_h_t *dbc;
   canMan *acc_can;
@@ -67,6 +72,7 @@ public:
   inline state get_current_state() { return this->current_state; }
   inline uint16_t get_bool_code() { return this->bool_code; }
   inline uint16_t get_error_code() { return this->error_code; }
+  inline bool get_launch_state() { return this->launch_state; }
   inline bool get_buzzer_state() { return this->buzzer_active; }
   inline bool get_bspd_ok_hs() { return this->bspd_ok_hs; }
   inline bool get_rtd_fella() { return this->RTD_button_pressed; }
@@ -75,6 +81,9 @@ public:
   bool try_ts_energized();
   bool try_ts_enabled();
   bool ts_safe();
+
+  void update_acc_can();
+  void update_inv_can();
 
   void set_parameter(uint64_t msg, uint8_t length);
   void update_dash_buttons(uint64_t msg, uint8_t length);
@@ -86,4 +95,5 @@ public:
                               uint16_t raw_brake);
   void send_pedal_travel_message();
   void send_firmware_status_message();
+  void send_launch_control_status_message();
 };

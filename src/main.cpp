@@ -26,23 +26,11 @@ void loop() {
   vsense_bspd.update();
   vcu.update_bspd(vsense_bspd.value.in, 0, 0);
 
-  // consol.log("apps1: ");
-  // consol.log(vcu.pedals->get_apps1_travel());
-  // consol.log("\t");
-  // consol.logln(apps1.value.in);
-  // consol.log("apps2: ");
-  // consol.log(vcu.pedals->get_apps2_travel());
-  // consol.log("\t");
-  // consol.logln(apps2.value.in);
-  // consol.log("apps: ");
-  // consol.logln(vcu.pedals->get_travel());
-  // consol.log("brake: ");
-  // consol.log(vcu.pedals->get_brake_travel());
-  // consol.log("\t");
-  // consol.logln(bse.value.in);
-
   //
   //// CAN Stage
+  vcu.update_acc_can();
+  vcu.update_inv_can();
+
   if (timer_1s.check()) {
     vcu.send_firmware_status_message();
     vcu.send_status_message();
@@ -57,54 +45,6 @@ void loop() {
 
     print_message(&kms_can, CAN_ID_VCU_PEDALS_TRAVEL, &std_out_wrap);
     print_message(&kms_can, CAN_ID_VCU_PEDAL_READINGS, &std_out_wrap);
-  }
-
-  if (vcu.acc_can->check_controller_message()) {
-    can_message msg_in = vcu.acc_can->get_controller_message();
-    vcu.inv_can->send_controller_message(msg_in);
-    // vcu.daq_can->send_controller_message(msg_in);
-
-    switch (msg_in.id) {
-    case CAN_ID_ACU_SHUTDOWN_STATUS:
-      vcu.accumulator->update_acu_status(msg_in.buf.val, msg_in.length);
-      break;
-
-    case CAN_ID_PRECHARGE_STATUS:
-      vcu.accumulator->update_precharge_status(msg_in.buf.val, msg_in.length);
-      break;
-
-      // NOTE: Commented out for now as we are already fowarding everything from
-      // the accumulator bus to the inverter bus
-
-      // We foward this to the inverter bus for the dash
-
-      // case CAN_ID_MSGID_0X6B3:
-      //   vcu.inv_can->send_controller_message(msg_in);
-      //   break;
-    }
-  }
-
-  if (vcu.inv_can->check_controller_message()) {
-    can_message msg_in = vcu.inv_can->get_controller_message();
-    // vcu.daq_can->send_controller_message(msg_in);
-
-    switch (msg_in.id) {
-    case CAN_ID_DASH_BUTTONS:
-      vcu.update_dash_buttons(msg_in.buf.val, msg_in.length);
-      break;
-
-    case CAN_ID_M166_CURRENT_INFO:
-      vcu.inverter->update_bus_current(msg_in.buf.val, msg_in.length);
-      break;
-
-    case CAN_ID_M167_VOLTAGE_INFO:
-      vcu.inverter->update_bus_voltage(msg_in.buf.val, msg_in.length);
-      break;
-
-    case CAN_ID_VCU_SET_PARAMETER:
-      vcu.set_parameter(msg_in.buf.val, msg_in.length);
-      break;
-    }
   }
 
   //
@@ -124,7 +64,7 @@ void loop() {
       vcu.inverter->ping();
 
     if (vcu.ts_safe()) {
-      if (vcu.set_state(TRACTIVE_SYSTEM_PRECHARGING)) {
+      if (vcu.set_state(TRACTIVE_SYSTEM_ENERGIZED)) {
         consol.logln("Entering TRACTIVE_SYSTEM_PRECHARGING");
         consol.logln("TCU is trying to precharge...");
       } else {
@@ -132,18 +72,6 @@ void loop() {
         consol.logln(vcu.get_error_code());
       }
     };
-    break;
-
-  case TRACTIVE_SYSTEM_PRECHARGING:
-    if (timer_20hz.check())
-      vcu.inverter->ping();
-
-    if (vcu.set_state(TRACTIVE_SYSTEM_ENERGIZED)) {
-      consol.logln("Tractive system energized, waiting on driver...");
-    } else {
-      consol.log("Failed to enter TRACTIVE_SYSTEM_ENERGIZED, ERROR: ");
-      consol.logln(vcu.get_error_code());
-    }
     break;
 
   case TRACTIVE_SYSTEM_ENERGIZED:
@@ -173,10 +101,9 @@ void loop() {
       vcu.inverter->ping();
 
     digitalWrite(BUZZER, vcu.get_buzzer_state());
+    buzzer_timer.reset();
 
-    delay(2215); // BUG: Get rid of this aids arduino call
-
-    if (vcu.set_state(READY_TO_DRIVE)) {
+    if (vcu.set_state(READY_TO_DRIVE) && buzzer_timer.check()) {
       consol.logln("Ready to Rip");
 
       digitalWrite(BUZZER, vcu.get_buzzer_state());
@@ -195,6 +122,7 @@ void loop() {
             vcu.pedals->get_travel(), vcu.inverter->get_torque_limit()));
       }
 
+      // NOTE: I don't think this works right now...
       // if (timer_10hz.check()) {
       //   vcu.inverter->send_clear_faults();
       // }
@@ -202,6 +130,28 @@ void loop() {
       consol.log("Something isn't safe, leaving RTD, ERROR: ");
       consol.logln(vcu.get_error_code());
       vcu.set_state(TRACTIVE_SYSTEM_DISABLED);
+    }
+    break;
+
+  case LAUNCH_WAIT:
+    if (vcu.set_state(LAUNCH)) {
+      // TODO: I think this should just be wating for some confirmation from the
+      // driver or something idk go figure it out nerd
+
+    } else {
+      consol.log("Aborting launch, ERROR: ");
+      consol.logln(vcu.get_error_code());
+      vcu.set_state(READY_TO_DRIVE);
+    }
+    break;
+
+  case LAUNCH:
+    if (vcu.get_launch_state()) {
+      // TODO: Get the launch logic goin
+
+    } else {
+      consol.log("Exiting launch");
+      vcu.set_state(READY_TO_DRIVE);
     }
     break;
   }
