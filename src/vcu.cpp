@@ -1,5 +1,6 @@
 #include "vcu.hpp"
 #include "car.h"
+#include "parameters.hpp"
 
 VCU::VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator,
          can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can,
@@ -18,19 +19,9 @@ VCU::VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator,
   this->timer_pedal_message = timer_pedal_message;
 }
 
-// Fix this by fixing the TCU
-bool VCU::try_ts_energized() {
-  if (inverter->get_bus_voltage() > 60.0 &&
-      (accumulator->get_precharge_state() == 1 ||
-       accumulator->get_precharge_state() == 2)) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
 bool VCU::try_ts_enabled() {
-  if (RTD_button_pressed && (pedals->get_brake_travel() > 0.3)) {
+  if (RTD_button_pressed &&
+      (pedals->get_brake_travel() > MINIMUM_BRAKE_FOR_RTD)) {
     return true;
   } else {
     return false;
@@ -38,8 +29,9 @@ bool VCU::try_ts_enabled() {
 }
 
 bool VCU::ts_safe() {
-  if (accumulator->get_precharge_state() == 2 && accumulator->get_bms_ok_hs() &&
-      accumulator->get_imd_ok_hs() && inverter->get_bus_voltage() > 60.0) {
+  if (accumulator->get_precharge_state() == PRECHARGE_OK_STATE &&
+      accumulator->get_bms_ok_hs() && accumulator->get_imd_ok_hs() &&
+      inverter->get_bus_voltage() > TRACTIVE_SYSTEM_MINIMUM_VOLTAGE) {
     return true;
   } else {
     set_state(TRACTIVE_SYSTEM_DISABLED);
@@ -63,17 +55,6 @@ bool VCU::set_state(state target_state) {
     break;
 
   case TRACTIVE_SYSTEM_DISABLED:
-    if (target_state == TRACTIVE_SYSTEM_PRECHARGING) {
-      current_state = TRACTIVE_SYSTEM_PRECHARGING;
-      return true;
-    } else {
-      error_code = bool_code;
-      current_state = TRACTIVE_SYSTEM_DISABLED;
-      return false;
-    }
-    break;
-
-  case TRACTIVE_SYSTEM_PRECHARGING:
     if (target_state == TRACTIVE_SYSTEM_ENERGIZED && ts_safe()) {
       current_state = TRACTIVE_SYSTEM_ENERGIZED;
       return true;
@@ -110,7 +91,7 @@ bool VCU::set_state(state target_state) {
 
       // TODO: Make this torque limit easier to configure
       inverter->set_inverter_enable(true);
-      inverter->set_torque_limit(10);
+      inverter->set_torque_limit(160);
 
       return true;
     } else {
@@ -133,7 +114,11 @@ bool VCU::set_state(state target_state) {
     break;
 
   default:
-    this->error_code = this->bool_code;
+    inverter->set_inverter_enable(false);
+    inverter->set_torque_limit(0);
+
+    buzzer_active = false;
+
     this->current_state = TRACTIVE_SYSTEM_DISABLED;
     return false;
     break;
@@ -269,23 +254,6 @@ void VCU::send_status_message() {
 
   inv_can->send_controller_message(out_msg);
 }
-
-// These values are provided by the python script ran by the lib_dep
-// https://github.com/KSU-MS/pio-git-hash-gen
-#ifndef AUTO_VERSION
-#warning "AUTO_VERSION was not defined by the generator!"
-#define AUTO_VERSION 0xdeadbeef
-#endif
-
-#ifndef FW_PROJECT_IS_DIRTY
-#warning "FW_PROJECT_IS_DIRTY was not defined by the generator!"
-#define FW_PROJECT_IS_DIRTY 1
-#endif
-
-#ifndef FW_PROJECT_IS_MAIN_OR_MASTER
-#warning "FW_PROJECT_IS_MAIN_OR_MASTER was not defined by the generator!"
-#define FW_PROJECT_IS_MAIN_OR_MASTER 0
-#endif
 
 void VCU::send_firmware_status_message() {
   // TODO: Abstract this arduino call

@@ -1,6 +1,12 @@
 #pragma once
 
 //
+//// Some car values
+#define TRACTIVE_SYSTEM_MINIMUM_VOLTAGE 360 // TODO: Get real value
+#define PRECHARGE_OK_STATE 2
+#define MINIMUM_BRAKE_FOR_RTD 0.3
+
+//
 //// Hardcoded pedal values
 #define MIN_BRAKE_PEDAL 2000
 #define START_BRAKE_PEDAL 2751
@@ -49,3 +55,22 @@
 //
 //// Default SPI settings
 #define DEFAULT_SPI_SPEED 1000000
+
+//
+//// GIT status message defs
+// These values are provided by the python script ran by the lib_dep
+// https://github.com/KSU-MS/pio-git-hash-gen
+#ifndef AUTO_VERSION
+#warning "AUTO_VERSION was not defined by the generator!"
+#define AUTO_VERSION 0xdeadbeef
+#endif
+
+#ifndef FW_PROJECT_IS_DIRTY
+#warning "FW_PROJECT_IS_DIRTY was not defined by the generator!"
+#define FW_PROJECT_IS_DIRTY 1
+#endif
+
+#ifndef FW_PROJECT_IS_MAIN_OR_MASTER
+#warning "FW_PROJECT_IS_MAIN_OR_MASTER was not defined by the generator!"
+#define FW_PROJECT_IS_MAIN_OR_MASTER 0
+#endif

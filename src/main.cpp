@@ -55,8 +55,8 @@ void loop() {
                                vcu.pedals->get_apps2_raw(),
                                vcu.pedals->get_brake_raw());
 
-    // print_message(&kms_can, CAN_ID_VCU_PEDALS_TRAVEL, &std_out_wrap);
-    // print_message(&kms_can, CAN_ID_VCU_PEDAL_READINGS, &std_out_wrap);
+    print_message(&kms_can, CAN_ID_VCU_PEDALS_TRAVEL, &std_out_wrap);
+    print_message(&kms_can, CAN_ID_VCU_PEDAL_READINGS, &std_out_wrap);
   }
 
   if (vcu.acc_can->check_controller_message()) {
