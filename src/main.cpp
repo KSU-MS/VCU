@@ -10,9 +10,6 @@ void setup() {
   pinMode(BUZZER, OUTPUT);
 
   consol.logln("Booted");
-
-  vcu.accumulator->set_charge_limit(15);
-  vcu.accumulator->set_discharge_limit(200);
 }
 
 void loop() {
@@ -34,7 +31,6 @@ void loop() {
   if (timer_1s.check()) {
     vcu.send_firmware_status_message();
     vcu.send_status_message();
-    vcu.accumulator->send_bms_current_limit();
   }
 
   if (timer_20hz.check()) {
@@ -99,6 +95,9 @@ void loop() {
   case TRACTIVE_SYSTEM_ENABLED:
     if (timer_20hz.check())
       vcu.inverter->ping();
+
+    vcu.inverter->set_current_limits(INVERTER_CHARGE_LIMIT,
+                                     INVERTER_DISCHARGE_LIMIT);
 
     digitalWrite(BUZZER, vcu.get_buzzer_state());
     buzzer_timer.reset();

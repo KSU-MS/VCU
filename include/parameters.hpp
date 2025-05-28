@@ -6,6 +6,9 @@
 #define PRECHARGE_OK_STATE 2
 #define MINIMUM_BRAKE_FOR_RTD 0.3
 
+#define INVERTER_CHARGE_LIMIT 60
+#define INVERTER_DISCHARGE_LIMIT 600
+
 //
 //// Hardcoded pedal values
 #define MIN_BRAKE_PEDAL 2000

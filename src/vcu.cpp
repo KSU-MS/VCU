@@ -199,12 +199,8 @@ void VCU::set_parameter(uint64_t msg, uint8_t length) {
     // Not real yet
     break;
 
-  case BMS_CHARGE_LIMIT:
-    accumulator->set_charge_limit(parameter_value);
-    break;
-
-  case BMS_DISCHARGE_LIMIT:
-    accumulator->set_discharge_limit(parameter_value);
+  case INV_DISCHARGE_LIMIT:
+    inverter->set_current_limits(INVERTER_CHARGE_LIMIT, parameter_value);
     break;
 
   case LAUNCH_MODE:
@@ -265,6 +261,7 @@ void VCU::update_inv_can() {
 
     case CAN_ID_M167_VOLTAGE_INFO:
       inverter->update_bus_voltage(msg_in.buf.val, msg_in.length);
+      acc_can->send_controller_message(msg_in); // Forward this for precharge
       break;
 
     case CAN_ID_VCU_SET_PARAMETER:

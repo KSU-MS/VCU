@@ -11,6 +11,7 @@ private:
 
   bool speed_mode = false;
   int16_t speed_request = 0;
+  int16_t speed_limit = 0;
   double torque_request = 0;
   double torque_limit = 0;
 
@@ -18,7 +19,7 @@ private:
   uint16_t motor_temp;
 
   bool over_power;
-  uint32_t over_power_event;
+  uint32_t over_power_event_epoch;
   float over_power_decay_factor;
   double bus_voltage;
   double bus_current;
@@ -43,7 +44,9 @@ public:
 
   inline void set_power_limit(double limit) { power_limit = limit; }
   inline void set_torque_limit(double limit) { torque_limit = limit; }
+  inline void set_speed_limit(uint16_t limit) { speed_limit = limit; }
   inline void set_inverter_enable(bool enable) { inverter_enable = enable; }
+  void set_current_limits(uint16_t charge_limit, uint16_t discharge_limit);
 
   void update_bus_current(uint64_t msg_in, uint8_t length);
   void update_bus_voltage(uint64_t msg_in, uint8_t length);

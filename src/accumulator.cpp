@@ -8,18 +8,6 @@ Accumulator::Accumulator(can_obj_car_h_t *dbc, canMan *can,
   this->can_message_check = can_message_check;
 }
 
-// TODO: Make this real
-void Accumulator::send_bms_current_limit() {
-  // encode_can_0x6b1_Pack_CCL(dbc, charge_limit);
-  // encode_can_0x6b1_Pack_DCL(dbc, discharge_limit);
-  //
-  // can_message out_msg;
-  // out_msg.id = CAN_ID_MSGID_0X6B1;
-  // out_msg.length = pack_message(dbc, CAN_ID_MSGID_0X6B1, &out_msg.buf.val);
-  //
-  // can->send_controller_message(out_msg);
-}
-
 void Accumulator::update_acu_status(uint64_t msg, uint8_t length) {
   unpack_message(dbc, CAN_ID_ACU_SHUTDOWN_STATUS, msg, length, 0);
 

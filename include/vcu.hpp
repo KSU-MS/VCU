@@ -25,10 +25,9 @@ enum parameter {
   TORQUE_LIMIT = 1,        // In Nm
   SPEED_MODE = 2,          // Boolean
   SPEED_LIMIT = 3,         // In some speed unit?
-  BMS_CHARGE_LIMIT = 4,    // idk for this
-  BMS_DISCHARGE_LIMIT = 5, // or for this
-  LAUNCH_MODE = 6,         // Look at traction_control.hpp for mode defs
-  TRACTION_MODE = 7,       // Look at traction_control.hpp for mode defs
+  INV_DISCHARGE_LIMIT = 4, // Need to find unit for this
+  LAUNCH_MODE = 5,         // Look at traction_control.hpp for mode defs
+  TRACTION_MODE = 6,       // Look at traction_control.hpp for mode defs
 };
 
 class VCU {
