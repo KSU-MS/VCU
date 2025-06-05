@@ -109,7 +109,7 @@ Pedals pedals(MIN_BRAKE_PEDAL, START_BRAKE_PEDAL, END_BRAKE_PEDAL,
               END_ACCELERATOR_PEDAL_1, START_ACCELERATOR_PEDAL_2,
               END_ACCELERATOR_PEDAL_2);
 
-Inverter inverter(&wrapped_20hz, &wrapped_100hz, &wrapped_200hz, true, &inv_can,
+Inverter inverter(&wrapped_20hz, &wrapped_100hz, &wrapped_200hz, false, &inv_can,
                   &kms_can, -0.69314718056);
 
 Accumulator accumulator(&kms_can, &acc_can, &wrapped_2hz);

@@ -56,12 +56,12 @@ void loop() {
     break;
 
   case TRACTIVE_SYSTEM_DISABLED:
-    if (timer_20hz.check())
+    if(timer_10hz.check())
       vcu.inverter->ping();
 
     if (vcu.ts_safe()) {
       if (vcu.set_state(TRACTIVE_SYSTEM_ENERGIZED)) {
-        consol.logln("Entering TRACTIVE_SYSTEM_PRECHARGING");
+        consol.logln("Entering TRACTIVE_SYSTEM_ENERGIZED");
         consol.logln("TCU is trying to precharge...");
       } else {
         consol.log("Failed to enter TRACTIVE_SYSTEM_PRECHARGING, ERROR: ");
@@ -71,7 +71,7 @@ void loop() {
     break;
 
   case TRACTIVE_SYSTEM_ENERGIZED:
-    if (timer_20hz.check())
+    if(timer_10hz.check())
       vcu.inverter->ping();
 
     // try_ts_enabled is just looking for the brake and RTD button
@@ -93,16 +93,16 @@ void loop() {
     break;
 
   case TRACTIVE_SYSTEM_ENABLED:
-    if (timer_20hz.check())
+    if(timer_10hz.check())
       vcu.inverter->ping();
 
     vcu.inverter->set_current_limits(INVERTER_CHARGE_LIMIT,
                                      INVERTER_DISCHARGE_LIMIT);
 
     digitalWrite(BUZZER, vcu.get_buzzer_state());
-    buzzer_timer.reset();
+    delay(2151);
 
-    if (vcu.set_state(READY_TO_DRIVE) && buzzer_timer.check()) {
+    if (vcu.set_state(READY_TO_DRIVE)) {
       consol.logln("Ready to Rip");
 
       digitalWrite(BUZZER, vcu.get_buzzer_state());
