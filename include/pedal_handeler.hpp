@@ -2,8 +2,12 @@
 
 #include <stdint.h>
 
-class PEDALS {
+class Pedals {
 private:
+  uint16_t raw_apps1;
+  uint16_t raw_apps2;
+  uint16_t raw_brake;
+
   float brake_ratio;
   uint16_t brake_start;
   uint16_t bse_low_fault;
@@ -26,7 +30,7 @@ private:
   bool apps_bse_fault; // Screenshot (too much brake and gas (before BSPD))
 
 public:
-  PEDALS(uint16_t bse_low_fault, uint16_t brake_start, uint16_t brake_end,
+  Pedals(uint16_t bse_low_fault, uint16_t brake_start, uint16_t brake_end,
          uint16_t bse_high_fault, uint16_t apps1_start, uint16_t apps1_end,
          uint16_t apps2_start, uint16_t apps2_end) {
 
@@ -50,6 +54,10 @@ public:
   // TODO: Make the release and apps_bse values confgiurable
   void update_travel(uint16_t raw_apps1, uint16_t raw_apps2,
                      uint16_t raw_brake) {
+    this->raw_apps1 = raw_apps1;
+    this->raw_apps2 = raw_apps2;
+    this->raw_brake = raw_brake;
+
     // Get the pedal percentage in its throw from 0 to 1
     apps1_travel = (raw_apps1 - apps1_start) * apps1_ratio;
     if (apps1_travel < 0)
@@ -86,8 +94,8 @@ public:
     // Check that there is no apps related faults
     if (apps_fault == false && bse_fault == false && apps_bse_fault == false) {
 
-      // Check that the pedals are reading within 10%
-      if ((fabs(apps1_travel - apps2_travel) < 0.1)) {
+      // Check that the pedals are reading within 30%
+      if ((fabs(apps1_travel - apps2_travel) < 0.3)) {
         travel = (apps1_travel + apps2_travel) / 2;
 
         // Check that the driver isn't using both pedals at once
@@ -108,6 +116,9 @@ public:
   inline bool get_apps_fault_ok_low() { return apps_fault; }
   inline bool get_apps_bse_fault_ok_low() { return apps_bse_fault; }
 
+  inline uint16_t get_apps1_raw() { return raw_apps1; }
+  inline uint16_t get_apps2_raw() { return raw_apps2; }
+  inline uint16_t get_brake_raw() { return raw_brake; }
   inline double get_apps1_travel() { return apps1_travel; }
   inline double get_apps2_travel() { return apps2_travel; }
   inline double get_brake_travel() { return brake_travel; }
