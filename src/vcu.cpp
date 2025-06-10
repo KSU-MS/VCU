@@ -221,8 +221,8 @@ void VCU::set_parameter(uint64_t msg, uint8_t length) {
 void VCU::update_acc_can() {
   if (acc_can->check_controller_message()) {
     can_message msg_in = acc_can->get_controller_message();
-    inv_can->send_controller_message(msg_in);
-    // vcu.daq_can->send_controller_message(msg_in);
+    // inv_can->send_controller_message(msg_in);
+    daq_can->send_controller_message(msg_in);
 
     switch (msg_in.id) {
     case CAN_ID_ACU_SHUTDOWN_STATUS:
@@ -248,7 +248,7 @@ void VCU::update_acc_can() {
 void VCU::update_inv_can() {
   if (inv_can->check_controller_message()) {
     can_message msg_in = inv_can->get_controller_message();
-    // vcu.daq_can->send_controller_message(msg_in);
+    daq_can->send_controller_message(msg_in);
 
     switch (msg_in.id) {
     case CAN_ID_DASH_BUTTONS:
