@@ -94,8 +94,8 @@ public:
     // Check that there is no apps related faults
     if (apps_fault == false && bse_fault == false && apps_bse_fault == false) {
 
-      // Check that the pedals are reading within 10%
-      if ((fabs(apps1_travel - apps2_travel) < 0.1)) {
+      // Check that the pedals are reading within 30%
+      if ((fabs(apps1_travel - apps2_travel) < 0.3)) {
         travel = (apps1_travel + apps2_travel) / 2;
 
         // Check that the driver isn't using both pedals at once
