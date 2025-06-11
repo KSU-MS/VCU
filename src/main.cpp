@@ -11,6 +11,12 @@ void setup() {
 
   vcu.inverter->set_power_limit_kw(80);
 
+  // Pump fellas
+  pinMode(LOWSIDE1, OUTPUT);
+  pinMode(LOWSIDE2, OUTPUT);
+  digitalWrite(LOWSIDE1, LOW);
+  digitalWrite(LOWSIDE2, LOW);
+
   consol.logln("Booted");
 }
 

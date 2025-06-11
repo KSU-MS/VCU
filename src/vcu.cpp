@@ -46,6 +46,10 @@ bool VCU::set_state(state target_state) {
   case STARTUP:
     if (target_state == TRACTIVE_SYSTEM_DISABLED) {
       current_state = TRACTIVE_SYSTEM_DISABLED;
+
+      digitalWrite(LOWSIDE1, LOW);
+      digitalWrite(LOWSIDE2, LOW);
+
       return true;
     } else {
       error_code = bool_code;
@@ -57,10 +61,18 @@ bool VCU::set_state(state target_state) {
   case TRACTIVE_SYSTEM_DISABLED:
     if (target_state == TRACTIVE_SYSTEM_ENERGIZED && ts_safe()) {
       current_state = TRACTIVE_SYSTEM_ENERGIZED;
+
+      digitalWrite(LOWSIDE1, HIGH);
+      digitalWrite(LOWSIDE2, HIGH);
+
       return true;
     } else {
       error_code = bool_code;
       current_state = TRACTIVE_SYSTEM_DISABLED;
+
+      digitalWrite(LOWSIDE1, LOW);
+      digitalWrite(LOWSIDE2, LOW);
+
       return false;
     }
     break;
@@ -71,6 +83,9 @@ bool VCU::set_state(state target_state) {
 
       buzzer_active = true;
 
+      digitalWrite(LOWSIDE1, HIGH);
+      digitalWrite(LOWSIDE2, HIGH);
+
       // Get the inverter prepped
       inverter->set_inverter_enable(true);
       inverter->set_torque_limit(0);
@@ -79,6 +94,10 @@ bool VCU::set_state(state target_state) {
     } else {
       error_code = bool_code;
       current_state = TRACTIVE_SYSTEM_DISABLED;
+
+      digitalWrite(LOWSIDE1, LOW);
+      digitalWrite(LOWSIDE2, LOW);
+
       return false;
     }
     break;
@@ -88,6 +107,9 @@ bool VCU::set_state(state target_state) {
       current_state = READY_TO_DRIVE;
 
       buzzer_active = false;
+
+      digitalWrite(LOWSIDE1, HIGH);
+      digitalWrite(LOWSIDE2, HIGH);
 
       // TODO: Make this torque limit easier to configure
       inverter->set_inverter_enable(true);
@@ -99,6 +121,10 @@ bool VCU::set_state(state target_state) {
 
       error_code = bool_code;
       current_state = TRACTIVE_SYSTEM_DISABLED;
+
+      digitalWrite(LOWSIDE1, LOW);
+      digitalWrite(LOWSIDE2, LOW);
+
       return false;
     }
     break;
@@ -108,6 +134,9 @@ bool VCU::set_state(state target_state) {
     inverter->set_torque_limit(0);
 
     buzzer_active = false;
+
+    digitalWrite(LOWSIDE1, LOW);
+    digitalWrite(LOWSIDE2, LOW);
 
     this->current_state = TRACTIVE_SYSTEM_DISABLED;
     return true;
