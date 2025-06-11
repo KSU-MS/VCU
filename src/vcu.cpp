@@ -213,7 +213,7 @@ void VCU::set_parameter(uint64_t msg, uint8_t length) {
 
   switch (parameter(target_parameter)) {
   case POWER_LIMIT:
-    inverter->set_power_limit(parameter_value);
+    inverter->set_power_limit_kw(parameter_value);
     break;
 
   case TORQUE_LIMIT:
