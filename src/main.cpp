@@ -9,6 +9,8 @@ void setup() {
   // TODO: Get rid of these evil arduino calls for the buzzer
   pinMode(BUZZER, OUTPUT);
 
+  vcu.inverter->set_power_limit_kw(80);
+
   consol.logln("Booted");
 }
 
@@ -56,7 +58,7 @@ void loop() {
     break;
 
   case TRACTIVE_SYSTEM_DISABLED:
-    if(timer_10hz.check())
+    if (timer_10hz.check())
       vcu.inverter->ping();
 
     if (vcu.ts_safe()) {
@@ -71,7 +73,7 @@ void loop() {
     break;
 
   case TRACTIVE_SYSTEM_ENERGIZED:
-    if(timer_10hz.check())
+    if (timer_10hz.check())
       vcu.inverter->ping();
 
     // try_ts_enabled is just looking for the brake and RTD button
@@ -93,7 +95,7 @@ void loop() {
     break;
 
   case TRACTIVE_SYSTEM_ENABLED:
-    if(timer_10hz.check())
+    if (timer_10hz.check())
       vcu.inverter->ping();
 
     vcu.inverter->set_current_limits(INVERTER_CHARGE_LIMIT,
@@ -125,6 +127,12 @@ void loop() {
       // if (timer_10hz.check()) {
       //   vcu.inverter->send_clear_faults();
       // }
+
+      if (timer_10hz_2.check()) {
+        vcu.inverter->set_current_limits(
+            INVERTER_CHARGE_LIMIT, vcu.inverter->get_instant_current_limit());
+        timer_10hz_2.reset();
+      }
     } else {
       consol.log("Something isn't safe, leaving RTD, ERROR: ");
       consol.logln(vcu.get_error_code());

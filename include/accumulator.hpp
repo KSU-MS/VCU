@@ -25,5 +25,4 @@ public:
 
   void update_acu_status(uint64_t msg, uint8_t length);
   void update_precharge_status(uint64_t msg, uint8_t length);
-  void send_bms_current_limit();
 };

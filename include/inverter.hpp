@@ -41,10 +41,11 @@ public:
   inline bool get_inverter_enable() { return inverter_enable; }
   inline double get_bus_voltage() { return bus_voltage; }
   inline double get_bus_current() { return bus_current; }
+  uint16_t get_instant_current_limit() { return (power_limit / bus_voltage); }
 
-  inline void set_power_limit(double limit) { power_limit = limit; }
   inline void set_torque_limit(double limit) { torque_limit = limit; }
   inline void set_speed_limit(uint16_t limit) { speed_limit = limit; }
+  inline void set_power_limit_kw(uint16_t limit) { power_limit = limit; }
   inline void set_inverter_enable(bool enable) { inverter_enable = enable; }
   void set_current_limits(uint16_t charge_limit, uint16_t discharge_limit);
 

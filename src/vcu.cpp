@@ -91,7 +91,7 @@ bool VCU::set_state(state target_state) {
 
       // TODO: Make this torque limit easier to configure
       inverter->set_inverter_enable(true);
-      inverter->set_torque_limit(160);
+      inverter->set_torque_limit(240);
 
       return true;
     } else {
