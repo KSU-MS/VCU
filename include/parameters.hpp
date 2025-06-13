@@ -2,6 +2,8 @@
 
 //
 //// Some car values
+#define MAX_TORQUE_LIMIT_NM 240
+
 #define TRACTIVE_SYSTEM_MINIMUM_VOLTAGE 350
 #define PRECHARGE_OK_STATE 2
 #define MINIMUM_BRAKE_FOR_RTD 0.3

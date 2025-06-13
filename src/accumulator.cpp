@@ -25,3 +25,10 @@ void Accumulator::update_precharge_status(uint64_t msg, uint8_t length) {
 
   decode_can_0x069_precharge_state(dbc, &precharge_state);
 }
+
+void Accumulator::update_instant_power(uint64_t msg, uint8_t length) {
+  unpack_message(dbc, CAN_ID_MSGID_0X6B1, msg, length, 0);
+
+  decode_can_0x6b1_Pack_Summed_Voltage(dbc, &pack_current);
+  decode_can_0x6b1_Pack_Current(dbc, &pack_current);
+}

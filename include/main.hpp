@@ -91,7 +91,7 @@ bool wrapped_200hz() {
 //// Comms
 // loggers
 Logger consol(serial);
-FILE std_out_wrap;
+// FILE std_out_wrap;
 
 // CAN controllers
 canMan acc_can(TEENSY_CAN1, ACCUMULATOR_CAN_BAUD_RATE);
@@ -111,7 +111,7 @@ Pedals pedals(MIN_BRAKE_PEDAL, START_BRAKE_PEDAL, END_BRAKE_PEDAL,
               END_ACCELERATOR_PEDAL_2);
 
 Inverter inverter(&wrapped_20hz, &wrapped_100hz, &wrapped_200hz, false,
-                  &inv_can, &kms_can, -0.69314718056);
+                  &inv_can, &daq_can, &kms_can, -0.69314718056);
 
 Accumulator accumulator(&kms_can, &acc_can, &wrapped_2hz);
 
@@ -121,7 +121,8 @@ VCU vcu(&pedals, &inverter, &accumulator, &kms_can, &acc_can, &inv_can,
 //
 //// Gizmos
 // Aditional ADC chanels
-adc steering_angle(mcp, ADC_CS, ADC_STEERING_CHANNEL);
+adc steering_angle(mcp, static_cast<uint8_t>(ADC_CS),
+                   static_cast<uint8_t>(ADC_STEERING_CHANNEL));
 
 // Voltage / Current sense lines
 adc vsense_bspd(avr, BSPD_SENSE);

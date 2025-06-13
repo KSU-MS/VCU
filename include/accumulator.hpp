@@ -15,6 +15,9 @@ private:
 
   bool (*can_message_check)();
 
+  double pack_voltage = 0;
+  double pack_current = 0;
+
 public:
   Accumulator(can_obj_car_h_t *dbc, canMan *acc_can,
               bool (*can_message_check)());
@@ -25,4 +28,8 @@ public:
 
   void update_acu_status(uint64_t msg, uint8_t length);
   void update_precharge_status(uint64_t msg, uint8_t length);
+
+  void update_instant_power(uint64_t msg, uint8_t length);
+
+  void calculate_effecincy(void);
 };

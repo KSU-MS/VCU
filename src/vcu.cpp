@@ -113,7 +113,7 @@ bool VCU::set_state(state target_state) {
 
       // TODO: Make this torque limit easier to configure
       inverter->set_inverter_enable(true);
-      inverter->set_torque_limit(240);
+      inverter->set_torque_limit(MAX_TORQUE_LIMIT_NM);
 
       return true;
     } else {
@@ -250,8 +250,7 @@ void VCU::set_parameter(uint64_t msg, uint8_t length) {
 void VCU::update_acc_can() {
   if (acc_can->check_controller_message()) {
     can_message msg_in = acc_can->get_controller_message();
-    inv_can->send_controller_message(msg_in);
-    // vcu.daq_can->send_controller_message(msg_in);
+    daq_can->send_controller_message(msg_in);
 
     switch (msg_in.id) {
     case CAN_ID_ACU_SHUTDOWN_STATUS:
@@ -262,14 +261,13 @@ void VCU::update_acc_can() {
       accumulator->update_precharge_status(msg_in.buf.val, msg_in.length);
       break;
 
-      // NOTE: Commented out for now as we are already fowarding everything from
-      // the accumulator bus to the inverter bus
+    // We foward this to the inverter bus for the dash
+    case CAN_ID_MSGID_0X6B3:
+      inv_can->send_controller_message(msg_in);
+      break;
 
-      // We foward this to the inverter bus for the dash
-
-      // case CAN_ID_MSGID_0X6B3:
-      //   vcu.inv_can->send_controller_message(msg_in);
-      //   break;
+    default:
+      break;
     }
   }
 }
@@ -277,7 +275,7 @@ void VCU::update_acc_can() {
 void VCU::update_inv_can() {
   if (inv_can->check_controller_message()) {
     can_message msg_in = inv_can->get_controller_message();
-    // vcu.daq_can->send_controller_message(msg_in);
+    daq_can->send_controller_message(msg_in);
 
     switch (msg_in.id) {
     case CAN_ID_DASH_BUTTONS:
@@ -296,6 +294,9 @@ void VCU::update_inv_can() {
     case CAN_ID_VCU_SET_PARAMETER:
       set_parameter(msg_in.buf.val, msg_in.length);
       break;
+
+    default:
+      break;
     }
   }
 }
@@ -312,6 +313,7 @@ void VCU::send_pedal_travel_message() {
       pack_message(dbc, CAN_ID_VCU_PEDALS_TRAVEL, &out_msg.buf.val);
 
   inv_can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
 
 void VCU::send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
@@ -326,6 +328,7 @@ void VCU::send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
       pack_message(dbc, CAN_ID_VCU_PEDAL_READINGS, &out_msg.buf.val);
 
   inv_can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
 
 void VCU::send_status_message() {
@@ -361,6 +364,7 @@ void VCU::send_status_message() {
   out_msg.length = pack_message(dbc, CAN_ID_VCU_STATUS, &out_msg.buf.val);
 
   inv_can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
 
 void VCU::send_firmware_status_message() {
@@ -376,18 +380,20 @@ void VCU::send_firmware_status_message() {
       pack_message(dbc, CAN_ID_VCU_FIRMWARE_VERSION, &out_msg.buf.val);
 
   inv_can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
 
-void VCU::send_launch_control_status_message() {
-  encode_can_0x0cb_vcu_launchcontrol_elapsed_time(dbc, 0);
-  encode_can_0x0cb_vcu_launchcontrol_outputtorqueco(dbc, 0);
-  encode_can_0x0cb_vcu_launchcontrol_state(dbc, launch_state);
-  encode_can_0x0cb_vcu_launchcontrol_type(dbc, launch_mode);
-
-  can_message out_msg;
-  out_msg.id = CAN_ID_VCU_LAUNCHCONTROL_DIAGDATA;
-  out_msg.length =
-      pack_message(dbc, CAN_ID_VCU_LAUNCHCONTROL_DIAGDATA, &out_msg.buf.val);
-
-  inv_can->send_controller_message(out_msg);
-}
+// void VCU::send_launch_control_status_message() {
+//   encode_can_0x0cb_vcu_launchcontrol_elapsed_time(dbc, 0);
+//   encode_can_0x0cb_vcu_launchcontrol_outputtorqueco(dbc, 0);
+//   encode_can_0x0cb_vcu_launchcontrol_state(dbc, launch_state);
+//   encode_can_0x0cb_vcu_launchcontrol_type(dbc, launch_mode);
+//
+//   can_message out_msg;
+//   out_msg.id = CAN_ID_VCU_LAUNCHCONTROL_DIAGDATA;
+//   out_msg.length =
+//       pack_message(dbc, CAN_ID_VCU_LAUNCHCONTROL_DIAGDATA, &out_msg.buf.val);
+//
+//   inv_can->send_controller_message(out_msg);
+//   daq_can->send_controller_message(out_msg);
+// }

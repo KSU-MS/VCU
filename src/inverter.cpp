@@ -3,7 +3,7 @@
 
 Inverter::Inverter(bool (*timer_mc_kick)(), bool (*timer_current_limit)(),
                    bool (*timer_motor_controller_send)(), bool spin_direction,
-                   canMan *can, can_obj_car_h_t *dbc,
+                   canMan *can, canMan *daq_can, can_obj_car_h_t *dbc,
                    float over_power_decay_factor) {
   this->timer_mc_kick = timer_mc_kick;
   this->timer_current_limit = timer_current_limit;
@@ -14,6 +14,7 @@ Inverter::Inverter(bool (*timer_mc_kick)(), bool (*timer_current_limit)(),
   this->over_power_decay_factor = over_power_decay_factor;
 
   this->can = can;
+  this->daq_can = daq_can;
   this->dbc = dbc;
 
   this->ping();
@@ -30,6 +31,7 @@ void Inverter::set_current_limits(uint16_t charge_limit,
       pack_message(dbc, CAN_ID_BMS_CURRENT_LIMIT, &out_msg.buf.val);
 
   can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
 
 void Inverter::update_bus_current(uint64_t msg_in, uint8_t length) {
@@ -59,6 +61,7 @@ void Inverter::ping() {
       pack_message(dbc, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
 
   can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
 
 void Inverter::send_clear_faults() {
@@ -71,6 +74,7 @@ void Inverter::send_clear_faults() {
       pack_message(dbc, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
 
   can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
 
 void Inverter::command_torque(double torque_request) {
@@ -113,6 +117,7 @@ void Inverter::command_torque(double torque_request) {
       pack_message(dbc, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
 
   can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
 
 void Inverter::command_speed(int16_t speed_request) {
@@ -130,4 +135,5 @@ void Inverter::command_speed(int16_t speed_request) {
       pack_message(dbc, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
 
   can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
