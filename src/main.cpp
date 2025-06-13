@@ -47,8 +47,12 @@ void loop() {
                                vcu.pedals->get_apps2_raw(),
                                vcu.pedals->get_brake_raw());
 
-    print_message(&kms_can, CAN_ID_VCU_PEDALS_TRAVEL, &std_out_wrap);
-    print_message(&kms_can, CAN_ID_VCU_PEDAL_READINGS, &std_out_wrap);
+    consol.log("\n\rraw_apps1: ");
+    consol.log(vcu.pedals->get_apps1_raw());
+    consol.log("\n\rraw_apps2: ");
+    consol.log(vcu.pedals->get_apps2_raw());
+    consol.log("\n\rraw_brake: ");
+    consol.log(vcu.pedals->get_brake_raw());
   }
 
   //

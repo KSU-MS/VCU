@@ -100,7 +100,7 @@ void Inverter::command_torque(double torque_request) {
   //  torque_target = torque_request;
 
   encode_can_0x0c0_VCU_INV_Torque_Command(dbc, torque_target);
-  encode_can_0x0c0_VCU_INV_Torque_Limit_Command(dbc, torque_limit);
+  encode_can_0x0c0_VCU_INV_Torque_Limit_Command(dbc, torque_limit_nm);
   encode_can_0x0c0_VCU_INV_Speed_Command(dbc, 0);
   encode_can_0x0c0_VCU_INV_Speed_Mode_Enable(dbc, 0);
   encode_can_0x0c0_VCU_INV_Direction_Command(dbc, spin_forward);
@@ -117,7 +117,7 @@ void Inverter::command_torque(double torque_request) {
 
 void Inverter::command_speed(int16_t speed_request) {
   encode_can_0x0c0_VCU_INV_Torque_Command(dbc, 0.0);
-  encode_can_0x0c0_VCU_INV_Torque_Limit_Command(dbc, torque_limit);
+  encode_can_0x0c0_VCU_INV_Torque_Limit_Command(dbc, torque_limit_nm);
   encode_can_0x0c0_VCU_INV_Speed_Command(dbc, speed_request);
   encode_can_0x0c0_VCU_INV_Speed_Mode_Enable(dbc, speed_mode);
   encode_can_0x0c0_VCU_INV_Direction_Command(dbc, spin_forward);

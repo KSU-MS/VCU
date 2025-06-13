@@ -2,7 +2,7 @@
 
 //
 //// Some car values
-#define TRACTIVE_SYSTEM_MINIMUM_VOLTAGE 360 // TODO: Get real value
+#define TRACTIVE_SYSTEM_MINIMUM_VOLTAGE 350
 #define PRECHARGE_OK_STATE 2
 #define MINIMUM_BRAKE_FOR_RTD 0.3
 
@@ -12,7 +12,7 @@
 //
 //// Hardcoded pedal values
 #define MIN_BRAKE_PEDAL 2000
-#define START_BRAKE_PEDAL 2751
+#define START_BRAKE_PEDAL 2809
 #define END_BRAKE_PEDAL 2988
 #define MAX_BRAKE_PEDAL 4000
 
