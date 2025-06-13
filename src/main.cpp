@@ -9,7 +9,7 @@ void setup() {
   // TODO: Get rid of these evil arduino calls for the buzzer
   pinMode(BUZZER, OUTPUT);
 
-  vcu.inverter->set_power_limit_kw(80);
+  vcu.inverter->set_power_limit_kw(POWER_LIMIT_KW);
 
   // Pump fellas
   pinMode(LOWSIDE1, OUTPUT);

@@ -3,6 +3,7 @@
 //
 //// Some car values
 #define MAX_TORQUE_LIMIT_NM 240
+#define POWER_LIMIT_KW 80
 
 #define TRACTIVE_SYSTEM_MINIMUM_VOLTAGE 350
 #define PRECHARGE_OK_STATE 2
