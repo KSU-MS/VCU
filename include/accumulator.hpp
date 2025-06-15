@@ -5,6 +5,8 @@
 
 class Accumulator {
 private:
+  uint32_t time_last_msec = 0;
+
   canMan *can;
   can_obj_car_h_t *dbc;
 
@@ -18,6 +20,8 @@ private:
   double pack_voltage = 0;
   double pack_current = 0;
 
+  uint32_t consumed_power_wh = 0;
+
 public:
   Accumulator(can_obj_car_h_t *dbc, canMan *acc_can,
               bool (*can_message_check)());
@@ -28,8 +32,11 @@ public:
 
   void update_acu_status(uint64_t msg, uint8_t length);
   void update_precharge_status(uint64_t msg, uint8_t length);
+  void update_pack_power(uint64_t msg, uint8_t length);
 
-  void update_instant_power(uint64_t msg, uint8_t length);
+  inline double get_pack_voltage() { return pack_voltage; }
+  inline double get_pack_current() { return pack_current; }
+  inline uint32_t get_consumed_wh() { return consumed_power_wh; }
 
-  void calculate_effecincy(void);
+  void calculate_energy_consumed_wh(uint32_t time_msec);
 };

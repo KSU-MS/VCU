@@ -383,6 +383,19 @@ void VCU::send_firmware_status_message() {
   daq_can->send_controller_message(out_msg);
 }
 
+void VCU::send_power_tracking_message() {
+  encode_can_0x0d0_vcu_lifetime_distance(dbc, inverter->get_motor_distance_M());
+  encode_can_0x0d0_vcu_lifetime_ontime(dbc, accumulator->get_consumed_wh());
+
+  can_message out_msg;
+  out_msg.id = CAN_ID_VCU_LIFETIME_DISTANCE_AND_ONTIME;
+  out_msg.length = pack_message(dbc, CAN_ID_VCU_LIFETIME_DISTANCE_AND_ONTIME,
+                                &out_msg.buf.val);
+
+  inv_can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
+}
+
 // void VCU::send_launch_control_status_message() {
 //   encode_can_0x0cb_vcu_launchcontrol_elapsed_time(dbc, 0);
 //   encode_can_0x0cb_vcu_launchcontrol_outputtorqueco(dbc, 0);

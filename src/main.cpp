@@ -140,7 +140,8 @@ void loop() {
 
       if (timer_10hz_2.check()) {
         vcu.inverter->set_current_limits(
-            INVERTER_CHARGE_LIMIT, vcu.inverter->get_instant_current_limit());
+            INVERTER_CHARGE_LIMIT, vcu.inverter->get_instant_current_limit(
+                                       vcu.accumulator->get_pack_voltage()));
         timer_10hz_2.reset();
       }
     } else {

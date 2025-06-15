@@ -1,5 +1,6 @@
 #include "inverter.hpp"
 #include "car.h"
+#include "parameters.hpp"
 
 Inverter::Inverter(bool (*timer_mc_kick)(), bool (*timer_current_limit)(),
                    bool (*timer_motor_controller_send)(), bool spin_direction,
@@ -44,6 +45,15 @@ void Inverter::update_bus_voltage(uint64_t msg_in, uint8_t length) {
   unpack_message(dbc, CAN_ID_M167_VOLTAGE_INFO, msg_in, length, 0);
 
   decode_can_0x0a7_INV_DC_Bus_Voltage(dbc, &bus_voltage);
+}
+
+void Inverter::calculate_motor_distance_M(uint32_t time_msec) {
+  uint32_t time_elaped_msec = time_msec - time_last_msec;
+
+  double velocity_Msec =
+      (double(motor_rpm) / 60 / GEAR_RATIO) * WHEEL_CIRCUMFRANCE_M;
+
+  distance_M += time_elaped_msec * velocity_Msec;
 }
 
 void Inverter::ping() {

@@ -12,6 +12,9 @@
 #define INVERTER_CHARGE_LIMIT 60
 #define INVERTER_DISCHARGE_LIMIT 600
 
+#define WHEEL_CIRCUMFRANCE_M 1.435608
+#define GEAR_RATIO 4.168
+
 //
 //// Hardcoded pedal values
 #define MIN_BRAKE_PEDAL 2000

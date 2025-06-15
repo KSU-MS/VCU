@@ -5,6 +5,8 @@
 
 class Inverter {
 private:
+  uint32_t time_last_msec = 0;
+
   bool spin_forward = true;
   bool inverter_enable = false;
   bool inverter_discharge = false;
@@ -17,6 +19,7 @@ private:
 
   uint16_t motor_rpm;
   uint16_t motor_temp;
+  uint32_t distance_M;
 
   bool over_power;
   uint32_t over_power_event_epoch;
@@ -43,8 +46,9 @@ public:
   inline bool get_inverter_enable() { return inverter_enable; }
   inline double get_bus_voltage() { return bus_voltage; }
   inline double get_bus_current() { return bus_current; }
-  uint16_t get_instant_current_limit() {
-    return ((power_limit_kw * 1000) / bus_voltage);
+  inline uint32_t get_motor_distance_M() { return distance_M; }
+  uint16_t get_instant_current_limit(float voltage) {
+    return ((power_limit_kw * 1000) / voltage);
   }
 
   inline void set_torque_limit(double limit) { torque_limit_nm = limit; }
@@ -55,6 +59,8 @@ public:
 
   void update_bus_current(uint64_t msg_in, uint8_t length);
   void update_bus_voltage(uint64_t msg_in, uint8_t length);
+
+  void calculate_motor_distance_M(uint32_t time_msec);
 
   void ping();
   void send_clear_faults();
