@@ -1,5 +1,6 @@
 #include "main.hpp"
 #include "car.h"
+#include "core_pins.h"
 
 void setup() {
   consol.logln("Booting...");
@@ -47,6 +48,8 @@ void loop() {
                                vcu.pedals->get_apps2_raw(),
                                vcu.pedals->get_brake_raw());
 
+    vcu.send_power_tracking_message();
+
     consol.log("\n\rraw_apps1: ");
     consol.log(vcu.pedals->get_apps1_raw());
     consol.log("\n\rraw_apps2: ");
@@ -54,6 +57,11 @@ void loop() {
     consol.log("\n\rraw_brake: ");
     consol.log(vcu.pedals->get_brake_raw());
   }
+
+  //
+  //// Math Stage
+  vcu.accumulator->calculate_energy_consumed_wh(millis());
+  vcu.inverter->calculate_motor_distance_M(millis());
 
   //
   //// State machine Stage
