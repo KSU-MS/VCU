@@ -261,6 +261,10 @@ void VCU::update_acc_can() {
       accumulator->update_precharge_status(msg_in.buf.val, msg_in.length);
       break;
 
+    case CAN_ID_MSGID_0X6B1:
+      accumulator->update_pack_power(msg_in.buf.val, msg_in.length);
+      break;
+
     // We foward this to the inverter bus for the dash
     case CAN_ID_MSGID_0X6B3:
       inv_can->send_controller_message(msg_in);
@@ -280,6 +284,10 @@ void VCU::update_inv_can() {
     switch (msg_in.id) {
     case CAN_ID_DASH_BUTTONS:
       update_dash_buttons(msg_in.buf.val, msg_in.length);
+      break;
+
+    case CAN_ID_M165_MOTOR_POSITION_INFO:
+      inverter->update_motor_feedback(msg_in.buf.val, msg_in.length);
       break;
 
     case CAN_ID_M166_CURRENT_INFO:

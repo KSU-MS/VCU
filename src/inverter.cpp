@@ -47,13 +47,21 @@ void Inverter::update_bus_voltage(uint64_t msg_in, uint8_t length) {
   decode_can_0x0a7_INV_DC_Bus_Voltage(dbc, &bus_voltage);
 }
 
+void Inverter::update_motor_feedback(uint64_t msg_in, uint8_t length) {
+  unpack_message(dbc, CAN_ID_M165_MOTOR_POSITION_INFO, msg_in, length, 0);
+
+  decode_can_0x0a5_INV_Motor_Speed(dbc, &motor_rpm);
+}
+
 void Inverter::calculate_motor_distance_M(uint32_t time_msec) {
   uint32_t time_elaped_msec = time_msec - time_last_msec;
 
   double velocity_Msec =
       (double(motor_rpm) / 60 / GEAR_RATIO) * WHEEL_CIRCUMFRANCE_M;
 
-  distance_M += time_elaped_msec * velocity_Msec;
+  distance_M += (double(time_elaped_msec) / 1000) * velocity_Msec;
+
+  time_last_msec = time_msec;
 }
 
 void Inverter::ping() {

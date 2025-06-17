@@ -17,9 +17,9 @@ private:
   double torque_request = 0;
   double torque_limit_nm = 0;
 
-  uint16_t motor_rpm;
+  int16_t motor_rpm;
   uint16_t motor_temp;
-  uint32_t distance_M;
+  double distance_M;
 
   bool over_power;
   uint32_t over_power_event_epoch;
@@ -59,6 +59,7 @@ public:
 
   void update_bus_current(uint64_t msg_in, uint8_t length);
   void update_bus_voltage(uint64_t msg_in, uint8_t length);
+  void update_motor_feedback(uint64_t msg_in, uint8_t length);
 
   void calculate_motor_distance_M(uint32_t time_msec);
 

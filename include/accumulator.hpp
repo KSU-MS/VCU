@@ -20,7 +20,7 @@ private:
   double pack_voltage = 0;
   double pack_current = 0;
 
-  uint32_t consumed_power_wh = 0;
+  double consumed_power_wh = 0;
 
 public:
   Accumulator(can_obj_car_h_t *dbc, canMan *acc_can,
