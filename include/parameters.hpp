@@ -2,7 +2,7 @@
 
 //
 //// Some car values
-#define MAX_TORQUE_LIMIT_NM 240
+#define MAX_TORQUE_LIMIT_NM 10
 #define POWER_LIMIT_KW 80
 
 #define TRACTIVE_SYSTEM_MINIMUM_VOLTAGE 350
@@ -18,9 +18,11 @@
 //
 //// Hardcoded pedal values
 #define MIN_BRAKE_PEDAL 2000
-#define START_BRAKE_PEDAL 2921
+#define START_BRAKE_PEDAL 2840
 #define END_BRAKE_PEDAL 3341
 #define MAX_BRAKE_PEDAL 4000
+
+#define MIN_APPS_PEDAL 100
 
 #define START_ACCELERATOR_PEDAL_1 2862
 #define END_ACCELERATOR_PEDAL_1 3484
