@@ -82,7 +82,7 @@ void loop() {
     if (vcu.ts_safe()) {
       if (vcu.set_state(TRACTIVE_SYSTEM_ENERGIZED)) {
         consol.logln("Entering TRACTIVE_SYSTEM_ENERGIZED");
-        consol.logln("TCU is trying to precharge...");
+        consol.logln("Car is waiting on driver...");
       } else {
         consol.log("Failed to enter TRACTIVE_SYSTEM_PRECHARGING, ERROR: ");
         consol.logln(vcu.get_error_code());
@@ -98,6 +98,7 @@ void loop() {
     if (vcu.try_ts_enabled()) {
       if (vcu.set_state(TRACTIVE_SYSTEM_ENABLED)) {
         consol.logln("Entering TRACTIVE_SYSTEM_ENABLED");
+        consol.logln("Car is preping to Rip");
       } else {
         consol.log("Failed to enter TRACTIVE_SYSTEM_ENABLED, ERROR: ");
         consol.logln(vcu.get_error_code());
