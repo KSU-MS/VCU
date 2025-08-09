@@ -13,6 +13,8 @@ private:
   uint16_t bse_low_fault;
   uint16_t bse_high_fault;
 
+  uint16_t apps_low_fault;
+
   float apps1_ratio;
   uint16_t apps1_start;
 
@@ -31,13 +33,15 @@ private:
 
 public:
   Pedals(uint16_t bse_low_fault, uint16_t brake_start, uint16_t brake_end,
-         uint16_t bse_high_fault, uint16_t apps1_start, uint16_t apps1_end,
-         uint16_t apps2_start, uint16_t apps2_end) {
+         uint16_t bse_high_fault, uint16_t apps_low_fault, uint16_t apps1_start,
+         uint16_t apps1_end, uint16_t apps2_start, uint16_t apps2_end) {
 
     this->brake_ratio = 1 / float(brake_end - brake_start);
     this->brake_start = brake_start;
     this->bse_low_fault = bse_low_fault;
     this->bse_high_fault = bse_high_fault;
+
+    this->apps_low_fault = apps_low_fault;
 
     apps1_ratio = 1 / float(apps1_end - apps1_start);
     this->apps1_start = apps1_start;
@@ -59,17 +63,25 @@ public:
     this->raw_brake = raw_brake;
 
     // Get the pedal percentage in its throw from 0 to 1
-    apps1_travel = (raw_apps1 - apps1_start) * apps1_ratio;
-    if (apps1_travel < 0)
-      apps1_travel = 0;
-    else if (apps1_travel > 1)
-      apps1_travel = 1;
+    if (raw_apps1 < apps_low_fault) {
+      apps_fault = true;
+    } else {
+      apps1_travel = (raw_apps1 - apps1_start) * apps1_ratio;
+      if (apps1_travel < 0)
+        apps1_travel = 0;
+      else if (apps1_travel > 1)
+        apps1_travel = 1;
+    }
 
-    apps2_travel = (raw_apps2 - apps2_start) * apps2_ratio;
-    if (apps2_travel < 0)
-      apps2_travel = 0;
-    else if (apps2_travel > 1)
-      apps2_travel = 1;
+    if (raw_apps2 < apps_low_fault) {
+      apps_fault = true;
+    } else {
+      apps2_travel = (raw_apps2 - apps2_start) * apps2_ratio;
+      if (apps2_travel < 0)
+        apps2_travel = 0;
+      else if (apps2_travel > 1)
+        apps2_travel = 1;
+    }
 
     // T.4.3.4
     // BSE check to make sure its not shorting
@@ -94,7 +106,7 @@ public:
     // Check that there is no apps related faults
     if (apps_fault == false && bse_fault == false && apps_bse_fault == false) {
 
-      // Check that the pedals are reading within 30%
+      // Check that the pedals are reading within 10%
       if ((fabs(apps1_travel - apps2_travel) < 0.3)) {
         travel = (apps1_travel + apps2_travel) / 2;
 

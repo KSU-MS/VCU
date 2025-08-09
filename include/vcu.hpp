@@ -95,4 +95,6 @@ public:
   void send_pedal_travel_message();
   void send_firmware_status_message();
   void send_launch_control_status_message();
+
+  void send_power_tracking_message();
 };

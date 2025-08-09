@@ -1,5 +1,6 @@
 #include "main.hpp"
 #include "car.h"
+#include "core_pins.h"
 
 void setup() {
   consol.logln("Booting...");
@@ -8,6 +9,14 @@ void setup() {
 
   // TODO: Get rid of these evil arduino calls for the buzzer
   pinMode(BUZZER, OUTPUT);
+
+  vcu.inverter->set_power_limit_kw(POWER_LIMIT_KW);
+
+  // Pump fellas
+  pinMode(LOWSIDE1, OUTPUT);
+  pinMode(LOWSIDE2, OUTPUT);
+  digitalWrite(LOWSIDE1, LOW);
+  digitalWrite(LOWSIDE2, LOW);
 
   consol.logln("Booted");
 }
@@ -39,9 +48,20 @@ void loop() {
                                vcu.pedals->get_apps2_raw(),
                                vcu.pedals->get_brake_raw());
 
-    print_message(&kms_can, CAN_ID_VCU_PEDALS_TRAVEL, &std_out_wrap);
-    print_message(&kms_can, CAN_ID_VCU_PEDAL_READINGS, &std_out_wrap);
+    vcu.send_power_tracking_message();
+
+    consol.log("\n\rraw_apps1: ");
+    consol.log(vcu.pedals->get_apps1_raw());
+    consol.log("\n\rraw_apps2: ");
+    consol.log(vcu.pedals->get_apps2_raw());
+    consol.log("\n\rraw_brake: ");
+    consol.log(vcu.pedals->get_brake_raw());
   }
+
+  //
+  //// Math Stage
+  vcu.accumulator->calculate_energy_consumed_wh(millis());
+  vcu.inverter->calculate_motor_distance_M(millis());
 
   //
   //// State machine Stage
@@ -126,6 +146,13 @@ void loop() {
       // if (timer_10hz.check()) {
       //   vcu.inverter->send_clear_faults();
       // }
+
+      if (timer_10hz_2.check()) {
+        vcu.inverter->set_current_limits(
+            INVERTER_CHARGE_LIMIT, vcu.inverter->get_instant_current_limit(
+                                       vcu.accumulator->get_pack_voltage()));
+        timer_10hz_2.reset();
+      }
     } else {
       consol.log("Something isn't safe, leaving RTD, ERROR: ");
       consol.logln(vcu.get_error_code());

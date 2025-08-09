@@ -25,3 +25,19 @@ void Accumulator::update_precharge_status(uint64_t msg, uint8_t length) {
 
   decode_can_0x069_precharge_state(dbc, &precharge_state);
 }
+
+void Accumulator::update_pack_power(uint64_t msg, uint8_t length) {
+  unpack_message(dbc, CAN_ID_MSGID_0X6B1, msg, length, 0);
+
+  decode_can_0x6b1_Pack_Summed_Voltage(dbc, &pack_voltage);
+  decode_can_0x6b1_Pack_Current(dbc, &pack_current);
+}
+
+void Accumulator::calculate_energy_consumed_wh(uint32_t time_msec) {
+  uint32_t time_elaped_msec = time_msec - time_last_msec;
+
+  consumed_power_wh += ((double(time_elaped_msec) / 1000) / 3600) *
+                       (pack_current * pack_voltage);
+
+  time_last_msec = time_msec;
+}

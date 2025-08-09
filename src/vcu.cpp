@@ -46,6 +46,10 @@ bool VCU::set_state(state target_state) {
   case STARTUP:
     if (target_state == TRACTIVE_SYSTEM_DISABLED) {
       current_state = TRACTIVE_SYSTEM_DISABLED;
+
+      digitalWrite(LOWSIDE1, LOW);
+      digitalWrite(LOWSIDE2, LOW);
+
       return true;
     } else {
       error_code = bool_code;
@@ -57,10 +61,18 @@ bool VCU::set_state(state target_state) {
   case TRACTIVE_SYSTEM_DISABLED:
     if (target_state == TRACTIVE_SYSTEM_ENERGIZED && ts_safe()) {
       current_state = TRACTIVE_SYSTEM_ENERGIZED;
+
+      digitalWrite(LOWSIDE1, HIGH);
+      digitalWrite(LOWSIDE2, HIGH);
+
       return true;
     } else {
       error_code = bool_code;
       current_state = TRACTIVE_SYSTEM_DISABLED;
+
+      digitalWrite(LOWSIDE1, LOW);
+      digitalWrite(LOWSIDE2, LOW);
+
       return false;
     }
     break;
@@ -71,6 +83,9 @@ bool VCU::set_state(state target_state) {
 
       buzzer_active = true;
 
+      digitalWrite(LOWSIDE1, HIGH);
+      digitalWrite(LOWSIDE2, HIGH);
+
       // Get the inverter prepped
       inverter->set_inverter_enable(true);
       inverter->set_torque_limit(0);
@@ -79,6 +94,10 @@ bool VCU::set_state(state target_state) {
     } else {
       error_code = bool_code;
       current_state = TRACTIVE_SYSTEM_DISABLED;
+
+      digitalWrite(LOWSIDE1, LOW);
+      digitalWrite(LOWSIDE2, LOW);
+
       return false;
     }
     break;
@@ -89,9 +108,12 @@ bool VCU::set_state(state target_state) {
 
       buzzer_active = false;
 
+      digitalWrite(LOWSIDE1, HIGH);
+      digitalWrite(LOWSIDE2, HIGH);
+
       // TODO: Make this torque limit easier to configure
       inverter->set_inverter_enable(true);
-      inverter->set_torque_limit(160);
+      inverter->set_torque_limit(MAX_TORQUE_LIMIT_NM);
 
       return true;
     } else {
@@ -99,6 +121,10 @@ bool VCU::set_state(state target_state) {
 
       error_code = bool_code;
       current_state = TRACTIVE_SYSTEM_DISABLED;
+
+      digitalWrite(LOWSIDE1, LOW);
+      digitalWrite(LOWSIDE2, LOW);
+
       return false;
     }
     break;
@@ -108,6 +134,9 @@ bool VCU::set_state(state target_state) {
     inverter->set_torque_limit(0);
 
     buzzer_active = false;
+
+    digitalWrite(LOWSIDE1, LOW);
+    digitalWrite(LOWSIDE2, LOW);
 
     this->current_state = TRACTIVE_SYSTEM_DISABLED;
     return true;
@@ -184,7 +213,7 @@ void VCU::set_parameter(uint64_t msg, uint8_t length) {
 
   switch (parameter(target_parameter)) {
   case POWER_LIMIT:
-    inverter->set_power_limit(parameter_value);
+    inverter->set_power_limit_kw(parameter_value);
     break;
 
   case TORQUE_LIMIT:
@@ -221,7 +250,6 @@ void VCU::set_parameter(uint64_t msg, uint8_t length) {
 void VCU::update_acc_can() {
   if (acc_can->check_controller_message()) {
     can_message msg_in = acc_can->get_controller_message();
-    // inv_can->send_controller_message(msg_in);
     daq_can->send_controller_message(msg_in);
 
     switch (msg_in.id) {
@@ -233,14 +261,17 @@ void VCU::update_acc_can() {
       accumulator->update_precharge_status(msg_in.buf.val, msg_in.length);
       break;
 
-      // NOTE: Commented out for now as we are already fowarding everything from
-      // the accumulator bus to the inverter bus
+    case CAN_ID_MSGID_0X6B1:
+      accumulator->update_pack_power(msg_in.buf.val, msg_in.length);
+      break;
 
-      // We foward this to the inverter bus for the dash
+    // We foward this to the inverter bus for the dash
+    case CAN_ID_MSGID_0X6B3:
+      inv_can->send_controller_message(msg_in);
+      break;
 
-      // case CAN_ID_MSGID_0X6B3:
-      //   vcu.inv_can->send_controller_message(msg_in);
-      //   break;
+    default:
+      break;
     }
   }
 }
@@ -255,6 +286,10 @@ void VCU::update_inv_can() {
       update_dash_buttons(msg_in.buf.val, msg_in.length);
       break;
 
+    case CAN_ID_M165_MOTOR_POSITION_INFO:
+      inverter->update_motor_feedback(msg_in.buf.val, msg_in.length);
+      break;
+
     case CAN_ID_M166_CURRENT_INFO:
       inverter->update_bus_current(msg_in.buf.val, msg_in.length);
       break;
@@ -266,6 +301,9 @@ void VCU::update_inv_can() {
 
     case CAN_ID_VCU_SET_PARAMETER:
       set_parameter(msg_in.buf.val, msg_in.length);
+      break;
+
+    default:
       break;
     }
   }
@@ -283,6 +321,7 @@ void VCU::send_pedal_travel_message() {
       pack_message(dbc, CAN_ID_VCU_PEDALS_TRAVEL, &out_msg.buf.val);
 
   inv_can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
 
 void VCU::send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
@@ -297,6 +336,7 @@ void VCU::send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
       pack_message(dbc, CAN_ID_VCU_PEDAL_READINGS, &out_msg.buf.val);
 
   inv_can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
 
 void VCU::send_status_message() {
@@ -332,6 +372,7 @@ void VCU::send_status_message() {
   out_msg.length = pack_message(dbc, CAN_ID_VCU_STATUS, &out_msg.buf.val);
 
   inv_can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
 
 void VCU::send_firmware_status_message() {
@@ -347,18 +388,33 @@ void VCU::send_firmware_status_message() {
       pack_message(dbc, CAN_ID_VCU_FIRMWARE_VERSION, &out_msg.buf.val);
 
   inv_can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
 
-void VCU::send_launch_control_status_message() {
-  encode_can_0x0cb_vcu_launchcontrol_elapsed_time(dbc, 0);
-  encode_can_0x0cb_vcu_launchcontrol_outputtorqueco(dbc, 0);
-  encode_can_0x0cb_vcu_launchcontrol_state(dbc, launch_state);
-  encode_can_0x0cb_vcu_launchcontrol_type(dbc, launch_mode);
+void VCU::send_power_tracking_message() {
+  encode_can_0x0d0_vcu_lifetime_distance(dbc, inverter->get_motor_distance_M());
+  encode_can_0x0d0_vcu_lifetime_ontime(dbc, accumulator->get_consumed_wh());
 
   can_message out_msg;
-  out_msg.id = CAN_ID_VCU_LAUNCHCONTROL_DIAGDATA;
-  out_msg.length =
-      pack_message(dbc, CAN_ID_VCU_LAUNCHCONTROL_DIAGDATA, &out_msg.buf.val);
+  out_msg.id = CAN_ID_VCU_LIFETIME_DISTANCE_AND_ONTIME;
+  out_msg.length = pack_message(dbc, CAN_ID_VCU_LIFETIME_DISTANCE_AND_ONTIME,
+                                &out_msg.buf.val);
 
   inv_can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
+
+// void VCU::send_launch_control_status_message() {
+//   encode_can_0x0cb_vcu_launchcontrol_elapsed_time(dbc, 0);
+//   encode_can_0x0cb_vcu_launchcontrol_outputtorqueco(dbc, 0);
+//   encode_can_0x0cb_vcu_launchcontrol_state(dbc, launch_state);
+//   encode_can_0x0cb_vcu_launchcontrol_type(dbc, launch_mode);
+//
+//   can_message out_msg;
+//   out_msg.id = CAN_ID_VCU_LAUNCHCONTROL_DIAGDATA;
+//   out_msg.length =
+//       pack_message(dbc, CAN_ID_VCU_LAUNCHCONTROL_DIAGDATA, &out_msg.buf.val);
+//
+//   inv_can->send_controller_message(out_msg);
+//   daq_can->send_controller_message(out_msg);
+// }

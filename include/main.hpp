@@ -22,12 +22,13 @@ can_obj_car_h_t kms_can;
 // TODO: Make the timer stuff into its own utility, maybe a part of the logger?
 #include <Metro.h>
 
-Metro timer_1s = Metro(1000, true);  // Used for VCU status message
-Metro timer_2hz = Metro(500, true);  // Used for ACU and Precharge messages
-Metro timer_10hz = Metro(100, true); // Used for VCU pedals message
-Metro timer_20hz = Metro(50, true);  // Used for inverter timeout
-Metro timer_100hz = Metro(10, true); // Used for inverter current limit
-Metro timer_200hz = Metro(5, true);  // Used for inverter command message
+Metro timer_1s = Metro(1000, true);    // Used for VCU status message
+Metro timer_2hz = Metro(500, true);    // Used for ACU and Precharge messages
+Metro timer_10hz = Metro(100, true);   // Used for VCU pedals message
+Metro timer_10hz_2 = Metro(100, true); // A naming convention so good I made 2
+Metro timer_20hz = Metro(50, true);    // Used for inverter timeout
+Metro timer_100hz = Metro(10, true);   // Used for inverter current limit
+Metro timer_200hz = Metro(5, true);    // Used for inverter command message
 
 Metro buzzer_timer = Metro(2215, false);
 
@@ -90,7 +91,7 @@ bool wrapped_200hz() {
 //// Comms
 // loggers
 Logger consol(serial);
-FILE std_out_wrap;
+// FILE std_out_wrap;
 
 // CAN controllers
 canMan acc_can(TEENSY_CAN1, ACCUMULATOR_CAN_BAUD_RATE);
@@ -105,12 +106,12 @@ adc bse(mcp, ADC_CS, ADC_BSE_CHANNEL, 0.980483996877);
 //
 //// Critical components
 Pedals pedals(MIN_BRAKE_PEDAL, START_BRAKE_PEDAL, END_BRAKE_PEDAL,
-              MAX_BRAKE_PEDAL, START_ACCELERATOR_PEDAL_1,
+              MAX_BRAKE_PEDAL, MIN_APPS_PEDAL, START_ACCELERATOR_PEDAL_1,
               END_ACCELERATOR_PEDAL_1, START_ACCELERATOR_PEDAL_2,
               END_ACCELERATOR_PEDAL_2);
 
-Inverter inverter(&wrapped_20hz, &wrapped_100hz, &wrapped_200hz, false, &inv_can,
-                  &kms_can, -0.69314718056);
+Inverter inverter(&wrapped_20hz, &wrapped_100hz, &wrapped_200hz, false,
+                  &inv_can, &daq_can, &kms_can, -0.69314718056);
 
 Accumulator accumulator(&kms_can, &acc_can, &wrapped_2hz);
 
@@ -120,7 +121,8 @@ VCU vcu(&pedals, &inverter, &accumulator, &kms_can, &acc_can, &inv_can,
 //
 //// Gizmos
 // Aditional ADC chanels
-adc steering_angle(mcp, ADC_CS, ADC_STEERING_CHANNEL);
+adc steering_angle(mcp, static_cast<uint8_t>(ADC_CS),
+                   static_cast<uint8_t>(ADC_STEERING_CHANNEL));
 
 // Voltage / Current sense lines
 adc vsense_bspd(avr, BSPD_SENSE);
