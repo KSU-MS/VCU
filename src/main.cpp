@@ -2,7 +2,8 @@
 #include "car.h"
 #include "core_pins.h"
 
-void setup() {
+void setup()
+{
   consol.logln("Booting...");
 
   vcu.init_state_machine();
@@ -21,7 +22,8 @@ void setup() {
   consol.logln("Booted");
 }
 
-void loop() {
+void loop()
+{
   //
   //// ADC Stage
   apps1.update();
@@ -37,12 +39,14 @@ void loop() {
   vcu.update_acc_can();
   vcu.update_inv_can();
 
-  if (timer_1s.check()) {
+  if (timer_1s.check())
+  {
     vcu.send_firmware_status_message();
     vcu.send_status_message();
   }
 
-  if (timer_20hz.check()) {
+  if (timer_20hz.check())
+  {
     vcu.send_pedal_travel_message();
     vcu.send_pedal_raw_message(vcu.pedals->get_apps1_raw(),
                                vcu.pedals->get_apps2_raw(),
@@ -61,15 +65,21 @@ void loop() {
   //
   //// Math Stage
   vcu.accumulator->calculate_energy_consumed_wh(millis());
+  vcu.inverter->calculate_power_output();
   vcu.inverter->calculate_motor_distance_M(millis());
+  vcu.inverter->calculate_pid_loop();
 
   //
   //// State machine Stage
-  switch (vcu.get_current_state()) {
+  switch (vcu.get_current_state())
+  {
   case STARTUP:
-    if (vcu.set_state(TRACTIVE_SYSTEM_DISABLED)) {
+    if (vcu.set_state(TRACTIVE_SYSTEM_DISABLED))
+    {
       consol.logln("Tractive system disabled, waiting for TS voltage");
-    } else {
+    }
+    else
+    {
       consol.log("Failed to boot, ERROR: ");
       consol.logln(vcu.get_error_code());
     }
@@ -79,11 +89,15 @@ void loop() {
     if (timer_10hz.check())
       vcu.inverter->ping();
 
-    if (vcu.ts_safe()) {
-      if (vcu.set_state(TRACTIVE_SYSTEM_ENERGIZED)) {
+    if (vcu.ts_safe())
+    {
+      if (vcu.set_state(TRACTIVE_SYSTEM_ENERGIZED))
+      {
         consol.logln("Entering TRACTIVE_SYSTEM_ENERGIZED");
         consol.logln("Car is waiting on driver...");
-      } else {
+      }
+      else
+      {
         consol.log("Failed to enter TRACTIVE_SYSTEM_PRECHARGING, ERROR: ");
         consol.logln(vcu.get_error_code());
       }
@@ -95,18 +109,23 @@ void loop() {
       vcu.inverter->ping();
 
     // try_ts_enabled is just looking for the brake and RTD button
-    if (vcu.try_ts_enabled()) {
-      if (vcu.set_state(TRACTIVE_SYSTEM_ENABLED)) {
+    if (vcu.try_ts_enabled())
+    {
+      if (vcu.set_state(TRACTIVE_SYSTEM_ENABLED))
+      {
         consol.logln("Entering TRACTIVE_SYSTEM_ENABLED");
         consol.logln("Car is preping to Rip");
-      } else {
+      }
+      else
+      {
         consol.log("Failed to enter TRACTIVE_SYSTEM_ENABLED, ERROR: ");
         consol.logln(vcu.get_error_code());
       }
     }
 
     // Catch for if we unlatch
-    if (!vcu.ts_safe()) {
+    if (!vcu.ts_safe())
+    {
       consol.log("Something isn't safe, leaving ENERGIZED, ERROR: ");
       consol.logln(vcu.get_error_code());
       vcu.set_state(TRACTIVE_SYSTEM_DISABLED);
@@ -123,11 +142,14 @@ void loop() {
     digitalWrite(BUZZER, vcu.get_buzzer_state());
     delay(2151);
 
-    if (vcu.set_state(READY_TO_DRIVE)) {
+    if (vcu.set_state(READY_TO_DRIVE))
+    {
       consol.logln("Ready to Rip");
 
       digitalWrite(BUZZER, vcu.get_buzzer_state());
-    } else {
+    }
+    else
+    {
       consol.log("Failed to enter READY_TO_DRIVE, ERROR: ");
       consol.logln(vcu.get_error_code());
 
@@ -136,8 +158,10 @@ void loop() {
     break;
 
   case READY_TO_DRIVE:
-    if (vcu.ts_safe()) {
-      if (timer_200hz.check()) {
+    if (vcu.ts_safe())
+    {
+      if (timer_200hz.check())
+      {
         vcu.inverter->command_torque(vcu.pedals->get_torque_request(
             vcu.pedals->get_travel(), vcu.inverter->get_torque_limit()));
       }
@@ -147,13 +171,16 @@ void loop() {
       //   vcu.inverter->send_clear_faults();
       // }
 
-      if (timer_10hz_2.check()) {
+      if (timer_10hz_2.check())
+      {
         vcu.inverter->set_current_limits(
             INVERTER_CHARGE_LIMIT, vcu.inverter->get_instant_current_limit(
                                        vcu.accumulator->get_pack_voltage()));
         timer_10hz_2.reset();
       }
-    } else {
+    }
+    else
+    {
       consol.log("Something isn't safe, leaving RTD, ERROR: ");
       consol.logln(vcu.get_error_code());
       vcu.set_state(TRACTIVE_SYSTEM_DISABLED);
@@ -161,11 +188,13 @@ void loop() {
     break;
 
   case LAUNCH_WAIT:
-    if (vcu.set_state(LAUNCH)) {
+    if (vcu.set_state(LAUNCH))
+    {
       // TODO: I think this should just be wating for some confirmation from the
       // driver or something idk go figure it out nerd
-
-    } else {
+    }
+    else
+    {
       consol.log("Aborting launch, ERROR: ");
       consol.logln(vcu.get_error_code());
       vcu.set_state(READY_TO_DRIVE);
@@ -173,10 +202,12 @@ void loop() {
     break;
 
   case LAUNCH:
-    if (vcu.get_launch_state()) {
+    if (vcu.get_launch_state())
+    {
       // TODO: Get the launch logic goin
-
-    } else {
+    }
+    else
+    {
       consol.log("Exiting launch");
       vcu.set_state(READY_TO_DRIVE);
     }

@@ -53,6 +53,12 @@ void Inverter::update_bus_voltage(uint64_t msg_in, uint8_t length)
   decode_can_0x0a7_INV_DC_Bus_Voltage(dbc, &bus_voltage);
 }
 
+void Inverter::calculate_power_output()
+{
+  // power output is calculated as bus_current * bus_voltage
+  power_over_w = (bus_current * bus_voltage);
+}
+
 void Inverter::update_motor_feedback(uint64_t msg_in, uint8_t length)
 {
   unpack_message(dbc, CAN_ID_M165_MOTOR_POSITION_INFO, msg_in, length, 0);
@@ -118,16 +124,18 @@ void Inverter::command_torque(double torque_request)
 
   // https://www.desmos.com/calculator/j8kydktjry
 
-  // double P = bus_current * bus_voltage;
-  // double power_over_w = std::max(0.0, P - (power_limit_kw * 1000));
+  double power_over_w = std::max(0.0, power_output - (power_limit_kw * 1000));
 
-  // if (power_over_w > 1e-6)
-  // {
-  //   double torque_over_nm = power_over_w / std::max(1e-6, (motor_rpm / 60.0) * 2.0 * M_PI);
-  //   // torque_D += (torque_over_nm * torque_kd) * dt_s;
-  //   torque_I += torque_ki * torque_over_nm / dt_s;
-  //   torque_target -= torque_kp * torque_over_nm + torque_I + torque_D;
-  // }
+  if (power_over_w > 1e-6)
+  {
+    torque_over_nm = power_over_w / std::max(1e-6, (motor_rpm / 60.0) * 2.0 * M_PI);
+    torque_target -= torque_adjustment;
+    torque_target = std::max(0.0, torque_target);
+  }
+  else
+  {
+    torque_over_nm = 0.0;
+  }
   // else
   // {
   //   torque_I *= 0.98;
@@ -157,11 +165,11 @@ void Inverter::command_torque(double torque_request)
 
   encode_can_0x0c0_VCU_INV_Torque_Command(dbc, torque_target); // torque command to INV
   encode_can_0x0c0_VCU_INV_Torque_Limit_Command(dbc, torque_limit_nm);
-  encode_can_0x0c0_VCU_INV_Speed_Command(dbc, 0);                       // unused
-  encode_can_0x0c0_VCU_INV_Speed_Mode_Enable(dbc, 0);                   // unused
-  encode_can_0x0c0_VCU_INV_Direction_Command(dbc, spin_forward);        // unused
-  encode_can_0x0c0_VCU_INV_Inverter_Discharge(dbc, inverter_discharge); // unused
-  encode_can_0x0c0_VCU_INV_Inverter_Enable(dbc, inverter_enable);       // unused
+  encode_can_0x0c0_VCU_INV_Speed_Command(dbc, 0);
+  encode_can_0x0c0_VCU_INV_Speed_Mode_Enable(dbc, 0);
+  encode_can_0x0c0_VCU_INV_Direction_Command(dbc, spin_forward);
+  encode_can_0x0c0_VCU_INV_Inverter_Discharge(dbc, inverter_discharge);
+  encode_can_0x0c0_VCU_INV_Inverter_Enable(dbc, inverter_enable);
 
   can_message out_msg;
   out_msg.id = CAN_ID_M192_COMMAND_MESSAGE;
