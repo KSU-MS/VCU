@@ -7,7 +7,8 @@
 #include "pedal_handeler.hpp"
 #include "traction_control.hpp"
 
-enum state {
+enum state
+{
   STARTUP = 0,                   // VCU is powering on
   TRACTIVE_SYSTEM_DISABLED = 1,  // GLV is on, but not TSV
   TRACTIVE_SYSTEM_ENERGIZED = 2, // TSV is up, but RTD button isn't pressed
@@ -20,7 +21,8 @@ enum state {
 // TODO: Make this neatly documented somewhere in the readme or something, and
 // add some guys to adjust the pedal settings and maybe use a negative value for
 // persistant save or not? Anyways add more shit to this
-enum parameter {
+enum parameter
+{
   POWER_LIMIT = 0,         // In KW
   TORQUE_LIMIT = 1,        // In Nm
   SPEED_MODE = 2,          // Boolean
@@ -28,9 +30,13 @@ enum parameter {
   INV_DISCHARGE_LIMIT = 4, // Need to find unit for this
   LAUNCH_MODE = 5,         // Look at traction_control.hpp for mode defs
   TRACTION_MODE = 6,       // Look at traction_control.hpp for mode defs
+  INVERTER_P = 7,
+  INVERTER_I = 8,
+  INVERTER_D = 9,
 };
 
-class VCU {
+class VCU
+{
 private:
   state current_state = STARTUP;
   uint8_t torque_mode = 0; // Legacy

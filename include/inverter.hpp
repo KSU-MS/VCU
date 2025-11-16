@@ -65,7 +65,6 @@ public:
   {
     this->torquepid = QuickPID(&torque_over_nm, &torque_adjustment, 0, torque_kp, torque_ki, torque_kd, QuickPID::Action::direct);
     this->torquepid.SetSampleTimeUs(5000);
-    
   };
 
   inline uint8_t get_torque_limit() { return uint8_t(torque_limit_nm); }
@@ -84,6 +83,13 @@ public:
   inline void set_power_limit_kw(uint16_t limit) { power_limit_kw = limit; }
   inline void set_inverter_enable(bool enable) { inverter_enable = enable; }
   inline void calculate_pid_loop() { torquepid.Compute(); }
+  inline void set_pid_parameters(double kp, double ki, double kd) { torquepid.SetTunings(kp, ki, kd); }
+  inline void get_pid_parameters(double &kp, double &ki, double &kd)
+  {
+    kp = torquepid.GetKp();
+    ki = torquepid.GetKi();
+    kd = torquepid.GetKd();
+  }
   void set_current_limits(uint16_t charge_limit, uint16_t discharge_limit);
 
   void update_bus_current(uint64_t msg_in, uint8_t length);

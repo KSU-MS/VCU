@@ -276,6 +276,24 @@ void VCU::set_parameter(uint64_t msg, uint8_t length)
     // Not real yet
     break;
 
+  case INVERTER_P:
+    double kp, ki, kd;
+    inverter->get_pid_parameters(kp, ki, kd);
+    inverter->set_pid_parameters(parameter_value, ki, kd);
+    break;
+
+  case INVERTER_I:
+    double kp, ki, kd;
+    inverter->get_pid_parameters(kp, ki, kd);
+    inverter->set_pid_parameters(kp, parameter_value, kd);
+    break;
+
+  case INVERTER_D:
+    double kp, ki, kd;
+    inverter->get_pid_parameters(kp, ki, kd);
+    inverter->set_pid_parameters(kp, ki, parameter_value);
+    break;
+
   default:
     break;
   }

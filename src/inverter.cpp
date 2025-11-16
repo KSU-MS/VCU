@@ -78,6 +78,19 @@ void Inverter::calculate_motor_distance_M(uint32_t time_msec)
   time_last_msec = time_msec;
 }
 
+void Inverter::set_speed_limit(uint16_t speed_limit)
+{
+  encode_can_0x0aa_INV_Limit_Max_Speed(dbc, speed_limit);
+
+  can_message out_msg;
+  out_msg.id = CAN_ID_BMS_CURRENT_LIMIT;
+  out_msg.length =
+      pack_message(dbc, CAN_ID_BMS_CURRENT_LIMIT, &out_msg.buf.val);
+
+  can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
+}
+
 void Inverter::ping()
 {
   encode_can_0x0c0_VCU_INV_Torque_Command(dbc, 0.0);
