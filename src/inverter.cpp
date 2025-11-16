@@ -22,6 +22,11 @@ Inverter::Inverter(bool (*timer_mc_kick)(), bool (*timer_current_limit)(),
   this->dbc = dbc;
 
   this->ping();
+
+  this->set_inv_parameter(Motor_Overspeed_EEPROM_RPM, MAX_MOTOR_RPM_LIMIT);
+  this->set_inv_parameter(Max_Speed_EEPROM_RPM, SOFT_MOTOR_RPM_LIMIT);
+  this->set_inv_parameter(Break_Speed_EEPROM_RPM, BRAKE_SPEED_RPM);
+  // this->set_inv_parameter(Speed_Rate_Limit_EEPROM_RPM_per_s, SPEED_RATE_LIMIT_RPM_PER_S);
 }
 
 void Inverter::set_current_limits(uint16_t charge_limit,
@@ -202,6 +207,21 @@ void Inverter::command_speed(int16_t speed_request)
   encode_can_0x0c0_VCU_INV_Direction_Command(dbc, spin_forward);
   encode_can_0x0c0_VCU_INV_Inverter_Discharge(dbc, inverter_discharge);
   encode_can_0x0c0_VCU_INV_Inverter_Enable(dbc, inverter_enable);
+
+  can_message out_msg;
+  out_msg.id = CAN_ID_M192_COMMAND_MESSAGE;
+  out_msg.length =
+      pack_message(dbc, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
+
+  can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
+}
+
+void Inverter::set_inv_parameter(uint16_t param_address, uint32_t param_data)
+{
+  encode_can_0x0c1_VCU_INV_Parameter_Address(dbc, param_address);
+  encode_can_0x0c1_VCU_INV_Parameter_RW_Command(dbc, 1); // write
+  encode_can_0x0c1_VCU_INV_Parameter_Data(dbc, param_data);
 
   can_message out_msg;
   out_msg.id = CAN_ID_M192_COMMAND_MESSAGE;

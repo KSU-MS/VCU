@@ -57,6 +57,14 @@ private:
   canMan *daq_can;
   can_obj_car_h_t *dbc;
 
+  enum inv_param_address : uint16_t
+  {
+    Motor_Overspeed_EEPROM_RPM = 0x006F,
+    Max_Speed_EEPROM_RPM = 0x0080,
+    Break_Speed_EEPROM_RPM = 0x007F,
+    Speed_Rate_Limit_EEPROM_RPM_per_s = 0x00A9,
+  };
+
 public:
   Inverter(bool (*timer_mc_kick)(), bool (*timer_current_limit)(),
            bool (*timer_motor_controller_send)(), bool spin_direction,
@@ -103,4 +111,7 @@ public:
   void send_clear_faults();
   void command_torque(double torque_request);
   void command_speed(int16_t speed_request);
+
+  void set_inv_parameter(uint16_t param_address, uint32_t param_data);
+  void read_inv_parameter(uint16_t param_address);
 };
