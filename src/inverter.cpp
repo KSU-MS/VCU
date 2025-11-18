@@ -4,8 +4,7 @@
 
 Inverter::Inverter(bool (*timer_mc_kick)(), bool (*timer_current_limit)(),
                    bool (*timer_motor_controller_send)(), bool spin_direction, std::array<parameter, 25> *params,
-                   canMan *can, canMan *daq_can, can_obj_car_h_t *dbc,
-                   float over_power_decay_factor)
+                   canMan *inv_can, canMan *daq_can, can_obj_car_h_t *dbc)
 {
   this->timer_mc_kick = timer_mc_kick;
   this->timer_current_limit = timer_current_limit;
@@ -15,26 +14,17 @@ Inverter::Inverter(bool (*timer_mc_kick)(), bool (*timer_current_limit)(),
 
   this->spin_forward = spin_direction;
 
-  this->over_power_decay_factor = over_power_decay_factor;
-
   this->params = params;
 
-  this->can = can;
+  this->inv_can = inv_can;
   this->daq_can = daq_can;
   this->dbc = dbc;
 
   this->ping();
 
-  const uint32_t max_rpm_limit =
-      static_cast<uint32_t>((*this->params)[MAX_RPM_LIMIT].parameter_value);
-  const uint32_t soft_rpm_limit =
-      static_cast<uint32_t>((*this->params)[SOFT_RPM_LIMIT].parameter_value);
-  const uint32_t brake_speed_limit =
-      static_cast<uint32_t>((*this->params)[BRAKE_SPEED_LIMIT].parameter_value);
-
-  this->set_inv_parameter(Motor_Overspeed_EEPROM_RPM, max_rpm_limit);
-  this->set_inv_parameter(Max_Speed_EEPROM_RPM, soft_rpm_limit);
-  this->set_inv_parameter(Break_Speed_EEPROM_RPM, brake_speed_limit);
+  this->set_inv_parameter(Motor_Overspeed_EEPROM_RPM, static_cast<uint32_t>(params->at(MAX_RPM_LIMIT).parameter_value));
+  this->set_inv_parameter(Max_Speed_EEPROM_RPM, static_cast<uint32_t>(params->at(SOFT_RPM_LIMIT).parameter_value));
+  this->set_inv_parameter(Break_Speed_EEPROM_RPM, static_cast<uint32_t>(params->at(BRAKE_SPEED_LIMIT).parameter_value));
   // this->set_inv_parameter(Speed_Rate_Limit_EEPROM_RPM_per_s, SPEED_RATE_LIMIT_RPM_PER_S);
 
   this->torquepid = QuickPID(&torque_over_nm, &torque_adjustment, 0, double(torque_kp_x100) / 100, double(torque_ki_x100) / 100, double(torque_kd_x100) / 100, QuickPID::Action::direct);
@@ -52,7 +42,7 @@ void Inverter::set_current_limits(uint16_t charge_limit,
   out_msg.length =
       pack_message(dbc, CAN_ID_BMS_CURRENT_LIMIT, &out_msg.buf.val);
 
-  can->send_controller_message(out_msg);
+  inv_can->send_controller_message(out_msg);
   daq_can->send_controller_message(out_msg);
 }
 
@@ -110,7 +100,7 @@ void Inverter::ping()
   out_msg.length =
       pack_message(dbc, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
 
-  can->send_controller_message(out_msg);
+  inv_can->send_controller_message(out_msg);
   daq_can->send_controller_message(out_msg);
 }
 
@@ -124,7 +114,7 @@ void Inverter::send_clear_faults()
   out_msg.length =
       pack_message(dbc, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
 
-  can->send_controller_message(out_msg);
+  inv_can->send_controller_message(out_msg);
   daq_can->send_controller_message(out_msg);
 }
 
@@ -141,15 +131,27 @@ void Inverter::command_torque(double torque_request)
 
   // https://www.desmos.com/calculator/j8kydktjry
 
+  // calculate excess power output
   double power_over_w =
       std::max(0.0, power_output - (((*params)[POWER_LIMIT].parameter_value / 10.0) * 1000.0));
 
   if (power_over_w > 1e-6)
   {
+    // calculate excess torque output from motor speed and excess power
     torque_over_nm = power_over_w / std::max(1e-6, (motor_rpm / 60.0) * 2.0 * M_PI);
+
+    // cap torque adjustment to 10% of max torque
     double torque_adjustment_capped =
         std::min(torque_over_nm, (*params)[MAX_TORQUE].parameter_value * 0.1);
+
+    // ensure torque subtracted is not negative
+    torque_adjustment_capped =
+        std::max(0.0, torque_adjustment_capped);
+
+    // adjust torque target
     torque_target -= torque_adjustment_capped;
+
+    // ensure torque target is not negative
     torque_target = std::max(0.0, torque_target);
   }
   else
@@ -184,23 +186,26 @@ void Inverter::command_torque(double torque_request)
   // }
 
   encode_can_0x0c0_VCU_INV_Torque_Command(dbc, torque_target); // torque command to INV
-  encode_can_0x0c0_VCU_INV_Torque_Limit_Command(dbc, (*params)[MAX_TORQUE].parameter_value);
-  encode_can_0x0c0_VCU_INV_Speed_Command(dbc, 0);
-  encode_can_0x0c0_VCU_INV_Speed_Mode_Enable(dbc, 0);
-  encode_can_0x0c0_VCU_INV_Direction_Command(dbc, spin_forward);
-  encode_can_0x0c0_VCU_INV_Inverter_Discharge(dbc, inverter_discharge);
-  encode_can_0x0c0_VCU_INV_Inverter_Enable(dbc, inverter_enable);
+
+  // all of this should really be handled elsewhere, we call this function on a 200hz interval
+
+  // encode_can_0x0c0_VCU_INV_Torque_Limit_Command(dbc, (*params)[MAX_TORQUE].parameter_value);
+  // encode_can_0x0c0_VCU_INV_Speed_Command(dbc, 0);
+  // encode_can_0x0c0_VCU_INV_Speed_Mode_Enable(dbc, 0);
+  // encode_can_0x0c0_VCU_INV_Direction_Command(dbc, spin_forward);
+  // encode_can_0x0c0_VCU_INV_Inverter_Discharge(dbc, inverter_discharge);
+  // encode_can_0x0c0_VCU_INV_Inverter_Enable(dbc, inverter_enable);
 
   can_message out_msg;
   out_msg.id = CAN_ID_M192_COMMAND_MESSAGE;
   out_msg.length =
       pack_message(dbc, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
 
-  can->send_controller_message(out_msg);
+  inv_can->send_controller_message(out_msg);
   daq_can->send_controller_message(out_msg);
 }
 
-void Inverter::command_speed(int16_t speed_request)
+void Inverter::command_speed(int16_t speed_request) // unused
 {
 
   encode_can_0x0c0_VCU_INV_Torque_Command(dbc, 0.0);
@@ -216,7 +221,7 @@ void Inverter::command_speed(int16_t speed_request)
   out_msg.length =
       pack_message(dbc, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
 
-  can->send_controller_message(out_msg);
+  inv_can->send_controller_message(out_msg);
   daq_can->send_controller_message(out_msg);
 }
 
@@ -231,6 +236,6 @@ void Inverter::set_inv_parameter(uint16_t param_address, uint32_t param_data)
   out_msg.length =
       pack_message(dbc, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
 
-  can->send_controller_message(out_msg);
+  inv_can->send_controller_message(out_msg);
   daq_can->send_controller_message(out_msg);
 }

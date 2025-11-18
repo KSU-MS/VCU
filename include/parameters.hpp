@@ -110,4 +110,7 @@ enum parameter_definitions : uint8_t
     CURRENT_CHARGE_LIMIT = 5,
     CURRENT_DISCHARGE_LIMIT = 6,
     INSTANT_CURRENT_LIMIT = 7,
+    INVERTER_TORQUE_KP = 8,
+    INVERTER_TORQUE_KI = 9,
+    INVERTER_TORQUE_KD = 10
 };

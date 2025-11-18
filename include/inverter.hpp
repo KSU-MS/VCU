@@ -16,8 +16,6 @@ private:
   bool inverter_discharge = false;
 
   bool speed_mode = false;
-  uint16_t speed_request = 0;
-  uint16_t speed_limit = 0;
   double torque_adjustment = 0;
 
   const int torque_kp_x100 = 300; // tune this variable
@@ -25,8 +23,6 @@ private:
   const int torque_kd_x100 = 1;
   const int speed_kp_x100 = 2; // tune this variable
   const int speed_ki_x100 = 0; // tune this variable
-
-  const double dt_s = 0.005;
 
   double torque_over_nm = 0.0;
   double power_over_w = 0.0;
@@ -39,9 +35,6 @@ private:
   uint16_t motor_temp;
   double distance_M;
 
-  bool over_power;
-  uint32_t over_power_event_epoch;
-  float over_power_decay_factor;
   double bus_voltage;
   double bus_current;
   double power_output;
@@ -54,7 +47,7 @@ private:
 
   std::array<parameter, 25> *params;
 
-  canMan *can;
+  canMan *inv_can;
   canMan *daq_can;
   can_obj_car_h_t *dbc;
 
@@ -69,8 +62,7 @@ private:
 public:
   Inverter(bool (*timer_mc_kick)(), bool (*timer_current_limit)(),
            bool (*timer_motor_controller_send)(), bool spin_direction, std::array<parameter, 25> *params,
-           canMan *can, canMan *daq_can, can_obj_car_h_t *dbc,
-           float over_power_decay_factor);
+           canMan *can, canMan *daq_can, can_obj_car_h_t *dbc);
 
   inline bool get_inverter_enable() { return inverter_enable; }
   inline double get_bus_voltage() { return bus_voltage; }
@@ -86,11 +78,9 @@ public:
   {
     (*params)[MAX_TORQUE].parameter_value = static_cast<uint64_t>(limit * 10.0);
   }
-  inline void set_speed_limit(uint16_t limit) { speed_limit = limit; }
-  inline void set_power_limit_kw(uint16_t limit_kw)
-  {
-    (*params)[POWER_LIMIT].parameter_value = static_cast<uint64_t>(limit_kw * 10);
-  }
+  inline void set_soft_speed_limit(uint16_t limit) { (*params)[SOFT_RPM_LIMIT].parameter_value = static_cast<double>(limit); }
+  inline void set_hard_speed_limit(uint16_t limit) { (*params)[MAX_RPM_LIMIT].parameter_value = static_cast<double>(limit); }
+  inline void set_power_limit_kw(uint16_t limit) { (*params)[POWER_LIMIT].parameter_value = static_cast<double>(limit) * 10.0; }
   inline void set_inverter_enable(bool enable) { inverter_enable = enable; }
   inline void calculate_pid_loop() { torquepid.Compute(); }
   inline void set_pid_parameters(int kp, int ki, int kd) { torquepid.SetTunings(double(kp) / 100.0, double(ki) / 100.0, double(kd) / 100.0); }

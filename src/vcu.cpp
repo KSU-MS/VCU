@@ -2,11 +2,16 @@
 #include "car.h"
 #include "parameters.hpp"
 #include <array>
+#include <logger.hpp>
+
+extern Logger consol;
 
 VCU::VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator, std::array<parameter, 25> *params,
          can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can,
          canMan *daq_can, bool (*timer_status_message)(),
-         bool (*timer_pedal_message)())
+         bool (*timer_pedal_message)(), bool (*timer_inverter_ping)(),
+         bool (*timer_inverter_command)(), bool (*timer_current_limit)(),
+         void (*reset_timer_current_limit)())
 {
   this->pedals = pedals;
   this->inverter = inverter;
@@ -20,6 +25,10 @@ VCU::VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator, std::arra
 
   this->timer_status_message = timer_status_message;
   this->timer_pedal_message = timer_pedal_message;
+  this->timer_inverter_ping = timer_inverter_ping;
+  this->timer_inverter_command = timer_inverter_command;
+  this->timer_current_limit = timer_current_limit;
+  this->reset_timer_current_limit = reset_timer_current_limit;
 }
 
 bool VCU::try_ts_enabled()
@@ -135,6 +144,8 @@ bool VCU::set_state(state target_state)
 
       // TODO: Make this torque limit easier to configure
       inverter->set_inverter_enable(true);
+
+      // not implemented yet
       // inverter->set_torque_limit(MAX_TORQUE_LIMIT_NM);
       // inverter->set_speed_limit(SOFT_MOTOR_RPM_LIMIT);
 
@@ -248,133 +259,158 @@ void VCU::set_parameter(uint64_t msg, uint8_t length)
                                                        double(this->params->at(target_parameter).scale);
 }
 
-//
-//// CAN stage
-void VCU::update_acc_can()
+void VCU::handle_state_machine()
 {
-  if (acc_can->check_controller_message())
+  switch (current_state)
   {
-    can_message msg_in = acc_can->get_controller_message();
-    daq_can->send_controller_message(msg_in);
-
-    switch (msg_in.id)
+  case STARTUP:
+    if (set_state(TRACTIVE_SYSTEM_DISABLED))
     {
-    case CAN_ID_ACU_SHUTDOWN_STATUS:
-      accumulator->update_acu_status(msg_in.buf.val, msg_in.length);
-      break;
-
-    case CAN_ID_PRECHARGE_STATUS:
-      accumulator->update_precharge_status(msg_in.buf.val, msg_in.length);
-      break;
-
-    case CAN_ID_MSGID_0X6B1:
-      accumulator->update_pack_power(msg_in.buf.val, msg_in.length);
-      break;
-
-    // We foward this to the inverter bus for the dash
-    case CAN_ID_MSGID_0X6B3:
-      inv_can->send_controller_message(msg_in);
-      break;
-
-    default:
-      break;
+      consol.logln("Tractive system disabled, waiting for TS voltage");
     }
-  }
-}
-
-void VCU::update_inv_can()
-{
-  if (inv_can->check_controller_message())
-  {
-    can_message msg_in = inv_can->get_controller_message();
-    daq_can->send_controller_message(msg_in);
-
-    switch (msg_in.id)
+    else
     {
-    case CAN_ID_DASH_BUTTONS:
-      update_dash_buttons(msg_in.buf.val, msg_in.length);
-      break;
-
-    case CAN_ID_M165_MOTOR_POSITION_INFO:
-      inverter->update_motor_feedback(msg_in.buf.val, msg_in.length);
-      break;
-
-    case CAN_ID_M166_CURRENT_INFO:
-      inverter->update_bus_current(msg_in.buf.val, msg_in.length);
-      break;
-
-    case CAN_ID_M167_VOLTAGE_INFO:
-      inverter->update_bus_voltage(msg_in.buf.val, msg_in.length);
-      acc_can->send_controller_message(msg_in); // Forward this for precharge
-      break;
-
-    default:
-      break;
+      consol.log("Failed to boot, ERROR: ");
+      consol.logln(get_error_code());
     }
-  }
-}
+    break;
 
-void VCU::update_daq_can()
-{
-  if (daq_can->check_controller_message())
-  {
-    can_message msg_in = daq_can->get_controller_message();
-
-    switch (msg_in.id)
+  case TRACTIVE_SYSTEM_DISABLED:
+    if (timer_inverter_ping != nullptr && timer_inverter_ping())
     {
-    case CAN_ID_VCU_SET_PARAMETER:
-      set_parameter(msg_in.buf.val, msg_in.length);
-      break;
-    case CAN_ID_M193_READ_WRITE_PARAM_COMMAND:
-      inv_can->send_controller_message(msg_in);
-      break;
-
-    default:
-      break;
+      inverter->ping();
     }
+
+    if (ts_safe())
+    {
+      if (set_state(TRACTIVE_SYSTEM_ENERGIZED))
+      {
+        consol.logln("Entering TRACTIVE_SYSTEM_ENERGIZED");
+        consol.logln("Car is waiting on driver...");
+      }
+      else
+      {
+        consol.log("Failed to enter TRACTIVE_SYSTEM_PRECHARGING, ERROR: ");
+        consol.logln(get_error_code());
+      }
+    };
+    break;
+
+  case TRACTIVE_SYSTEM_ENERGIZED:
+    if (timer_inverter_ping != nullptr && timer_inverter_ping())
+    {
+      inverter->ping();
+    }
+
+    if (try_ts_enabled())    if (timer_inverter_ping != nullptr && timer_inverter_ping())
+    {
+      inverter->ping();
+    }
+    {
+      if (set_state(TRACTIVE_SYSTEM_ENABLED))
+      {
+        consol.logln("Entering TRACTIVE_SYSTEM_ENABLED");
+        consol.logln("Car is preping to Rip");
+      }
+      else
+      {
+        consol.log("Failed to enter TRACTIVE_SYSTEM_ENABLED, ERROR: ");
+        consol.logln(get_error_code());
+      }
+    }
+
+    if (!ts_safe())
+    {
+      consol.log("Something isn't safe, leaving ENERGIZED, ERROR: ");
+      consol.logln(get_error_code());
+      set_state(TRACTIVE_SYSTEM_DISABLED);
+    }
+    break;
+
+  case TRACTIVE_SYSTEM_ENABLED:
+    if (timer_inverter_ping != nullptr && timer_inverter_ping())
+    {
+      inverter->ping();
+    }
+
+    inverter->set_current_limits(
+        static_cast<uint16_t>((*params)[CURRENT_CHARGE_LIMIT].parameter_value),
+        static_cast<uint16_t>((*params)[CURRENT_DISCHARGE_LIMIT].parameter_value));
+
+    digitalWrite(BUZZER, get_buzzer_state());
+    delay(2151);
+
+    if (set_state(READY_TO_DRIVE))
+    {
+      consol.logln("Ready to Rip");
+
+      digitalWrite(BUZZER, get_buzzer_state());
+    }
+    else
+    {
+      consol.log("Failed to enter READY_TO_DRIVE, ERROR: ");
+      consol.logln(get_error_code());
+
+      digitalWrite(BUZZER, get_buzzer_state());
+    }
+    break;
+
+  case READY_TO_DRIVE:
+    if (ts_safe())
+    {
+      if (timer_inverter_command != nullptr && timer_inverter_command())
+      {
+        inverter->command_torque(pedals->get_torque_request(
+            pedals->get_travel(), (*params)[MAX_TORQUE].parameter_value));
+      }
+
+      if (timer_current_limit != nullptr && timer_current_limit())
+      {
+        inverter->set_current_limits(
+            static_cast<uint16_t>((*params)[CURRENT_CHARGE_LIMIT].parameter_value),
+            inverter->get_instant_current_limit(accumulator->get_pack_voltage()));
+
+        if (reset_timer_current_limit)
+        {
+          reset_timer_current_limit();
+        }
+      }
+    }
+    else
+    {
+      consol.log("Something isn't safe, leaving RTD, ERROR: ");
+      consol.logln(get_error_code());
+      set_state(TRACTIVE_SYSTEM_DISABLED);
+    }
+    break;
+
+  case LAUNCH_WAIT:
+    if (set_state(LAUNCH))
+    {
+    }
+    else
+    {
+      consol.log("Aborting launch, ERROR: ");
+      consol.logln(get_error_code());
+      set_state(READY_TO_DRIVE);
+    }
+    break;
+
+  case LAUNCH:
+    if (get_launch_state())
+    {
+    }
+    else
+    {
+      consol.log("Exiting launch");
+      set_state(READY_TO_DRIVE);
+    }
+    break;
   }
-}
-
-void VCU::send_pedal_travel_message()
-{
-  encode_can_0x0cc_vcu_apps1_travel(dbc, pedals->get_apps1_travel() * 100);
-  encode_can_0x0cc_vcu_apps2_travel(dbc, pedals->get_apps2_travel() * 100);
-  encode_can_0x0cc_vcu_bse1_travel(dbc, pedals->get_brake_travel() * 100);
-
-  // Init and pack the message
-  can_message out_msg;
-  out_msg.id = CAN_ID_VCU_PEDALS_TRAVEL;
-  out_msg.length =
-      pack_message(dbc, CAN_ID_VCU_PEDALS_TRAVEL, &out_msg.buf.val);
-
-  inv_can->send_controller_message(out_msg);
-  daq_can->send_controller_message(out_msg);
-}
-
-void VCU::send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
-                                 uint16_t raw_brake)
-{
-  encode_can_0x0c4_APPS1(dbc, raw_apps1);
-  encode_can_0x0c4_APPS2(dbc, raw_apps2);
-  encode_can_0x0c4_BSE1(dbc, raw_brake);
-
-  can_message out_msg;
-  out_msg.id = CAN_ID_VCU_PEDAL_READINGS;
-  out_msg.length =
-      pack_message(dbc, CAN_ID_VCU_PEDAL_READINGS, &out_msg.buf.val);
-
-  inv_can->send_controller_message(out_msg);
-  daq_can->send_controller_message(out_msg);
 }
 
 void VCU::send_status_message()
 {
-  encode_can_0x0c3_VCU_ACCEL_BRAKE_IMPLAUSIBLE(
-      dbc, pedals->get_apps_bse_fault_ok_low());
-  encode_can_0x0c3_VCU_ACCEL_IMPLAUSIBLE(dbc, pedals->get_apps_fault_ok_low());
-  encode_can_0x0c3_VCU_BRAKE_IMPLAUSIBLE(dbc, pedals->get_bse_fault_ok_low());
-  encode_can_0x0c3_VCU_BRAKE_ACTIVE(dbc,
-                                    bool(pedals->get_brake_travel() > 0.3));
   encode_can_0x0c3_VCU_BSPD_BRAKE_HIGH(dbc, bspd_brake_high);
   encode_can_0x0c3_VCU_BSPD_CURRENT_HIGH(dbc, bspd_current_high);
   encode_can_0x0c3_VCU_BSPD_OK_HIGH(dbc, bspd_ok_hs);

@@ -38,6 +38,10 @@ private:
   bool (*timer_status_message)();
   bool (*timer_pedal_message)();
   bool (*timer_RTD_buzzer)();
+  bool (*timer_inverter_ping)();
+  bool (*timer_inverter_command)();
+  bool (*timer_current_limit)();
+  void (*reset_timer_current_limit)();
 
   bool launch_state;
   uint8_t launch_mode = 0;
@@ -48,6 +52,9 @@ public:
   Accumulator *accumulator;
   TractionController *tc;
   std::array<parameter, 25> *params;
+  parameter joe_smho[] = {
+      parameter{0, 1, "DUMMY_PARAM"},    
+  }
 
   can_obj_car_h_t *dbc;
   canMan *acc_can;
@@ -56,7 +63,9 @@ public:
 
   VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator, std::array<parameter, 25> *params,
       can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can, canMan *daq_can,
-      bool (*timer_status_message)(), bool (*timer_pedal_message)());
+      bool (*timer_status_message)(), bool (*timer_pedal_message)(),
+      bool (*timer_inverter_ping)(), bool (*timer_inverter_command)(),
+      bool (*timer_current_limit)(), void (*reset_timer_current_limit)());
 
   inline void init_state_machine() { this->current_state = STARTUP; }
 
@@ -68,14 +77,12 @@ public:
   inline bool get_bspd_ok_hs() { return this->bspd_ok_hs; }
   inline bool get_rtd_fella() { return this->RTD_button_pressed; }
 
+  void handle_state_machine();
+
   bool set_state(state target_state);
   bool try_ts_energized();
   bool try_ts_enabled();
   bool ts_safe();
-
-  void update_acc_can();
-  void update_inv_can();
-  void update_daq_can();
 
   void set_parameter(uint64_t msg, uint8_t length);
   void update_dash_buttons(uint64_t msg, uint8_t length);
@@ -83,9 +90,6 @@ public:
                    uint16_t raw_brake);
 
   void send_status_message();
-  void send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
-                              uint16_t raw_brake);
-  void send_pedal_travel_message();
   void send_firmware_status_message();
   void send_launch_control_status_message();
 
