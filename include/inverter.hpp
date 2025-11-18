@@ -1,6 +1,7 @@
 #pragma once
 
 #include <can_tools.hpp>
+#include <parameters.hpp>
 #include <car.h>
 #include <Metro.h>
 #include <QuickPID.h>
@@ -15,16 +16,15 @@ private:
   bool inverter_discharge = false;
 
   bool speed_mode = false;
-  int16_t speed_request = 0;
-  int16_t speed_limit = 0;
+  uint16_t speed_request = 0;
+  uint16_t speed_limit = 0;
   double torque_adjustment = 0;
-  double torque_limit_nm = 0;
 
-  const double torque_kp = 3.0;  // tune this variable
-  const double torque_ki = 0.01; // tune this variable
-  const double torque_kd = 0.01;
-  const double speed_kp = 2.0; // tune this variable
-  const double speed_ki = 0.0; // tune this variable
+  const int torque_kp_x100 = 300; // tune this variable
+  const int torque_ki_x100 = 1;   // tune this variable
+  const int torque_kd_x100 = 1;
+  const int speed_kp_x100 = 2; // tune this variable
+  const int speed_ki_x100 = 0; // tune this variable
 
   const double dt_s = 0.005;
 
@@ -45,13 +45,14 @@ private:
   double bus_voltage;
   double bus_current;
   double power_output;
-  uint16_t power_limit_kw;
 
   bool (*timer_mc_kick)();
   bool (*timer_current_limit)();
   bool (*timer_motor_controller_send)();
 
   Metro *timer_overpower_decay;
+
+  std::array<parameter, 25> *params;
 
   canMan *can;
   canMan *daq_can;
@@ -67,37 +68,35 @@ private:
 
 public:
   Inverter(bool (*timer_mc_kick)(), bool (*timer_current_limit)(),
-           bool (*timer_motor_controller_send)(), bool spin_direction,
+           bool (*timer_motor_controller_send)(), bool spin_direction, std::array<parameter, 25> *params,
            canMan *can, canMan *daq_can, can_obj_car_h_t *dbc,
-           float over_power_decay_factor)
-  {
-    this->torquepid = QuickPID(&torque_over_nm, &torque_adjustment, 0, torque_kp, torque_ki, torque_kd, QuickPID::Action::direct);
-    this->torquepid.SetSampleTimeUs(5000);
-  };
+           float over_power_decay_factor);
 
-  inline uint8_t get_torque_limit() { return uint8_t(torque_limit_nm); }
   inline bool get_inverter_enable() { return inverter_enable; }
   inline double get_bus_voltage() { return bus_voltage; }
   inline double get_bus_current() { return bus_current; }
   inline double get_power_output_kw() { return (power_output); }
-  inline uint32_t get_motor_distance_M() { return distance_M; }
+  inline double get_motor_distance_M() { return distance_M; }
   uint16_t get_instant_current_limit(float voltage)
   {
-    return ((power_limit_kw * 1000) / voltage);
+    return static_cast<uint16_t>(((*params)[POWER_LIMIT].parameter_value * 1000.0) / voltage);
   }
 
-  inline void set_torque_limit(double limit) { torque_limit_nm = limit; }
+  inline void set_torque_limit(double limit)
+  {
+    (*params)[MAX_TORQUE].parameter_value = static_cast<uint64_t>(limit * 10.0);
+  }
   inline void set_speed_limit(uint16_t limit) { speed_limit = limit; }
-  inline void set_power_limit_kw(uint16_t limit) { power_limit_kw = limit; }
+  inline void set_power_limit_kw(uint16_t limit_kw)
+  {
+    (*params)[POWER_LIMIT].parameter_value = static_cast<uint64_t>(limit_kw * 10);
+  }
   inline void set_inverter_enable(bool enable) { inverter_enable = enable; }
   inline void calculate_pid_loop() { torquepid.Compute(); }
-  inline void set_pid_parameters(double kp, double ki, double kd) { torquepid.SetTunings(kp, ki, kd); }
-  inline void get_pid_parameters(double &kp, double &ki, double &kd)
-  {
-    kp = torquepid.GetKp();
-    ki = torquepid.GetKi();
-    kd = torquepid.GetKd();
-  }
+  inline void set_pid_parameters(int kp, int ki, int kd) { torquepid.SetTunings(double(kp) / 100.0, double(ki) / 100.0, double(kd) / 100.0); }
+  inline int get_pid_kp() { return torque_kp_x100; }
+  inline int get_pid_ki() { return torque_ki_x100; }
+  inline int get_pid_kd() { return torque_kd_x100; }
   void set_current_limits(uint16_t charge_limit, uint16_t discharge_limit);
 
   void update_bus_current(uint64_t msg_in, uint8_t length);

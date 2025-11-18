@@ -1,8 +1,9 @@
 #include "vcu.hpp"
 #include "car.h"
 #include "parameters.hpp"
+#include <array>
 
-VCU::VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator,
+VCU::VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator, std::array<parameter, 25> *params,
          can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can,
          canMan *daq_can, bool (*timer_status_message)(),
          bool (*timer_pedal_message)())
@@ -10,6 +11,7 @@ VCU::VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator,
   this->pedals = pedals;
   this->inverter = inverter;
   this->accumulator = accumulator;
+  this->params = params;
 
   this->dbc = dbc;
   this->acc_can = acc_can;
@@ -106,7 +108,6 @@ bool VCU::set_state(state target_state)
 
       // Get the inverter prepped
       inverter->set_inverter_enable(true);
-      inverter->set_torque_limit(0);
 
       return true;
     }
@@ -134,8 +135,8 @@ bool VCU::set_state(state target_state)
 
       // TODO: Make this torque limit easier to configure
       inverter->set_inverter_enable(true);
-      inverter->set_torque_limit(MAX_TORQUE_LIMIT_NM);
-      inverter->set_speed_limit(SOFT_MOTOR_RPM_LIMIT);
+      // inverter->set_torque_limit(MAX_TORQUE_LIMIT_NM);
+      // inverter->set_speed_limit(SOFT_MOTOR_RPM_LIMIT);
 
       return true;
     }
@@ -155,7 +156,6 @@ bool VCU::set_state(state target_state)
 
   case READY_TO_DRIVE: // We want to be able to leave no matter what
     inverter->set_inverter_enable(false);
-    inverter->set_torque_limit(0);
 
     buzzer_active = false;
 
@@ -182,8 +182,6 @@ bool VCU::set_state(state target_state)
     else
     {
       inverter->set_inverter_enable(false);
-      inverter->set_torque_limit(0);
-      inverter->set_speed_limit(0);
 
       buzzer_active = false;
 
@@ -204,7 +202,6 @@ bool VCU::set_state(state target_state)
 
   default:
     inverter->set_inverter_enable(false);
-    inverter->set_torque_limit(0);
 
     buzzer_active = false;
 
@@ -246,57 +243,9 @@ void VCU::set_parameter(uint64_t msg, uint8_t length)
   decode_can_0x0d6_vcu_target_parameter(dbc, &target_parameter);
   decode_can_0x0d6_vcu_parameter_value(dbc, &parameter_value);
 
-  switch (parameter(target_parameter))
-  {
-  case POWER_LIMIT:
-    inverter->set_power_limit_kw(parameter_value);
-    break;
-
-  case TORQUE_LIMIT:
-    inverter->set_torque_limit(parameter_value);
-    break;
-
-  case SPEED_MODE:
-    // Not real yet
-    break;
-
-  case SPEED_LIMIT:
-    // Not real yet
-    break;
-
-  case INV_DISCHARGE_LIMIT:
-    inverter->set_current_limits(INVERTER_CHARGE_LIMIT, parameter_value);
-    break;
-
-  case LAUNCH_MODE:
-    // Not real yet
-    break;
-
-  case TRACTION_MODE:
-    // Not real yet
-    break;
-
-  case INVERTER_P:
-    double kp, ki, kd;
-    inverter->get_pid_parameters(kp, ki, kd);
-    inverter->set_pid_parameters(parameter_value, ki, kd);
-    break;
-
-  case INVERTER_I:
-    double kp, ki, kd;
-    inverter->get_pid_parameters(kp, ki, kd);
-    inverter->set_pid_parameters(kp, parameter_value, kd);
-    break;
-
-  case INVERTER_D:
-    double kp, ki, kd;
-    inverter->get_pid_parameters(kp, ki, kd);
-    inverter->set_pid_parameters(kp, ki, parameter_value);
-    break;
-
-  default:
-    break;
-  }
+  // set the parameter in the list
+  this->params->at(target_parameter).parameter_value = double(parameter_value) /
+                                                       double(this->params->at(target_parameter).scale);
 }
 
 //
@@ -359,8 +308,25 @@ void VCU::update_inv_can()
       acc_can->send_controller_message(msg_in); // Forward this for precharge
       break;
 
+    default:
+      break;
+    }
+  }
+}
+
+void VCU::update_daq_can()
+{
+  if (daq_can->check_controller_message())
+  {
+    can_message msg_in = daq_can->get_controller_message();
+
+    switch (msg_in.id)
+    {
     case CAN_ID_VCU_SET_PARAMETER:
       set_parameter(msg_in.buf.val, msg_in.length);
+      break;
+    case CAN_ID_M193_READ_WRITE_PARAM_COMMAND:
+      inv_can->send_controller_message(msg_in);
       break;
 
     default:
@@ -425,7 +391,7 @@ void VCU::send_status_message()
   encode_can_0x0c3_VCU_ENERGY_METER_PRESENT(dbc, false); // later
   encode_can_0x0c3_VCU_INVERTER_POWERED(dbc, inverter->get_inverter_enable());
   encode_can_0x0c3_VCU_LAUNCH_CONTROL_ACTIVE(dbc, 0); // later
-  encode_can_0x0c3_VCU_MAX_TORQUE(dbc, inverter->get_torque_limit());
+  encode_can_0x0c3_VCU_MAX_TORQUE(dbc, this->params->at(MAX_TORQUE).parameter_value);
   encode_can_0x0c3_VCU_TORQUE_MODE(dbc, torque_mode);
   encode_can_0x0c3_VCU_STATEMACHINE_STATE(dbc, current_state);
 
@@ -457,7 +423,7 @@ void VCU::send_firmware_status_message()
 
 void VCU::send_power_tracking_message()
 {
-  encode_can_0x0d0_vcu_lifetime_distance(dbc, inverter->get_motor_distance_M());
+  encode_can_0x0d0_vcu_lifetime_distance(dbc, uint32_t(inverter->get_motor_distance_M()));
   encode_can_0x0d0_vcu_lifetime_ontime(dbc, accumulator->get_consumed_wh());
 
   can_message out_msg;

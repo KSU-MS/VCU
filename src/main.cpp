@@ -11,7 +11,7 @@ void setup()
   // TODO: Get rid of these evil arduino calls for the buzzer
   pinMode(BUZZER, OUTPUT);
 
-  vcu.inverter->set_power_limit_kw(POWER_LIMIT_KW);
+  vcu.inverter->set_power_limit_kw(params.at(POWER_LIMIT).parameter_value);
 
   // Pump fellas
   pinMode(LOWSIDE1, OUTPUT);
@@ -38,6 +38,7 @@ void loop()
   //// CAN Stage
   vcu.update_acc_can();
   vcu.update_inv_can();
+  vcu.update_daq_can();
 
   if (timer_1s.check())
   {
@@ -136,8 +137,8 @@ void loop()
     if (timer_10hz.check())
       vcu.inverter->ping();
 
-    vcu.inverter->set_current_limits(INVERTER_CHARGE_LIMIT,
-                                     INVERTER_DISCHARGE_LIMIT);
+    vcu.inverter->set_current_limits(params.at(CURRENT_CHARGE_LIMIT).parameter_value,
+                                     params.at(CURRENT_DISCHARGE_LIMIT).parameter_value);
 
     digitalWrite(BUZZER, vcu.get_buzzer_state());
     delay(2151);
@@ -163,7 +164,7 @@ void loop()
       if (timer_200hz.check())
       {
         vcu.inverter->command_torque(vcu.pedals->get_torque_request(
-            vcu.pedals->get_travel(), vcu.inverter->get_torque_limit()));
+            vcu.pedals->get_travel(), vcu.params->at(MAX_TORQUE).parameter_value));
       }
 
       // NOTE: I don't think this works right now...
@@ -174,8 +175,8 @@ void loop()
       if (timer_10hz_2.check())
       {
         vcu.inverter->set_current_limits(
-            INVERTER_CHARGE_LIMIT, vcu.inverter->get_instant_current_limit(
-                                       vcu.accumulator->get_pack_voltage()));
+            params.at(CURRENT_CHARGE_LIMIT).parameter_value, vcu.inverter->get_instant_current_limit(
+                                                                 vcu.accumulator->get_pack_voltage()));
         timer_10hz_2.reset();
       }
     }

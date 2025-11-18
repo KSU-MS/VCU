@@ -2,10 +2,15 @@
 
 #include <can_tools.hpp>
 #include <car.h>
+#include <parameters.hpp>
+#include <array>
 
-class Accumulator {
+class Accumulator
+{
 private:
   uint32_t time_last_msec = 0;
+
+  std::array<parameter, 25> *params;
 
   canMan *can;
   can_obj_car_h_t *dbc;
@@ -23,7 +28,7 @@ private:
   double consumed_power_wh = 0;
 
 public:
-  Accumulator(can_obj_car_h_t *dbc, canMan *acc_can,
+  Accumulator(std::array<parameter, 25> *params, can_obj_car_h_t *dbc, canMan *acc_can,
               bool (*can_message_check)());
 
   inline uint8_t get_precharge_state() { return this->precharge_state; }
@@ -36,7 +41,7 @@ public:
 
   inline double get_pack_voltage() { return pack_voltage; }
   inline double get_pack_current() { return pack_current; }
-  inline uint32_t get_consumed_wh() { return consumed_power_wh; }
+  inline double get_consumed_wh() { return consumed_power_wh; }
 
   void calculate_energy_consumed_wh(uint32_t time_msec);
 };

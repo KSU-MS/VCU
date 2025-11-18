@@ -1,13 +1,16 @@
 #pragma once
-
+#include <array>
+#include <cstdint>
+#include <list>
+#include <string>
 //
-//// Some car values
-#define MAX_TORQUE_LIMIT_NM 190
-#define POWER_LIMIT_KW 80
-#define SOFT_MOTOR_RPM_LIMIT 6000
-#define MAX_MOTOR_RPM_LIMIT 7000
-#define BRAKE_SPEED_RPM 5000
-#define SPEED_RATE_LIMIT_RPM_PER_S 1000
+// Some car values
+#define MAX_TORQUE_LIMIT_NM_x10 1900
+#define POWER_LIMIT_KW_x10 800
+#define SOFT_MOTOR_RPM_LIMIT_x10 60000
+#define MAX_MOTOR_RPM_LIMIT_x10 70000
+#define BRAKE_SPEED_RPM_x10 50000
+#define SPEED_RATE_LIMIT_RPM_PER_S_x10 10000
 
 #define TRACTIVE_SYSTEM_MINIMUM_VOLTAGE 400
 #define PRECHARGE_OK_STATE 2
@@ -89,3 +92,22 @@
 #warning "FW_PROJECT_IS_MAIN_OR_MASTER was not defined by the generator!"
 #define FW_PROJECT_IS_MAIN_OR_MASTER 0
 #endif
+
+struct parameter
+{
+    double parameter_value;
+    uint8_t scale;
+    std::string parameter_name;
+};
+
+enum parameter_definitions : uint8_t
+{
+    MAX_TORQUE = 0,
+    SOFT_RPM_LIMIT = 1,
+    MAX_RPM_LIMIT = 2,
+    BRAKE_SPEED_LIMIT = 3,
+    POWER_LIMIT = 4,
+    CURRENT_CHARGE_LIMIT = 5,
+    CURRENT_DISCHARGE_LIMIT = 6,
+    INSTANT_CURRENT_LIMIT = 7,
+};

@@ -1,14 +1,19 @@
 #include "accumulator.hpp"
 #include "car.h"
+#include "parameters.hpp"
+#include <array>
 
-Accumulator::Accumulator(can_obj_car_h_t *dbc, canMan *can,
-                         bool (*can_message_check)()) {
+Accumulator::Accumulator(std::array<parameter, 25> *params, can_obj_car_h_t *dbc, canMan *can,
+                         bool (*can_message_check)())
+{
+  this->params = params;
   this->dbc = dbc;
   this->can = can;
   this->can_message_check = can_message_check;
 }
 
-void Accumulator::update_acu_status(uint64_t msg, uint8_t length) {
+void Accumulator::update_acu_status(uint64_t msg, uint8_t length)
+{
   unpack_message(dbc, CAN_ID_ACU_SHUTDOWN_STATUS, msg, length, 0);
 
   uint8_t imd_relay_val, bms_relay_val;
@@ -20,20 +25,23 @@ void Accumulator::update_acu_status(uint64_t msg, uint8_t length) {
   bms_ok_hs = bool(bms_relay_val);
 }
 
-void Accumulator::update_precharge_status(uint64_t msg, uint8_t length) {
+void Accumulator::update_precharge_status(uint64_t msg, uint8_t length)
+{
   unpack_message(dbc, CAN_ID_PRECHARGE_STATUS, msg, length, 0);
 
   decode_can_0x069_precharge_state(dbc, &precharge_state);
 }
 
-void Accumulator::update_pack_power(uint64_t msg, uint8_t length) {
+void Accumulator::update_pack_power(uint64_t msg, uint8_t length)
+{
   unpack_message(dbc, CAN_ID_MSGID_0X6B1, msg, length, 0);
 
   decode_can_0x6b1_Pack_Summed_Voltage(dbc, &pack_voltage);
   decode_can_0x6b1_Pack_Current(dbc, &pack_current);
 }
 
-void Accumulator::calculate_energy_consumed_wh(uint32_t time_msec) {
+void Accumulator::calculate_energy_consumed_wh(uint32_t time_msec)
+{
   uint32_t time_elaped_msec = time_msec - time_last_msec;
 
   consumed_power_wh += ((double(time_elaped_msec) / 1000) / 3600) *

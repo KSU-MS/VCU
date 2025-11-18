@@ -6,6 +6,8 @@
 #include "inverter.hpp"
 #include "pedal_handeler.hpp"
 #include "traction_control.hpp"
+#include "parameters.hpp"
+#include <array>
 
 enum state
 {
@@ -16,23 +18,6 @@ enum state
   READY_TO_DRIVE = 4,            // Try not to hit a curb plz
   LAUNCH_WAIT = 5,               // Make sure everything is chill for launch
   LAUNCH = 6,                    // Accelerate, but faster
-};
-
-// TODO: Make this neatly documented somewhere in the readme or something, and
-// add some guys to adjust the pedal settings and maybe use a negative value for
-// persistant save or not? Anyways add more shit to this
-enum parameter
-{
-  POWER_LIMIT = 0,         // In KW
-  TORQUE_LIMIT = 1,        // In Nm
-  SPEED_MODE = 2,          // Boolean
-  SPEED_LIMIT = 3,         // In some speed unit?
-  INV_DISCHARGE_LIMIT = 4, // Need to find unit for this
-  LAUNCH_MODE = 5,         // Look at traction_control.hpp for mode defs
-  TRACTION_MODE = 6,       // Look at traction_control.hpp for mode defs
-  INVERTER_P = 7,
-  INVERTER_I = 8,
-  INVERTER_D = 9,
 };
 
 class VCU
@@ -62,13 +47,14 @@ public:
   Inverter *inverter;
   Accumulator *accumulator;
   TractionController *tc;
+  std::array<parameter, 25> *params;
 
   can_obj_car_h_t *dbc;
   canMan *acc_can;
   canMan *inv_can;
   canMan *daq_can;
 
-  VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator,
+  VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator, std::array<parameter, 25> *params,
       can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can, canMan *daq_can,
       bool (*timer_status_message)(), bool (*timer_pedal_message)());
 
@@ -89,6 +75,7 @@ public:
 
   void update_acc_can();
   void update_inv_can();
+  void update_daq_can();
 
   void set_parameter(uint64_t msg, uint8_t length);
   void update_dash_buttons(uint64_t msg, uint8_t length);

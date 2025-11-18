@@ -111,6 +111,16 @@ bool wrapped_200hz()
 }
 #endif
 
+std::array<parameter, 25> params = {
+    parameter{MAX_TORQUE_LIMIT_NM_x10 / 10.0, 10, "TORQUE_LIMIT_NM_x10"},
+    parameter{SOFT_MOTOR_RPM_LIMIT_x10 / 10.0, 10, "SOFT_MOTOR_RPM_LIMIT_x10"},
+    parameter{MAX_MOTOR_RPM_LIMIT_x10 / 10.0, 10, "MAX_MOTOR_RPM_LIMIT_x10"},
+    parameter{BRAKE_SPEED_RPM_x10 / 10.0, 10, "BRAKE_SPEED_RPM_x10"},
+    parameter{POWER_LIMIT_KW_x10 / 10.0, 10, "POWER_LIMIT_KW_x10"},
+    parameter{INVERTER_CHARGE_LIMIT, 1, "INVERTER_CHARGE_LIMIT"},
+    parameter{INVERTER_DISCHARGE_LIMIT, 1, "INVERTER_DISCHARGE_LIMIT"},
+};
+
 //
 //// Comms
 // loggers
@@ -134,12 +144,12 @@ Pedals pedals(MIN_BRAKE_PEDAL, START_BRAKE_PEDAL, END_BRAKE_PEDAL,
               END_ACCELERATOR_PEDAL_1, START_ACCELERATOR_PEDAL_2,
               END_ACCELERATOR_PEDAL_2);
 
-Inverter inverter(&wrapped_20hz, &wrapped_100hz, &wrapped_200hz, false,
+Inverter inverter(&wrapped_20hz, &wrapped_100hz, &wrapped_200hz, false, &params,
                   &inv_can, &daq_can, &kms_can, -0.69314718056);
 
-Accumulator accumulator(&kms_can, &acc_can, &wrapped_2hz);
+Accumulator accumulator(&params, &kms_can, &acc_can, &wrapped_2hz);
 
-VCU vcu(&pedals, &inverter, &accumulator, &kms_can, &acc_can, &inv_can,
+VCU vcu(&pedals, &inverter, &accumulator, &params, &kms_can, &acc_can, &inv_can,
         &daq_can, &wrapped_1s, &wrapped_10hz);
 
 //

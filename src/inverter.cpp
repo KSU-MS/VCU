@@ -3,7 +3,7 @@
 #include "parameters.hpp"
 
 Inverter::Inverter(bool (*timer_mc_kick)(), bool (*timer_current_limit)(),
-                   bool (*timer_motor_controller_send)(), bool spin_direction,
+                   bool (*timer_motor_controller_send)(), bool spin_direction, std::array<parameter, 25> *params,
                    canMan *can, canMan *daq_can, can_obj_car_h_t *dbc,
                    float over_power_decay_factor)
 {
@@ -17,16 +17,28 @@ Inverter::Inverter(bool (*timer_mc_kick)(), bool (*timer_current_limit)(),
 
   this->over_power_decay_factor = over_power_decay_factor;
 
+  this->params = params;
+
   this->can = can;
   this->daq_can = daq_can;
   this->dbc = dbc;
 
   this->ping();
 
-  this->set_inv_parameter(Motor_Overspeed_EEPROM_RPM, MAX_MOTOR_RPM_LIMIT);
-  this->set_inv_parameter(Max_Speed_EEPROM_RPM, SOFT_MOTOR_RPM_LIMIT);
-  this->set_inv_parameter(Break_Speed_EEPROM_RPM, BRAKE_SPEED_RPM);
+  const uint32_t max_rpm_limit =
+      static_cast<uint32_t>((*this->params)[MAX_RPM_LIMIT].parameter_value);
+  const uint32_t soft_rpm_limit =
+      static_cast<uint32_t>((*this->params)[SOFT_RPM_LIMIT].parameter_value);
+  const uint32_t brake_speed_limit =
+      static_cast<uint32_t>((*this->params)[BRAKE_SPEED_LIMIT].parameter_value);
+
+  this->set_inv_parameter(Motor_Overspeed_EEPROM_RPM, max_rpm_limit);
+  this->set_inv_parameter(Max_Speed_EEPROM_RPM, soft_rpm_limit);
+  this->set_inv_parameter(Break_Speed_EEPROM_RPM, brake_speed_limit);
   // this->set_inv_parameter(Speed_Rate_Limit_EEPROM_RPM_per_s, SPEED_RATE_LIMIT_RPM_PER_S);
+
+  this->torquepid = QuickPID(&torque_over_nm, &torque_adjustment, 0, double(torque_kp_x100) / 100, double(torque_ki_x100) / 100, double(torque_kd_x100) / 100, QuickPID::Action::direct);
+  this->torquepid.SetSampleTimeUs(5000);
 }
 
 void Inverter::set_current_limits(uint16_t charge_limit,
@@ -83,19 +95,6 @@ void Inverter::calculate_motor_distance_M(uint32_t time_msec)
   time_last_msec = time_msec;
 }
 
-void Inverter::set_speed_limit(uint16_t speed_limit)
-{
-  encode_can_0x0aa_INV_Limit_Max_Speed(dbc, speed_limit);
-
-  can_message out_msg;
-  out_msg.id = CAN_ID_BMS_CURRENT_LIMIT;
-  out_msg.length =
-      pack_message(dbc, CAN_ID_BMS_CURRENT_LIMIT, &out_msg.buf.val);
-
-  can->send_controller_message(out_msg);
-  daq_can->send_controller_message(out_msg);
-}
-
 void Inverter::ping()
 {
   encode_can_0x0c0_VCU_INV_Torque_Command(dbc, 0.0);
@@ -142,12 +141,15 @@ void Inverter::command_torque(double torque_request)
 
   // https://www.desmos.com/calculator/j8kydktjry
 
-  double power_over_w = std::max(0.0, power_output - (power_limit_kw * 1000));
+  double power_over_w =
+      std::max(0.0, power_output - (((*params)[POWER_LIMIT].parameter_value / 10.0) * 1000.0));
 
   if (power_over_w > 1e-6)
   {
     torque_over_nm = power_over_w / std::max(1e-6, (motor_rpm / 60.0) * 2.0 * M_PI);
-    torque_target -= torque_adjustment;
+    double torque_adjustment_capped =
+        std::min(torque_over_nm, (*params)[MAX_TORQUE].parameter_value * 0.1);
+    torque_target -= torque_adjustment_capped;
     torque_target = std::max(0.0, torque_target);
   }
   else
@@ -182,7 +184,7 @@ void Inverter::command_torque(double torque_request)
   // }
 
   encode_can_0x0c0_VCU_INV_Torque_Command(dbc, torque_target); // torque command to INV
-  encode_can_0x0c0_VCU_INV_Torque_Limit_Command(dbc, torque_limit_nm);
+  encode_can_0x0c0_VCU_INV_Torque_Limit_Command(dbc, (*params)[MAX_TORQUE].parameter_value);
   encode_can_0x0c0_VCU_INV_Speed_Command(dbc, 0);
   encode_can_0x0c0_VCU_INV_Speed_Mode_Enable(dbc, 0);
   encode_can_0x0c0_VCU_INV_Direction_Command(dbc, spin_forward);
@@ -200,8 +202,9 @@ void Inverter::command_torque(double torque_request)
 
 void Inverter::command_speed(int16_t speed_request)
 {
+
   encode_can_0x0c0_VCU_INV_Torque_Command(dbc, 0.0);
-  encode_can_0x0c0_VCU_INV_Torque_Limit_Command(dbc, torque_limit_nm);
+  encode_can_0x0c0_VCU_INV_Torque_Limit_Command(dbc, (*params)[MAX_TORQUE].parameter_value);
   encode_can_0x0c0_VCU_INV_Speed_Command(dbc, speed_request);
   encode_can_0x0c0_VCU_INV_Speed_Mode_Enable(dbc, speed_mode);
   encode_can_0x0c0_VCU_INV_Direction_Command(dbc, spin_forward);
