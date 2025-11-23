@@ -1,0 +1,15 @@
+/home/klee/Github/VCU/build/CMakeFiles/cores.o.dir
+/home/klee/Github/VCU/build/CMakeFiles/SPI.o.dir
+/home/klee/Github/VCU/build/CMakeFiles/SdFat.o.dir
+/home/klee/Github/VCU/build/CMakeFiles/SD.o.dir
+/home/klee/Github/VCU/build/CMakeFiles/Time.o.dir
+/home/klee/Github/VCU/build/CMakeFiles/ksu_fw_common.o.dir
+/home/klee/Github/VCU/build/CMakeFiles/ksu_ms_dbc.o.dir
+/home/klee/Github/VCU/build/CMakeFiles/edit_cache.dir
+/home/klee/Github/VCU/build/CMakeFiles/rebuild_cache.dir
+/home/klee/Github/VCU/build/src/CMakeFiles/vcu.o.dir
+/home/klee/Github/VCU/build/src/CMakeFiles/installarduino.dir
+/home/klee/Github/VCU/build/src/CMakeFiles/firmware.elf.dir
+/home/klee/Github/VCU/build/src/CMakeFiles/firmware_hex.dir
+/home/klee/Github/VCU/build/src/CMakeFiles/edit_cache.dir
+/home/klee/Github/VCU/build/src/CMakeFiles/rebuild_cache.dir

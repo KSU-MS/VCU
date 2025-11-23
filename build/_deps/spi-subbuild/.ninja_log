@@ -1,0 +1,21 @@
+# ninja log v7
+1	19	1763938034066132238	spi-populate-prefix/src/spi-populate-stamp/spi-populate-mkdir	38ce729d30820371
+1	19	1763938034066132238	/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-mkdir	38ce729d30820371
+19	339	1763938034386142421	spi-populate-prefix/src/spi-populate-stamp/spi-populate-download	f879bb4cf8b1051d
+19	339	1763938034386142421	/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-download	f879bb4cf8b1051d
+339	540	1763938034386142421	spi-populate-prefix/src/spi-populate-stamp/spi-populate-update	7849377ceeadbc2
+339	540	1763938034386142421	/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-update	7849377ceeadbc2
+540	561	1763938034606149422	spi-populate-prefix/src/spi-populate-stamp/spi-populate-patch	39514e2ab37589bf
+540	561	1763938034606149422	/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-patch	39514e2ab37589bf
+561	578	1763938034626150058	spi-populate-prefix/src/spi-populate-stamp/spi-populate-configure	f197fa6e7166315d
+561	578	1763938034626150058	/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-configure	f197fa6e7166315d
+578	594	1763938034642150568	spi-populate-prefix/src/spi-populate-stamp/spi-populate-build	d18686bfb25290b
+578	594	1763938034642150568	/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-build	d18686bfb25290b
+594	611	1763938034658151077	spi-populate-prefix/src/spi-populate-stamp/spi-populate-install	49e31ac3ed91c63e
+594	611	1763938034658151077	/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-install	49e31ac3ed91c63e
+611	630	1763938034678151713	spi-populate-prefix/src/spi-populate-stamp/spi-populate-test	9729a6ab4a277b02
+611	630	1763938034678151713	/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-test	9729a6ab4a277b02
+630	657	1763938034702152477	CMakeFiles/spi-populate-complete	1e86ab1622213926
+630	657	1763938034702152477	spi-populate-prefix/src/spi-populate-stamp/spi-populate-done	1e86ab1622213926
+630	657	1763938034702152477	/home/klee/Github/VCU/build/_deps/spi-subbuild/CMakeFiles/spi-populate-complete	1e86ab1622213926
+630	657	1763938034702152477	/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-done	1e86ab1622213926

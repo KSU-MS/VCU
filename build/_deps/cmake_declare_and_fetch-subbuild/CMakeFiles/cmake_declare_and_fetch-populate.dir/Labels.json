@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/CMakeFiles/cmake_declare_and_fetch-populate"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/CMakeFiles/cmake_declare_and_fetch-populate.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/CMakeFiles/cmake_declare_and_fetch-populate-complete.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-build.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-configure.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-download.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-install.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-mkdir.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-patch.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-test.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"cmake_declare_and_fetch-populate"
+		],
+		"name" : "cmake_declare_and_fetch-populate"
+	}
+}

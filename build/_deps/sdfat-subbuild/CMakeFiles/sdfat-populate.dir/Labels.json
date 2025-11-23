@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/CMakeFiles/sdfat-populate"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/CMakeFiles/sdfat-populate.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/CMakeFiles/sdfat-populate-complete.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-build.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-configure.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-download.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-install.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-mkdir.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-patch.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-test.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"sdfat-populate"
+		],
+		"name" : "sdfat-populate"
+	}
+}

@@ -1,0 +1,21 @@
+# ninja log v7
+1	21	1763938034794155405	sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-mkdir	13f8e559890681c5
+1	21	1763938034794155405	/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-mkdir	13f8e559890681c5
+21	1218	1763938035990193454	sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-download	36ea9a9b761e2e21
+21	1218	1763938035990193454	/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-download	36ea9a9b761e2e21
+1218	1461	1763938035994193581	sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-update	27ba2fcea2801b7e
+1218	1461	1763938035994193581	/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-update	27ba2fcea2801b7e
+1461	1482	1763938036254201850	sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-patch	dee697d0564ff853
+1461	1482	1763938036254201850	/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-patch	dee697d0564ff853
+1482	1501	1763938036274202486	sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-configure	f1a4936135bdc38d
+1482	1501	1763938036274202486	/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-configure	f1a4936135bdc38d
+1501	1519	1763938036294203122	sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-build	e4a305a3339cdf89
+1501	1519	1763938036294203122	/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-build	e4a305a3339cdf89
+1519	1536	1763938036310203630	sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-install	1fc849cc2deaad27
+1519	1536	1763938036310203630	/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-install	1fc849cc2deaad27
+1537	1554	1763938036326204139	sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-test	5175d01531833a22
+1537	1554	1763938036326204139	/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-test	5175d01531833a22
+1554	1581	1763938036354205030	CMakeFiles/sdfat-populate-complete	7641f9f1690b0a9b
+1554	1581	1763938036354205030	sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-done	7641f9f1690b0a9b
+1554	1581	1763938036354205030	/home/klee/Github/VCU/build/_deps/sdfat-subbuild/CMakeFiles/sdfat-populate-complete	7641f9f1690b0a9b
+1554	1581	1763938036354205030	/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-done	7641f9f1690b0a9b

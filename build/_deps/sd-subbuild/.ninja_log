@@ -1,0 +1,21 @@
+# ninja log v7
+0	21	1763938036474208845	sd-populate-prefix/src/sd-populate-stamp/sd-populate-mkdir	c29123a5f2cdafc4
+0	21	1763938036474208845	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-mkdir	c29123a5f2cdafc4
+21	721	1763938037174231104	sd-populate-prefix/src/sd-populate-stamp/sd-populate-download	6aca7a1388b359df
+21	721	1763938037174231104	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-download	6aca7a1388b359df
+721	909	1763938037174231104	sd-populate-prefix/src/sd-populate-stamp/sd-populate-update	83fd48da83abe30f
+721	909	1763938037174231104	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-update	83fd48da83abe30f
+909	930	1763938037382237716	sd-populate-prefix/src/sd-populate-stamp/sd-populate-patch	700f39fdf0349bc9
+909	930	1763938037382237716	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-patch	700f39fdf0349bc9
+930	950	1763938037402238352	sd-populate-prefix/src/sd-populate-stamp/sd-populate-configure	506fa2921f073e22
+930	950	1763938037402238352	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-configure	506fa2921f073e22
+950	968	1763938037418238861	sd-populate-prefix/src/sd-populate-stamp/sd-populate-build	82b82143dcd68660
+950	968	1763938037418238861	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-build	82b82143dcd68660
+968	986	1763938037438239497	sd-populate-prefix/src/sd-populate-stamp/sd-populate-install	8a80e75963a61865
+968	986	1763938037438239497	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-install	8a80e75963a61865
+986	1004	1763938037454240005	sd-populate-prefix/src/sd-populate-stamp/sd-populate-test	38b5451e5c597e52
+986	1004	1763938037454240005	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-test	38b5451e5c597e52
+1004	1030	1763938037482240896	CMakeFiles/sd-populate-complete	f039430596a174cc
+1004	1030	1763938037482240896	sd-populate-prefix/src/sd-populate-stamp/sd-populate-done	f039430596a174cc
+1004	1030	1763938037482240896	/home/klee/Github/VCU/build/_deps/sd-subbuild/CMakeFiles/sd-populate-complete	f039430596a174cc
+1004	1030	1763938037482240896	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-done	f039430596a174cc
