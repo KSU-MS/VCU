@@ -1,0 +1,21 @@
+CompileFlags:
+  # Tell clangd to read commands from build/compile_commands.json
+  CompilationDatabase: build
+  # Add the ARM toolchain's libstdc++ include roots so headers like <type_traits>
+  # resolve when clang (rather than arm-none-eabi-g++) parses sources.
+  Add: [
+    "--target=arm-none-eabi",
+    "-isystem/home/klee/tools/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/arm-none-eabi/include/c++/14.3.1",
+    "-isystem/home/klee/tools/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/arm-none-eabi/include/c++/14.3.1/arm-none-eabi",
+    "-isystem/home/klee/tools/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/arm-none-eabi/include/c++/14.3.1/backward",
+    "-isystem/home/klee/tools/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/lib/gcc/arm-none-eabi/14.3.1/include",
+    "-isystem/home/klee/tools/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/lib/gcc/arm-none-eabi/14.3.1/include-fixed",
+    "-isystem/home/klee/tools/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/arm-none-eabi/include",
+    "-ferror-limit=0",
+  ]
+Diagnostics:
+    Suppress:
+      - ovl_diff_return_type
+      - variable_object_no_init
+      - pp_including_mainfile_in_preamble
+

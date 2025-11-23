@@ -1,0 +1,11 @@
+# ninja log v5
+0	69	1763915559158478950	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-mkdir	c71f5a0e806c1328
+69	413	1763915559502476636	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-download	6fafd54c58a35f22
+413	616	0	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-update	546c4163a419456a
+617	636	1763915559726475130	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-patch	4eeb1ecd0a05b398
+636	655	1763915559742475022	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-configure	331fb5fafb0d28aa
+655	673	1763915559762474888	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-build	52126be2aa92db94
+673	690	1763915559778474780	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-install	f81ffbb72cc4d76b
+690	707	1763915559794474672	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-test	d090be252705191a
+707	732	1763915559818474511	CMakeFiles/teensy_cmake_macros-populate-complete	b475513f5dbbed07
+707	732	1763915559818474511	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-done	b475513f5dbbed07

@@ -1,0 +1,3 @@
+repository='https://github.com/KSU-MS/ksu-fw-common.git'
+module=''
+tag='origin'

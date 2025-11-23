@@ -1,0 +1,11 @@
+# ninja log v5
+0	65	1763915564262444634	sd-populate-prefix/src/sd-populate-stamp/sd-populate-mkdir	a42b664b546b29d
+66	410	1763915564606442322	sd-populate-prefix/src/sd-populate-stamp/sd-populate-download	994620a8385b1baa
+410	627	0	sd-populate-prefix/src/sd-populate-stamp/sd-populate-update	6cc6ea1918211f48
+627	647	1763915564842440736	sd-populate-prefix/src/sd-populate-stamp/sd-populate-patch	3f1e6d384abce2ee
+647	664	1763915564862440602	sd-populate-prefix/src/sd-populate-stamp/sd-populate-configure	f914d2232fe894a8
+664	682	1763915564878440494	sd-populate-prefix/src/sd-populate-stamp/sd-populate-build	2a8027ce90305b4a
+682	700	1763915564898440360	sd-populate-prefix/src/sd-populate-stamp/sd-populate-install	a3c39a3503095959
+700	717	1763915564914440253	sd-populate-prefix/src/sd-populate-stamp/sd-populate-test	8b498d70cd5281ef
+717	743	1763915564942440064	CMakeFiles/sd-populate-complete	a18fe2eededf2f3d
+717	743	1763915564942440064	sd-populate-prefix/src/sd-populate-stamp/sd-populate-done	a18fe2eededf2f3d

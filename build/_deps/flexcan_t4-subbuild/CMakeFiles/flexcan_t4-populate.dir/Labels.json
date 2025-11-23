@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/CMakeFiles/flexcan_t4-populate"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/CMakeFiles/flexcan_t4-populate.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/CMakeFiles/flexcan_t4-populate-complete.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-install.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-mkdir.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-download.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-update.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-patch.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-configure.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-build.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-test.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"flexcan_t4-populate"
+		],
+		"name" : "flexcan_t4-populate"
+	}
+}

@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/CMakeFiles/teensy_cmake_macros-populate"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/CMakeFiles/teensy_cmake_macros-populate.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/CMakeFiles/teensy_cmake_macros-populate-complete.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-install.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-mkdir.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-download.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-update.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-patch.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-configure.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-build.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-test.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"teensy_cmake_macros-populate"
+		],
+		"name" : "teensy_cmake_macros-populate"
+	}
+}
