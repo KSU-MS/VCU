@@ -32,14 +32,21 @@ if(NOT DEFINED CMAKE_CROSSCOMPILING)
   set(CMAKE_CROSSCOMPILING "TRUE")
 endif()
 
+<<<<<<< HEAD
 # Set path to fallback-tool for dependency-resolution.
+=======
+# Set default install directory permissions.
+>>>>>>> aa20f60 (include all shit)
 if(NOT DEFINED CMAKE_OBJDUMP)
   set(CMAKE_OBJDUMP "/home/klee/tools/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-objdump")
 endif()
 
+<<<<<<< HEAD
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
   file(WRITE "/home/klee/Github/VCU/build/src/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()
+=======
+>>>>>>> aa20f60 (include all shit)

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # This is a generated file and its contents are an internal implementation detail.
 # The download step will be re-executed if anything in this file changes.
 # No other meaning or use of this file is supported.
@@ -10,3 +11,8 @@ url(s)=https://github.com/KSU-MS/ksu-ms-dbc/releases/latest/download/can_lib.tar
 hash=
       no_extract=
 
+=======
+repository='external project URL'
+module='https://github.com/KSU-MS/ksu-ms-dbc/releases/latest/download/can_lib.tar.gz'
+tag=''
+>>>>>>> aa20f60 (include all shit)

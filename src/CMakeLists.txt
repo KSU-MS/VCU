@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 3.17)
+project(vcu)
+
+file(GLOB_RECURSE SOURCE_FILES ${CMAKE_SOURCE_DIR}/src/*.cpp ${CMAKE_SOURCE_DIR}/src/*.c)
+file(GLOB_RECURSE HEADER_FILES ${CMAKE_SOURCE_DIR}/include/*.hpp ${CMAKE_SOURCE_DIR}/include/*.h)
+
+teensy_add_library(vcu STATIC ${SOURCE_FILES} ${HEADER_FILES})
+
+add_custom_target(installarduino
+"${CMAKE_COMMAND}" -P "${CMAKE_SOURCE_DIR}/cmake/install_arduino_library.cmake")
+
+project(firmware)
+
+teensy_include_directories(../include)
+teensy_add_executable(firmware ${SOURCE_FILES})
+
+teensy_target_link_libraries(firmware vcu ksu_fw_common ksu_ms_dbc SD SdFat SPI Time cores)
+target_link_libraries(firmware.elf stdc++)

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ninja log v7
 1	19	1763938034066132238	spi-populate-prefix/src/spi-populate-stamp/spi-populate-mkdir	38ce729d30820371
 1	19	1763938034066132238	/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-mkdir	38ce729d30820371
@@ -19,3 +20,16 @@
 630	657	1763938034702152477	spi-populate-prefix/src/spi-populate-stamp/spi-populate-done	1e86ab1622213926
 630	657	1763938034702152477	/home/klee/Github/VCU/build/_deps/spi-subbuild/CMakeFiles/spi-populate-complete	1e86ab1622213926
 630	657	1763938034702152477	/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-done	1e86ab1622213926
+=======
+# ninja log v5
+0	65	1763915561778461330	spi-populate-prefix/src/spi-populate-stamp/spi-populate-mkdir	fc7a2fb24c7cbb6f
+65	416	1763915562130458963	spi-populate-prefix/src/spi-populate-stamp/spi-populate-download	3e1bd66f13a4b8b9
+416	621	0	spi-populate-prefix/src/spi-populate-stamp/spi-populate-update	9d298a6a347ebed9
+621	639	1763915562350457484	spi-populate-prefix/src/spi-populate-stamp/spi-populate-patch	44534d4d6d95af8e
+639	655	1763915562370457350	spi-populate-prefix/src/spi-populate-stamp/spi-populate-configure	67d5d624eb81104e
+656	673	1763915562386457242	spi-populate-prefix/src/spi-populate-stamp/spi-populate-build	8cb28c4d3cfe71f4
+673	690	1763915562402457135	spi-populate-prefix/src/spi-populate-stamp/spi-populate-install	a8e4fd32a2fe10d2
+690	706	1763915562418457027	spi-populate-prefix/src/spi-populate-stamp/spi-populate-test	fe1a800b6da91b9f
+706	732	1763915562446456839	CMakeFiles/spi-populate-complete	4e81e169e90b2ca6
+706	732	1763915562446456839	spi-populate-prefix/src/spi-populate-stamp/spi-populate-done	4e81e169e90b2ca6
+>>>>>>> aa20f60 (include all shit)

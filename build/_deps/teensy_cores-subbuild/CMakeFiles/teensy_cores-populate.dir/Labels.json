@@ -11,6 +11,7 @@
 			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/CMakeFiles/teensy_cores-populate-complete.rule"
 		},
 		{
+<<<<<<< HEAD
 			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-build.rule"
 		},
 		{
@@ -20,12 +21,15 @@
 			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-download.rule"
 		},
 		{
+=======
+>>>>>>> aa20f60 (include all shit)
 			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-install.rule"
 		},
 		{
 			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-mkdir.rule"
 		},
 		{
+<<<<<<< HEAD
 			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-patch.rule"
 		},
 		{
@@ -33,6 +37,24 @@
 		},
 		{
 			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-update.rule"
+=======
+			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-download.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-update.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-patch.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-configure.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-build.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-test.rule"
+>>>>>>> aa20f60 (include all shit)
 		}
 	],
 	"target" : 

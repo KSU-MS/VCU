@@ -4,6 +4,7 @@
 /home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/CMakeFiles/flexcan_t4-populate
 /home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/CMakeFiles/flexcan_t4-populate.rule
 /home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/CMakeFiles/flexcan_t4-populate-complete.rule
+<<<<<<< HEAD
 /home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-build.rule
 /home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-configure.rule
 /home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-download.rule
@@ -12,3 +13,13 @@
 /home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-patch.rule
 /home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-test.rule
 /home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-update.rule
+=======
+/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-install.rule
+/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-mkdir.rule
+/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-download.rule
+/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-update.rule
+/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-patch.rule
+/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-configure.rule
+/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-build.rule
+/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-test.rule
+>>>>>>> aa20f60 (include all shit)

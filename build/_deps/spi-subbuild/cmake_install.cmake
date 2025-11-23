@@ -37,6 +37,7 @@ if(NOT DEFINED CMAKE_CROSSCOMPILING)
   set(CMAKE_CROSSCOMPILING "FALSE")
 endif()
 
+<<<<<<< HEAD
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
@@ -51,11 +52,22 @@ if(CMAKE_INSTALL_COMPONENT)
     set(CMAKE_INSTALL_MANIFEST "install_manifest_${CMAKE_INST_COMP_HASH}.txt")
     unset(CMAKE_INST_COMP_HASH)
   endif()
+=======
+if(CMAKE_INSTALL_COMPONENT)
+  set(CMAKE_INSTALL_MANIFEST "install_manifest_${CMAKE_INSTALL_COMPONENT}.txt")
+>>>>>>> aa20f60 (include all shit)
 else()
   set(CMAKE_INSTALL_MANIFEST "install_manifest.txt")
 endif()
 
+<<<<<<< HEAD
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   file(WRITE "/home/klee/Github/VCU/build/_deps/spi-subbuild/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()
+=======
+string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
+       "${CMAKE_INSTALL_MANIFEST_FILES}")
+file(WRITE "/home/klee/Github/VCU/build/_deps/spi-subbuild/${CMAKE_INSTALL_MANIFEST}"
+     "${CMAKE_INSTALL_MANIFEST_CONTENT}")
+>>>>>>> aa20f60 (include all shit)

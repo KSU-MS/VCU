@@ -1,6 +1,7 @@
 # Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
 # file Copyright.txt or https://cmake.org/licensing for details.
 
+<<<<<<< HEAD
 cmake_minimum_required(VERSION 3.31.6)
 
 # Reject any attempt to use a toolchain file. We must not use one because
@@ -8,6 +9,9 @@ cmake_minimum_required(VERSION 3.31.6)
 # variable is set, the cache variable will have been initialized from it.
 unset(CMAKE_TOOLCHAIN_FILE CACHE)
 unset(ENV{CMAKE_TOOLCHAIN_FILE})
+=======
+cmake_minimum_required(VERSION 3.18.4)
+>>>>>>> aa20f60 (include all shit)
 
 # We name the project and the target for the ExternalProject_Add() call
 # to something that will highlight to the user what we are working on if
@@ -15,6 +19,7 @@ unset(ENV{CMAKE_TOOLCHAIN_FILE})
 
 project(time-populate NONE)
 
+<<<<<<< HEAD
 
 # Pass through things we've already detected in the main project to avoid
 # paying the cost of redetecting them again in ExternalProject_Add()
@@ -28,6 +33,11 @@ set_property(GLOBAL PROPERTY _CMAKE_FindGit_GIT_EXECUTABLE_VERSION
 include(ExternalProject)
 ExternalProject_Add(time-populate
                      "UPDATE_DISCONNECTED" "False" "GIT_REPOSITORY" "https://github.com/PaulStoffregen/Time.git" "EXTERNALPROJECT_INTERNAL_ARGUMENT_SEPARATOR" "GIT_TAG" "master"
+=======
+include(ExternalProject)
+ExternalProject_Add(time-populate
+                     "UPDATE_DISCONNECTED" "False" "GIT_REPOSITORY" "https://github.com/PaulStoffregen/Time.git" "GIT_TAG" "master"
+>>>>>>> aa20f60 (include all shit)
                     SOURCE_DIR          "/home/klee/Github/VCU/build/_deps/time-src"
                     BINARY_DIR          "/home/klee/Github/VCU/build/_deps/time-build"
                     CONFIGURE_COMMAND   ""
@@ -36,7 +46,10 @@ ExternalProject_Add(time-populate
                     TEST_COMMAND        ""
                     USES_TERMINAL_DOWNLOAD  YES
                     USES_TERMINAL_UPDATE    YES
+<<<<<<< HEAD
                     USES_TERMINAL_PATCH     YES
+=======
+>>>>>>> aa20f60 (include all shit)
 )
 
 

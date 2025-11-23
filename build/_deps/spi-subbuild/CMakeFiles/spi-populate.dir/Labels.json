@@ -11,6 +11,7 @@
 			"file" : "/home/klee/Github/VCU/build/_deps/spi-subbuild/CMakeFiles/spi-populate-complete.rule"
 		},
 		{
+<<<<<<< HEAD
 			"file" : "/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-build.rule"
 		},
 		{
@@ -20,12 +21,15 @@
 			"file" : "/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-download.rule"
 		},
 		{
+=======
+>>>>>>> aa20f60 (include all shit)
 			"file" : "/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-install.rule"
 		},
 		{
 			"file" : "/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-mkdir.rule"
 		},
 		{
+<<<<<<< HEAD
 			"file" : "/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-patch.rule"
 		},
 		{
@@ -33,6 +37,24 @@
 		},
 		{
 			"file" : "/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-update.rule"
+=======
+			"file" : "/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-download.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-update.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-patch.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-configure.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-build.rule"
+		},
+		{
+			"file" : "/home/klee/Github/VCU/build/_deps/spi-subbuild/spi-populate-prefix/src/spi-populate-stamp/spi-populate-test.rule"
+>>>>>>> aa20f60 (include all shit)
 		}
 	],
 	"target" : 

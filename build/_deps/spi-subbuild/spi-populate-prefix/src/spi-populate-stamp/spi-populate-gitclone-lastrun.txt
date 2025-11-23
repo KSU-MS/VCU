@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # This is a generated file and its contents are an internal implementation detail.
 # The download step will be re-executed if anything in this file changes.
 # No other meaning or use of this file is supported.
@@ -13,3 +14,8 @@ recurse_submodules=--recursive
 submodules=
 CMP0097=NEW
       
+=======
+repository='https://github.com/PaulStoffregen/SPI.git'
+module=''
+tag='origin'
+>>>>>>> aa20f60 (include all shit)
