@@ -1,3 +1,0 @@
-repository='https://github.com/newdigate/teensy-cmake-macros.git'
-module=''
-tag='origin'

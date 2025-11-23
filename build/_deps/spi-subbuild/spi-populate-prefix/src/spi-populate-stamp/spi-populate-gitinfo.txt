@@ -1,3 +1,0 @@
-repository='https://github.com/PaulStoffregen/SPI.git'
-module=''
-tag='origin'

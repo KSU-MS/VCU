@@ -1,3 +1,0 @@
-repository='https://github.com/newdigate/cmake-declare-and-fetch.git'
-module=''
-tag='origin'

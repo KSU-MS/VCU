@@ -1,3 +1,0 @@
-repository='https://github.com/PaulStoffregen/Time.git'
-module=''
-tag='origin'

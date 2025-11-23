@@ -1,3 +1,0 @@
-repository='external project URL'
-module='https://github.com/KSU-MS/ksu-ms-dbc/releases/latest/download/can_lib.tar.gz'
-tag=''

@@ -1,3 +1,0 @@
-repository='https://github.com/PaulStoffregen/SdFat.git'
-module=''
-tag='origin'
