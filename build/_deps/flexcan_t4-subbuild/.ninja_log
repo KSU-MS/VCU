@@ -1,35 +1,21 @@
-<<<<<<< HEAD
 # ninja log v7
-1	20	1763938038626277257	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-mkdir	b241140e0f7871f4
-1	20	1763938038626277257	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-mkdir	b241140e0f7871f4
-20	394	1763938038998289078	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-download	3914f74b9d3c311
-20	394	1763938038998289078	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-download	3914f74b9d3c311
-394	603	1763938039002289206	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-update	6669fd9376f027b3
-394	603	1763938039002289206	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-update	6669fd9376f027b3
-603	623	1763938039230296449	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-patch	f29938c869a78987
-603	623	1763938039230296449	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-patch	f29938c869a78987
-623	641	1763938039246296957	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-configure	f9ccf99226b55735
-623	641	1763938039246296957	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-configure	f9ccf99226b55735
-641	658	1763938039262297466	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-build	ce32193d07a1e45
-641	658	1763938039262297466	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-build	ce32193d07a1e45
-658	674	1763938039278297974	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-install	6d05f4f233d71876
-658	674	1763938039278297974	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-install	6d05f4f233d71876
-674	692	1763938039298298609	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-test	bb245c63ff174e74
-674	692	1763938039298298609	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-test	bb245c63ff174e74
-692	717	1763938039322299372	CMakeFiles/flexcan_t4-populate-complete	f2100065b581e072
-692	717	1763938039322299372	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-done	f2100065b581e072
-692	717	1763938039322299372	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/CMakeFiles/flexcan_t4-populate-complete	f2100065b581e072
-692	717	1763938039322299372	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-done	f2100065b581e072
-=======
-# ninja log v5
-1	71	1763915565914433534	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-mkdir	e1411b104a18531a
-71	413	1763915566258431224	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-download	7014b354b4bf6027
-413	646	0	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-update	e124d83e88cc861b
-646	665	1763915566510429532	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-patch	7c4205ea38e5f31
-665	683	1763915566526429424	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-configure	5a7cb7fa439b8d29
-683	700	1763915566542429317	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-build	32fdf2067c338b0a
-700	717	1763915566558429209	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-install	9da16fde580831cf
-717	734	1763915566578429075	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-test	55b432e01860f7a0
-734	760	1763915566602428914	CMakeFiles/flexcan_t4-populate-complete	775ff61ed60afb67
-734	760	1763915566602428914	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-done	775ff61ed60afb67
->>>>>>> aa20f60 (include all shit)
+1	18	1764714036731751480	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-mkdir	b241140e0f7871f4
+1	18	1764714036731751480	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-mkdir	b241140e0f7871f4
+18	389	1764714037099749220	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-download	3914f74b9d3c311
+18	389	1764714037099749220	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-download	3914f74b9d3c311
+389	601	1764714037103749194	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-update	6669fd9376f027b3
+389	601	1764714037103749194	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-update	6669fd9376f027b3
+602	620	1764714037331747794	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-patch	f29938c869a78987
+602	620	1764714037331747794	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-patch	f29938c869a78987
+620	637	1764714037347747694	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-configure	f9ccf99226b55735
+620	637	1764714037347747694	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-configure	f9ccf99226b55735
+637	656	1764714037367747572	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-build	ce32193d07a1e45
+637	656	1764714037367747572	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-build	ce32193d07a1e45
+656	673	1764714037383747474	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-install	6d05f4f233d71876
+656	673	1764714037383747474	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-install	6d05f4f233d71876
+673	690	1764714037403747350	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-test	bb245c63ff174e74
+673	690	1764714037403747350	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-test	bb245c63ff174e74
+690	715	1764714037427747204	CMakeFiles/flexcan_t4-populate-complete	f2100065b581e072
+690	715	1764714037427747204	flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-done	f2100065b581e072
+690	715	1764714037427747204	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/CMakeFiles/flexcan_t4-populate-complete	f2100065b581e072
+690	715	1764714037427747204	/home/klee/Github/VCU/build/_deps/flexcan_t4-subbuild/flexcan_t4-populate-prefix/src/flexcan_t4-populate-stamp/flexcan_t4-populate-done	f2100065b581e072

@@ -1,9 +1,3 @@
-<<<<<<< HEAD
 /home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/CMakeFiles/teensy_cmake_macros-populate.dir
 /home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/CMakeFiles/edit_cache.dir
 /home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/CMakeFiles/rebuild_cache.dir
-=======
-/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/CMakeFiles/rebuild_cache.dir
-/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/CMakeFiles/edit_cache.dir
-/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/CMakeFiles/teensy_cmake_macros-populate.dir
->>>>>>> aa20f60 (include all shit)

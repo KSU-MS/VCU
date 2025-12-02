@@ -1,11 +1,7 @@
 # Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
 # file Copyright.txt or https://cmake.org/licensing for details.
 
-<<<<<<< HEAD
 cmake_minimum_required(VERSION ${CMAKE_VERSION}) # this file comes with cmake
-=======
-cmake_minimum_required(VERSION 3.5)
->>>>>>> aa20f60 (include all shit)
 
 function(check_file_hash has_hash hash_is_good)
   if("${has_hash}" STREQUAL "")
@@ -25,22 +21,14 @@ function(check_file_hash has_hash hash_is_good)
 
   set("${has_hash}" TRUE PARENT_SCOPE)
 
-<<<<<<< HEAD
   message(VERBOSE "verifying file...
-=======
-  message(STATUS "verifying file...
->>>>>>> aa20f60 (include all shit)
        file='/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/can_lib.tar.gz'")
 
   file("" "/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/can_lib.tar.gz" actual_value)
 
   if(NOT "${actual_value}" STREQUAL "")
     set("${hash_is_good}" FALSE PARENT_SCOPE)
-<<<<<<< HEAD
     message(VERBOSE " hash of
-=======
-    message(STATUS " hash of
->>>>>>> aa20f60 (include all shit)
     /home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/can_lib.tar.gz
   does not match expected value
     expected: ''
@@ -56,11 +44,7 @@ function(sleep_before_download attempt)
   endif()
 
   if(attempt EQUAL 1)
-<<<<<<< HEAD
     message(VERBOSE "Retrying...")
-=======
-    message(STATUS "Retrying...")
->>>>>>> aa20f60 (include all shit)
     return()
   endif()
 
@@ -82,53 +66,26 @@ function(sleep_before_download attempt)
     set(sleep_seconds 1200)
   endif()
 
-<<<<<<< HEAD
   message(VERBOSE "Retry after ${sleep_seconds} seconds (attempt #${attempt}) ...")
-=======
-  message(STATUS "Retry after ${sleep_seconds} seconds (attempt #${attempt}) ...")
->>>>>>> aa20f60 (include all shit)
 
   execute_process(COMMAND "${CMAKE_COMMAND}" -E sleep "${sleep_seconds}")
 endfunction()
 
-<<<<<<< HEAD
-=======
-if("/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/can_lib.tar.gz" STREQUAL "")
-  message(FATAL_ERROR "LOCAL can't be empty")
-endif()
-
-if("https://github.com/KSU-MS/ksu-ms-dbc/releases/latest/download/can_lib.tar.gz" STREQUAL "")
-  message(FATAL_ERROR "REMOTE can't be empty")
-endif()
-
->>>>>>> aa20f60 (include all shit)
 if(EXISTS "/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/can_lib.tar.gz")
   check_file_hash(has_hash hash_is_good)
   if(has_hash)
     if(hash_is_good)
-<<<<<<< HEAD
       message(VERBOSE "File already exists and hash match (skip download):
-=======
-      message(STATUS "File already exists and hash match (skip download):
->>>>>>> aa20f60 (include all shit)
   file='/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/can_lib.tar.gz'
   =''"
       )
       return()
     else()
-<<<<<<< HEAD
       message(VERBOSE "File already exists but hash mismatch. Removing...")
       file(REMOVE "/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/can_lib.tar.gz")
     endif()
   else()
     message(VERBOSE "File already exists but no hash specified (use URL_HASH):
-=======
-      message(STATUS "File already exists but hash mismatch. Removing...")
-      file(REMOVE "/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/can_lib.tar.gz")
-    endif()
-  else()
-    message(STATUS "File already exists but no hash specified (use URL_HASH):
->>>>>>> aa20f60 (include all shit)
   file='/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/can_lib.tar.gz'
 Old file will be removed and new file downloaded from URL."
     )
@@ -138,7 +95,6 @@ endif()
 
 set(retry_number 5)
 
-<<<<<<< HEAD
 message(VERBOSE "Downloading...
    dst='/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/can_lib.tar.gz'
    timeout='none'
@@ -162,38 +118,15 @@ foreach(i RANGE ${retry_number})
       
 
       file(
-=======
-message(STATUS "Downloading...
-   dst='/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/can_lib.tar.gz'
-   timeout='none'"
-)
-
-foreach(i RANGE ${retry_number})
-  sleep_before_download(${i})
-
-  foreach(url https://github.com/KSU-MS/ksu-ms-dbc/releases/latest/download/can_lib.tar.gz)
-    message(STATUS "Using src='${url}'")
-
-    
-    
-    
-    
-
-    file(
->>>>>>> aa20f60 (include all shit)
         DOWNLOAD
         "${url}" "/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/can_lib.tar.gz"
         SHOW_PROGRESS
         # no TIMEOUT
-<<<<<<< HEAD
         # no INACTIVITY_TIMEOUT
-=======
->>>>>>> aa20f60 (include all shit)
         STATUS status
         LOG log
         
         
-<<<<<<< HEAD
         )
 
       list(GET status 0 status_code)
@@ -224,33 +157,6 @@ foreach(i RANGE ${retry_number})
       endif()
     endif()
   endif()
-=======
-    )
-
-    list(GET status 0 status_code)
-    list(GET status 1 status_string)
-
-    if(status_code EQUAL 0)
-      check_file_hash(has_hash hash_is_good)
-      if(has_hash AND NOT hash_is_good)
-        message(STATUS "Hash mismatch, removing...")
-        file(REMOVE "/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/can_lib.tar.gz")
-      else()
-        message(STATUS "Downloading... done")
-        return()
-      endif()
-    else()
-      string(APPEND logFailedURLs "error: downloading '${url}' failed
-       status_code: ${status_code}
-       status_string: ${status_string}
-       log:
-       --- LOG BEGIN ---
-       ${log}
-       --- LOG END ---
-       "
-      )
-    endif()
->>>>>>> aa20f60 (include all shit)
   endforeach()
 endforeach()
 

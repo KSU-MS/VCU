@@ -1,35 +1,21 @@
-<<<<<<< HEAD
 # ninja log v7
-1	21	1763938031826060918	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-mkdir	c4dc67fcbcf5b89d
-1	21	1763938031826060918	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-mkdir	c4dc67fcbcf5b89d
-22	391	1763938032194072638	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-download	a4a3861aef539174
-22	391	1763938032194072638	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-download	a4a3861aef539174
-391	589	1763938032198072765	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-update	2b6147678736974b
-391	589	1763938032198072765	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-update	2b6147678736974b
-589	610	1763938032414079644	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-patch	9aa8ddc7d44516ca
-589	610	1763938032414079644	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-patch	9aa8ddc7d44516ca
-610	628	1763938032434080280	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-configure	b087b62f8e38b684
-610	628	1763938032434080280	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-configure	b087b62f8e38b684
-628	647	1763938032450080790	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-build	dce1ec531fa686f0
-628	647	1763938032450080790	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-build	dce1ec531fa686f0
-647	663	1763938032466081299	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-install	581ac42755a4e13c
-647	663	1763938032466081299	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-install	581ac42755a4e13c
-663	682	1763938032486081937	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-test	eeef70a059c9ec35
-663	682	1763938032486081937	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-test	eeef70a059c9ec35
-682	707	1763938032514082828	CMakeFiles/teensy_cmake_macros-populate-complete	d0ff67e615d2b841
-682	707	1763938032514082828	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-done	d0ff67e615d2b841
-682	707	1763938032514082828	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/CMakeFiles/teensy_cmake_macros-populate-complete	d0ff67e615d2b841
-682	707	1763938032514082828	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-done	d0ff67e615d2b841
-=======
-# ninja log v5
-0	69	1763915559158478950	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-mkdir	c71f5a0e806c1328
-69	413	1763915559502476636	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-download	6fafd54c58a35f22
-413	616	0	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-update	546c4163a419456a
-617	636	1763915559726475130	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-patch	4eeb1ecd0a05b398
-636	655	1763915559742475022	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-configure	331fb5fafb0d28aa
-655	673	1763915559762474888	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-build	52126be2aa92db94
-673	690	1763915559778474780	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-install	f81ffbb72cc4d76b
-690	707	1763915559794474672	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-test	d090be252705191a
-707	732	1763915559818474511	CMakeFiles/teensy_cmake_macros-populate-complete	b475513f5dbbed07
-707	732	1763915559818474511	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-done	b475513f5dbbed07
->>>>>>> aa20f60 (include all shit)
+1	20	1764714030539789532	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-mkdir	c4dc67fcbcf5b89d
+1	20	1764714030539789532	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-mkdir	c4dc67fcbcf5b89d
+20	361	1764714030879787443	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-download	a4a3861aef539174
+20	361	1764714030879787443	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-download	a4a3861aef539174
+361	559	1764714030879787443	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-update	2b6147678736974b
+361	559	1764714030879787443	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-update	2b6147678736974b
+559	580	1764714031099786091	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-patch	9aa8ddc7d44516ca
+559	580	1764714031099786091	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-patch	9aa8ddc7d44516ca
+580	598	1764714031115785993	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-configure	b087b62f8e38b684
+580	598	1764714031115785993	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-configure	b087b62f8e38b684
+598	617	1764714031135785870	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-build	dce1ec531fa686f0
+598	617	1764714031135785870	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-build	dce1ec531fa686f0
+617	635	1764714031151785772	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-install	581ac42755a4e13c
+617	635	1764714031151785772	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-install	581ac42755a4e13c
+635	653	1764714031171785649	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-test	eeef70a059c9ec35
+635	653	1764714031171785649	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-test	eeef70a059c9ec35
+653	681	1764714031199785476	CMakeFiles/teensy_cmake_macros-populate-complete	d0ff67e615d2b841
+653	681	1764714031199785476	teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-done	d0ff67e615d2b841
+653	681	1764714031199785476	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/CMakeFiles/teensy_cmake_macros-populate-complete	d0ff67e615d2b841
+653	681	1764714031199785476	/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-done	d0ff67e615d2b841

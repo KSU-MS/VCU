@@ -32,7 +32,7 @@ CMAKE_CXX_COMPILER_AR:FILEPATH=/home/klee/tools/arm-gnu-toolchain-14.3.rel1-x86_
 // for the GCC compiler
 CMAKE_CXX_COMPILER_RANLIB:FILEPATH=/home/klee/tools/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-gcc-ranlib
 
-CMAKE_CXX_FLAGS:STRING= -mthumb -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-d16 -Wno-overloaded-virtual -Wno-unused-function -Wno-tautological-compare -Wno-cpp
+CMAKE_CXX_FLAGS:STRING= -mthumb -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-d16 -Wno-unused-function -Wno-tautological-compare -Wno-cpp
 
 //Flags used by the CXX compiler during DEBUG builds.
 CMAKE_CXX_FLAGS_DEBUG:STRING=-g
@@ -54,7 +54,7 @@ CMAKE_C_COMPILER_AR:FILEPATH=/home/klee/tools/arm-gnu-toolchain-14.3.rel1-x86_64
 // for the GCC compiler
 CMAKE_C_COMPILER_RANLIB:FILEPATH=/home/klee/tools/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-gcc-ranlib
 
-CMAKE_C_FLAGS:STRING= -mthumb -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-d16 -Wno-overloaded-virtual -Wno-unused-function -Wno-tautological-compare -Wno-cpp
+CMAKE_C_FLAGS:STRING= -mthumb -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-d16 -Wno-unused-function -Wno-tautological-compare -Wno-cpp
 
 //Flags used by the C compiler during DEBUG builds.
 CMAKE_C_FLAGS_DEBUG:STRING=-g
@@ -83,7 +83,6 @@ CMAKE_EXE_LINKER_FLAGS_RELEASE:STRING=
 //Flags used by the linker during RELWITHDEBINFO builds.
 CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO:STRING=
 
-<<<<<<< HEAD
 //Enable/Disable output of build database during the build.
 CMAKE_EXPORT_BUILD_DATABASE:BOOL=
 
@@ -93,11 +92,6 @@ CMAKE_EXPORT_COMPILE_COMMANDS:UNINITIALIZED=ON
 //Value Computed by CMake.
 CMAKE_FIND_PACKAGE_REDIRECTS_DIR:STATIC=/home/klee/Github/VCU/build/CMakeFiles/pkgRedirects
 
-=======
-//No help, variable specified on the command line.
-CMAKE_EXPORT_COMPILE_COMMANDS:UNINITIALIZED=ON
-
->>>>>>> aa20f60 (include all shit)
 //Install path prefix, prepended onto install directories.
 CMAKE_INSTALL_PREFIX:PATH=/usr/local
 
@@ -201,12 +195,9 @@ CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO:STRING=
 //Path to a program.
 CMAKE_STRIP:FILEPATH=/home/klee/tools/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-strip
 
-<<<<<<< HEAD
 //Path to a program.
 CMAKE_TAPI:FILEPATH=CMAKE_TAPI-NOTFOUND
 
-=======
->>>>>>> aa20f60 (include all shit)
 //The CMake toolchain file
 CMAKE_TOOLCHAIN_FILE:FILEPATH=/home/klee/Github/VCU/cmake/toolchains/teensy41.cmake
 
@@ -306,12 +297,9 @@ FETCHCONTENT_UPDATES_DISCONNECTED_TEENSY_CORES:BOOL=OFF
 //Enables UPDATE_DISCONNECTED behavior just for population of Time
 FETCHCONTENT_UPDATES_DISCONNECTED_TIME:BOOL=OFF
 
-<<<<<<< HEAD
 //Git command line client
 GIT_EXECUTABLE:FILEPATH=/usr/bin/git
 
-=======
->>>>>>> aa20f60 (include all shit)
 //Set to the Teensy version corresponding to your board (30 or
 // 31 allowed)
 TEENSY_VERSION:STRING=41
@@ -320,24 +308,18 @@ TEENSY_VERSION:STRING=41
 firmware_BINARY_DIR:STATIC=/home/klee/Github/VCU/build/src
 
 //Value Computed by CMake
-<<<<<<< HEAD
 firmware_IS_TOP_LEVEL:STATIC=OFF
 
 //Value Computed by CMake
-=======
->>>>>>> aa20f60 (include all shit)
 firmware_SOURCE_DIR:STATIC=/home/klee/Github/VCU/src
 
 //Value Computed by CMake
 vcu_BINARY_DIR:STATIC=/home/klee/Github/VCU/build/src
 
 //Value Computed by CMake
-<<<<<<< HEAD
 vcu_IS_TOP_LEVEL:STATIC=OFF
 
 //Value Computed by CMake
-=======
->>>>>>> aa20f60 (include all shit)
 vcu_SOURCE_DIR:STATIC=/home/klee/Github/VCU/src
 
 
@@ -355,15 +337,9 @@ CMAKE_CACHEFILE_DIR:INTERNAL=/home/klee/Github/VCU/build
 //Major version of cmake used to create the current loaded cache
 CMAKE_CACHE_MAJOR_VERSION:INTERNAL=3
 //Minor version of cmake used to create the current loaded cache
-<<<<<<< HEAD
 CMAKE_CACHE_MINOR_VERSION:INTERNAL=31
 //Patch version of cmake used to create the current loaded cache
 CMAKE_CACHE_PATCH_VERSION:INTERNAL=6
-=======
-CMAKE_CACHE_MINOR_VERSION:INTERNAL=18
-//Patch version of cmake used to create the current loaded cache
-CMAKE_CACHE_PATCH_VERSION:INTERNAL=4
->>>>>>> aa20f60 (include all shit)
 //Path to CMake executable.
 CMAKE_COMMAND:INTERNAL=/usr/bin/cmake
 //Path to cpack program executable.
@@ -413,11 +389,8 @@ CMAKE_EXE_LINKER_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1
 CMAKE_EXE_LINKER_FLAGS_RELEASE-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO
 CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
-<<<<<<< HEAD
 //ADVANCED property for variable: CMAKE_EXPORT_BUILD_DATABASE
 CMAKE_EXPORT_BUILD_DATABASE-ADVANCED:INTERNAL=1
-=======
->>>>>>> aa20f60 (include all shit)
 //Name of external makefile project generator.
 CMAKE_EXTRA_GENERATOR:INTERNAL=
 //CMAKE_FIND_ROOT_PATH_MODE_INCLUDE
@@ -468,11 +441,7 @@ CMAKE_RANLIB-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_READELF
 CMAKE_READELF-ADVANCED:INTERNAL=1
 //Path to CMake installation.
-<<<<<<< HEAD
 CMAKE_ROOT:INTERNAL=/usr/share/cmake-3.31
-=======
-CMAKE_ROOT:INTERNAL=/usr/share/cmake-3.18
->>>>>>> aa20f60 (include all shit)
 //ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS
 CMAKE_SHARED_LINKER_FLAGS-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS_DEBUG
@@ -499,11 +468,8 @@ CMAKE_STATIC_LINKER_FLAGS_RELEASE-ADVANCED:INTERNAL=1
 CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_STRIP
 CMAKE_STRIP-ADVANCED:INTERNAL=1
-<<<<<<< HEAD
 //ADVANCED property for variable: CMAKE_TAPI
 CMAKE_TAPI-ADVANCED:INTERNAL=1
-=======
->>>>>>> aa20f60 (include all shit)
 //uname command
 CMAKE_UNAME:INTERNAL=/usr/bin/uname
 //ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE
@@ -513,11 +479,8 @@ CPP_COMPILE_FLAGS:INTERNAL=-O2 -g -Wall -ffunction-sections -fdata-sections  -MM
 //C_COMPILE_FLAGS
 C_COMPILE_FLAGS:INTERNAL=-O2 -g -Wall -ffunction-sections -fdata-sections  -MMD  -mthumb -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-d16  -D__IMXRT1062__ -DTEENSYDUINO=159  -DARDUINO=10607 -DARDUINO_TEENSY41 -DF_CPU=600000000 -DUSB_SERIAL -DLAYOUT_US_ENGLISH
 DeclareAndFetch_libraries_List:INTERNAL=**teensy_cmake_macros**
-<<<<<<< HEAD
 //ADVANCED property for variable: GIT_EXECUTABLE
 GIT_EXECUTABLE-ADVANCED:INTERNAL=1
-=======
->>>>>>> aa20f60 (include all shit)
 //LINK_FLAGS
 LINK_FLAGS:INTERNAL=-O2  -Wl,--gc-sections,--relax   -mthumb -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-d16  -T/home/klee/Github/VCU/build/_deps/teensy_cores-src/teensy4/imxrt1062_t41.ld -lm
 //S_COMPILE_FLAGS

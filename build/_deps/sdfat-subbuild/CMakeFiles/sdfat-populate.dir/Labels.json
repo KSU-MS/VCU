@@ -11,7 +11,6 @@
 			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/CMakeFiles/sdfat-populate-complete.rule"
 		},
 		{
-<<<<<<< HEAD
 			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-build.rule"
 		},
 		{
@@ -21,15 +20,12 @@
 			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-download.rule"
 		},
 		{
-=======
->>>>>>> aa20f60 (include all shit)
 			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-install.rule"
 		},
 		{
 			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-mkdir.rule"
 		},
 		{
-<<<<<<< HEAD
 			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-patch.rule"
 		},
 		{
@@ -37,24 +33,6 @@
 		},
 		{
 			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-update.rule"
-=======
-			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-download.rule"
-		},
-		{
-			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-update.rule"
-		},
-		{
-			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-patch.rule"
-		},
-		{
-			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-configure.rule"
-		},
-		{
-			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-build.rule"
-		},
-		{
-			"file" : "/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-test.rule"
->>>>>>> aa20f60 (include all shit)
 		}
 	],
 	"target" : 

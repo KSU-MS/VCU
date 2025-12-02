@@ -1,35 +1,21 @@
-<<<<<<< HEAD
 # ninja log v7
-1	20	1763938037574243820	time-populate-prefix/src/time-populate-stamp/time-populate-mkdir	834c39ef50cec5ac
-1	20	1763938037574243820	/home/klee/Github/VCU/build/_deps/time-subbuild/time-populate-prefix/src/time-populate-stamp/time-populate-mkdir	834c39ef50cec5ac
-20	674	1763938038230264672	time-populate-prefix/src/time-populate-stamp/time-populate-download	b9f4756543ee6b3
-20	674	1763938038230264672	/home/klee/Github/VCU/build/_deps/time-subbuild/time-populate-prefix/src/time-populate-stamp/time-populate-download	b9f4756543ee6b3
-674	863	1763938038230264672	time-populate-prefix/src/time-populate-stamp/time-populate-update	b36549ac4e4c14be
-674	863	1763938038230264672	/home/klee/Github/VCU/build/_deps/time-subbuild/time-populate-prefix/src/time-populate-stamp/time-populate-update	b36549ac4e4c14be
-863	884	1763938038438271282	time-populate-prefix/src/time-populate-stamp/time-populate-patch	d57b45d3cd2935ad
-863	884	1763938038438271282	/home/klee/Github/VCU/build/_deps/time-subbuild/time-populate-prefix/src/time-populate-stamp/time-populate-patch	d57b45d3cd2935ad
-884	900	1763938038454271791	time-populate-prefix/src/time-populate-stamp/time-populate-configure	b958025dde67cd0e
-884	900	1763938038454271791	/home/klee/Github/VCU/build/_deps/time-subbuild/time-populate-prefix/src/time-populate-stamp/time-populate-configure	b958025dde67cd0e
-900	916	1763938038470272299	time-populate-prefix/src/time-populate-stamp/time-populate-build	bb962a602286bc2a
-900	916	1763938038470272299	/home/klee/Github/VCU/build/_deps/time-subbuild/time-populate-prefix/src/time-populate-stamp/time-populate-build	bb962a602286bc2a
-916	933	1763938038486272808	time-populate-prefix/src/time-populate-stamp/time-populate-install	4c0259b0450585e7
-916	933	1763938038486272808	/home/klee/Github/VCU/build/_deps/time-subbuild/time-populate-prefix/src/time-populate-stamp/time-populate-install	4c0259b0450585e7
-933	951	1763938038506273443	time-populate-prefix/src/time-populate-stamp/time-populate-test	44abd592392987ad
-933	951	1763938038506273443	/home/klee/Github/VCU/build/_deps/time-subbuild/time-populate-prefix/src/time-populate-stamp/time-populate-test	44abd592392987ad
-951	976	1763938038530274206	CMakeFiles/time-populate-complete	3b8c9932a1b08f0b
-951	976	1763938038530274206	time-populate-prefix/src/time-populate-stamp/time-populate-done	3b8c9932a1b08f0b
-951	976	1763938038530274206	/home/klee/Github/VCU/build/_deps/time-subbuild/CMakeFiles/time-populate-complete	3b8c9932a1b08f0b
-951	976	1763938038530274206	/home/klee/Github/VCU/build/_deps/time-subbuild/time-populate-prefix/src/time-populate-stamp/time-populate-done	3b8c9932a1b08f0b
-=======
-# ninja log v5
-0	67	1763915565086439097	time-populate-prefix/src/time-populate-stamp/time-populate-mkdir	34418a71ec3a4117
-67	396	1763915565414436893	time-populate-prefix/src/time-populate-stamp/time-populate-download	a4aa8bdc78d0dd8f
-396	633	0	time-populate-prefix/src/time-populate-stamp/time-populate-update	a4754911f1bc862b
-633	653	1763915565670435174	time-populate-prefix/src/time-populate-stamp/time-populate-patch	e3299884179fdc98
-653	671	1763915565690435039	time-populate-prefix/src/time-populate-stamp/time-populate-configure	591cf7bbcfedaf1c
-672	689	1763915565706434932	time-populate-prefix/src/time-populate-stamp/time-populate-build	67b22a6aef9f50f8
-689	707	1763915565726434797	time-populate-prefix/src/time-populate-stamp/time-populate-install	5dbf9cb7566304b2
-707	723	1763915565742434690	time-populate-prefix/src/time-populate-stamp/time-populate-test	d285a7ce83268eb2
-723	749	1763915565766434528	CMakeFiles/time-populate-complete	5774a1754d06b166
-723	749	1763915565766434528	time-populate-prefix/src/time-populate-stamp/time-populate-done	5774a1754d06b166
->>>>>>> aa20f60 (include all shit)
+0	18	1764714036019755856	time-populate-prefix/src/time-populate-stamp/time-populate-mkdir	834c39ef50cec5ac
+0	18	1764714036019755856	/home/klee/Github/VCU/build/_deps/time-subbuild/time-populate-prefix/src/time-populate-stamp/time-populate-mkdir	834c39ef50cec5ac
+18	306	1764714036303754110	time-populate-prefix/src/time-populate-stamp/time-populate-download	b9f4756543ee6b3
+18	306	1764714036303754110	/home/klee/Github/VCU/build/_deps/time-subbuild/time-populate-prefix/src/time-populate-stamp/time-populate-download	b9f4756543ee6b3
+306	519	1764714036307754087	time-populate-prefix/src/time-populate-stamp/time-populate-update	b36549ac4e4c14be
+306	519	1764714036307754087	/home/klee/Github/VCU/build/_deps/time-subbuild/time-populate-prefix/src/time-populate-stamp/time-populate-update	b36549ac4e4c14be
+519	539	1764714036539752661	time-populate-prefix/src/time-populate-stamp/time-populate-patch	d57b45d3cd2935ad
+519	539	1764714036539752661	/home/klee/Github/VCU/build/_deps/time-subbuild/time-populate-prefix/src/time-populate-stamp/time-populate-patch	d57b45d3cd2935ad
+539	558	1764714036555752562	time-populate-prefix/src/time-populate-stamp/time-populate-configure	b958025dde67cd0e
+539	558	1764714036555752562	/home/klee/Github/VCU/build/_deps/time-subbuild/time-populate-prefix/src/time-populate-stamp/time-populate-configure	b958025dde67cd0e
+558	576	1764714036575752439	time-populate-prefix/src/time-populate-stamp/time-populate-build	bb962a602286bc2a
+558	576	1764714036575752439	/home/klee/Github/VCU/build/_deps/time-subbuild/time-populate-prefix/src/time-populate-stamp/time-populate-build	bb962a602286bc2a
+576	594	1764714036595752316	time-populate-prefix/src/time-populate-stamp/time-populate-install	4c0259b0450585e7
+576	594	1764714036595752316	/home/klee/Github/VCU/build/_deps/time-subbuild/time-populate-prefix/src/time-populate-stamp/time-populate-install	4c0259b0450585e7
+595	613	1764714036611752217	time-populate-prefix/src/time-populate-stamp/time-populate-test	44abd592392987ad
+595	613	1764714036611752217	/home/klee/Github/VCU/build/_deps/time-subbuild/time-populate-prefix/src/time-populate-stamp/time-populate-test	44abd592392987ad
+613	640	1764714036639752046	CMakeFiles/time-populate-complete	3b8c9932a1b08f0b
+613	640	1764714036639752046	time-populate-prefix/src/time-populate-stamp/time-populate-done	3b8c9932a1b08f0b
+613	640	1764714036639752046	/home/klee/Github/VCU/build/_deps/time-subbuild/CMakeFiles/time-populate-complete	3b8c9932a1b08f0b
+613	640	1764714036639752046	/home/klee/Github/VCU/build/_deps/time-subbuild/time-populate-prefix/src/time-populate-stamp/time-populate-done	3b8c9932a1b08f0b

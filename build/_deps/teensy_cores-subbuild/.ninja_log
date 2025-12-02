@@ -1,35 +1,21 @@
-<<<<<<< HEAD
 # ninja log v7
-1	19	1763938032602085630	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-mkdir	e5ce0d91f3d521e8
-1	19	1763938032602085630	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-mkdir	e5ce0d91f3d521e8
-19	1009	1763938033590117086	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-download	c64ee873c07c9d17
-19	1009	1763938033590117086	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-download	c64ee873c07c9d17
-1009	1262	1763938033590117086	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-update	c783cfcfe245a2e8
-1009	1262	1763938033590117086	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-update	c783cfcfe245a2e8
-1262	1279	1763938033862125745	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-patch	e78823af82d3b743
-1262	1279	1763938033862125745	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-patch	e78823af82d3b743
-1279	1296	1763938033878126254	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-configure	f9edfab08e25da26
-1279	1296	1763938033878126254	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-configure	f9edfab08e25da26
-1296	1315	1763938033898126890	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-build	6ffb38457b1423e6
-1296	1315	1763938033898126890	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-build	6ffb38457b1423e6
-1315	1330	1763938033914127400	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-install	15302505215fa3e7
-1315	1330	1763938033914127400	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-install	15302505215fa3e7
-1330	1347	1763938033930127909	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-test	f34168d8f63b7b68
-1330	1347	1763938033930127909	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-test	f34168d8f63b7b68
-1347	1372	1763938033954128673	CMakeFiles/teensy_cores-populate-complete	eba5c421e3555ad9
-1347	1372	1763938033954128673	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-done	eba5c421e3555ad9
-1347	1372	1763938033954128673	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/CMakeFiles/teensy_cores-populate-complete	eba5c421e3555ad9
-1347	1372	1763938033954128673	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-done	eba5c421e3555ad9
-=======
-# ninja log v5
-1	67	1763915559962473542	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-mkdir	e0b4030ec2ba6fae
-67	964	1763915560862467489	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-download	99445cdbdfda3a91
-964	1604	0	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-update	127cd3c41a4b3423
-1604	1623	1763915561522463051	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-patch	32429cfdfd23307b
-1623	1641	1763915561538462944	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-configure	1fa4a0f786afdd18
-1641	1657	1763915561554462836	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-build	12dcfd9369364f93
-1657	1673	1763915561570462729	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-install	76e3d2ad282f8f54
-1673	1689	1763915561586462621	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-test	b67bcd66a4a5cda2
-1689	1714	1763915561610462460	CMakeFiles/teensy_cores-populate-complete	fc2ba05c9ae097fa
-1689	1714	1763915561610462460	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-done	fc2ba05c9ae097fa
->>>>>>> aa20f60 (include all shit)
+0	19	1764714031287784935	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-mkdir	e5ce0d91f3d521e8
+0	19	1764714031287784935	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-mkdir	e5ce0d91f3d521e8
+19	1024	1764714032291778766	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-download	c64ee873c07c9d17
+19	1024	1764714032291778766	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-download	c64ee873c07c9d17
+1024	1286	1764714032295778741	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-update	c783cfcfe245a2e8
+1024	1286	1764714032295778741	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-update	c783cfcfe245a2e8
+1286	1307	1764714032575777020	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-patch	e78823af82d3b743
+1286	1307	1764714032575777020	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-patch	e78823af82d3b743
+1307	1325	1764714032595776897	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-configure	f9edfab08e25da26
+1307	1325	1764714032595776897	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-configure	f9edfab08e25da26
+1325	1343	1764714032611776799	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-build	6ffb38457b1423e6
+1325	1343	1764714032611776799	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-build	6ffb38457b1423e6
+1343	1358	1764714032627776700	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-install	15302505215fa3e7
+1343	1358	1764714032627776700	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-install	15302505215fa3e7
+1358	1376	1764714032647776578	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-test	f34168d8f63b7b68
+1358	1376	1764714032647776578	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-test	f34168d8f63b7b68
+1376	1400	1764714032667776455	CMakeFiles/teensy_cores-populate-complete	eba5c421e3555ad9
+1376	1400	1764714032667776455	teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-done	eba5c421e3555ad9
+1376	1400	1764714032667776455	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/CMakeFiles/teensy_cores-populate-complete	eba5c421e3555ad9
+1376	1400	1764714032667776455	/home/klee/Github/VCU/build/_deps/teensy_cores-subbuild/teensy_cores-populate-prefix/src/teensy_cores-populate-stamp/teensy_cores-populate-done	eba5c421e3555ad9

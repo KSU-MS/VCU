@@ -11,7 +11,6 @@
 			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/CMakeFiles/teensy_cmake_macros-populate-complete.rule"
 		},
 		{
-<<<<<<< HEAD
 			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-build.rule"
 		},
 		{
@@ -21,15 +20,12 @@
 			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-download.rule"
 		},
 		{
-=======
->>>>>>> aa20f60 (include all shit)
 			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-install.rule"
 		},
 		{
 			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-mkdir.rule"
 		},
 		{
-<<<<<<< HEAD
 			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-patch.rule"
 		},
 		{
@@ -37,24 +33,6 @@
 		},
 		{
 			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-update.rule"
-=======
-			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-download.rule"
-		},
-		{
-			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-update.rule"
-		},
-		{
-			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-patch.rule"
-		},
-		{
-			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-configure.rule"
-		},
-		{
-			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-build.rule"
-		},
-		{
-			"file" : "/home/klee/Github/VCU/build/_deps/teensy_cmake_macros-subbuild/teensy_cmake_macros-populate-prefix/src/teensy_cmake_macros-populate-stamp/teensy_cmake_macros-populate-test.rule"
->>>>>>> aa20f60 (include all shit)
 		}
 	],
 	"target" : 

@@ -1,35 +1,21 @@
-<<<<<<< HEAD
 # ninja log v7
-0	21	1763938036474208845	sd-populate-prefix/src/sd-populate-stamp/sd-populate-mkdir	c29123a5f2cdafc4
-0	21	1763938036474208845	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-mkdir	c29123a5f2cdafc4
-21	721	1763938037174231104	sd-populate-prefix/src/sd-populate-stamp/sd-populate-download	6aca7a1388b359df
-21	721	1763938037174231104	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-download	6aca7a1388b359df
-721	909	1763938037174231104	sd-populate-prefix/src/sd-populate-stamp/sd-populate-update	83fd48da83abe30f
-721	909	1763938037174231104	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-update	83fd48da83abe30f
-909	930	1763938037382237716	sd-populate-prefix/src/sd-populate-stamp/sd-populate-patch	700f39fdf0349bc9
-909	930	1763938037382237716	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-patch	700f39fdf0349bc9
-930	950	1763938037402238352	sd-populate-prefix/src/sd-populate-stamp/sd-populate-configure	506fa2921f073e22
-930	950	1763938037402238352	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-configure	506fa2921f073e22
-950	968	1763938037418238861	sd-populate-prefix/src/sd-populate-stamp/sd-populate-build	82b82143dcd68660
-950	968	1763938037418238861	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-build	82b82143dcd68660
-968	986	1763938037438239497	sd-populate-prefix/src/sd-populate-stamp/sd-populate-install	8a80e75963a61865
-968	986	1763938037438239497	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-install	8a80e75963a61865
-986	1004	1763938037454240005	sd-populate-prefix/src/sd-populate-stamp/sd-populate-test	38b5451e5c597e52
-986	1004	1763938037454240005	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-test	38b5451e5c597e52
-1004	1030	1763938037482240896	CMakeFiles/sd-populate-complete	f039430596a174cc
-1004	1030	1763938037482240896	sd-populate-prefix/src/sd-populate-stamp/sd-populate-done	f039430596a174cc
-1004	1030	1763938037482240896	/home/klee/Github/VCU/build/_deps/sd-subbuild/CMakeFiles/sd-populate-complete	f039430596a174cc
-1004	1030	1763938037482240896	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-done	f039430596a174cc
-=======
-# ninja log v5
-0	65	1763915564262444634	sd-populate-prefix/src/sd-populate-stamp/sd-populate-mkdir	a42b664b546b29d
-66	410	1763915564606442322	sd-populate-prefix/src/sd-populate-stamp/sd-populate-download	994620a8385b1baa
-410	627	0	sd-populate-prefix/src/sd-populate-stamp/sd-populate-update	6cc6ea1918211f48
-627	647	1763915564842440736	sd-populate-prefix/src/sd-populate-stamp/sd-populate-patch	3f1e6d384abce2ee
-647	664	1763915564862440602	sd-populate-prefix/src/sd-populate-stamp/sd-populate-configure	f914d2232fe894a8
-664	682	1763915564878440494	sd-populate-prefix/src/sd-populate-stamp/sd-populate-build	2a8027ce90305b4a
-682	700	1763915564898440360	sd-populate-prefix/src/sd-populate-stamp/sd-populate-install	a3c39a3503095959
-700	717	1763915564914440253	sd-populate-prefix/src/sd-populate-stamp/sd-populate-test	8b498d70cd5281ef
-717	743	1763915564942440064	CMakeFiles/sd-populate-complete	a18fe2eededf2f3d
-717	743	1763915564942440064	sd-populate-prefix/src/sd-populate-stamp/sd-populate-done	a18fe2eededf2f3d
->>>>>>> aa20f60 (include all shit)
+0	19	1764714035263760502	sd-populate-prefix/src/sd-populate-stamp/sd-populate-mkdir	c29123a5f2cdafc4
+0	19	1764714035263760502	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-mkdir	c29123a5f2cdafc4
+19	367	1764714035611758364	sd-populate-prefix/src/sd-populate-stamp/sd-populate-download	6aca7a1388b359df
+19	367	1764714035611758364	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-download	6aca7a1388b359df
+367	566	1764714035611758364	sd-populate-prefix/src/sd-populate-stamp/sd-populate-update	83fd48da83abe30f
+367	566	1764714035611758364	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-update	83fd48da83abe30f
+566	585	1764714035827757037	sd-populate-prefix/src/sd-populate-stamp/sd-populate-patch	700f39fdf0349bc9
+566	585	1764714035827757037	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-patch	700f39fdf0349bc9
+585	604	1764714035847756913	sd-populate-prefix/src/sd-populate-stamp/sd-populate-configure	506fa2921f073e22
+585	604	1764714035847756913	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-configure	506fa2921f073e22
+604	623	1764714035867756790	sd-populate-prefix/src/sd-populate-stamp/sd-populate-build	82b82143dcd68660
+604	623	1764714035867756790	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-build	82b82143dcd68660
+623	642	1764714035887756668	sd-populate-prefix/src/sd-populate-stamp/sd-populate-install	8a80e75963a61865
+623	642	1764714035887756668	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-install	8a80e75963a61865
+642	660	1764714035903756569	sd-populate-prefix/src/sd-populate-stamp/sd-populate-test	38b5451e5c597e52
+642	660	1764714035903756569	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-test	38b5451e5c597e52
+660	685	1764714035931756397	CMakeFiles/sd-populate-complete	f039430596a174cc
+660	685	1764714035931756397	sd-populate-prefix/src/sd-populate-stamp/sd-populate-done	f039430596a174cc
+660	685	1764714035931756397	/home/klee/Github/VCU/build/_deps/sd-subbuild/CMakeFiles/sd-populate-complete	f039430596a174cc
+660	685	1764714035931756397	/home/klee/Github/VCU/build/_deps/sd-subbuild/sd-populate-prefix/src/sd-populate-stamp/sd-populate-done	f039430596a174cc

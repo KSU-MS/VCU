@@ -4,7 +4,6 @@
 /home/klee/Github/VCU/build/_deps/sdfat-subbuild/CMakeFiles/sdfat-populate
 /home/klee/Github/VCU/build/_deps/sdfat-subbuild/CMakeFiles/sdfat-populate.rule
 /home/klee/Github/VCU/build/_deps/sdfat-subbuild/CMakeFiles/sdfat-populate-complete.rule
-<<<<<<< HEAD
 /home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-build.rule
 /home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-configure.rule
 /home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-download.rule
@@ -13,13 +12,3 @@
 /home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-patch.rule
 /home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-test.rule
 /home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-update.rule
-=======
-/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-install.rule
-/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-mkdir.rule
-/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-download.rule
-/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-update.rule
-/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-patch.rule
-/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-configure.rule
-/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-build.rule
-/home/klee/Github/VCU/build/_deps/sdfat-subbuild/sdfat-populate-prefix/src/sdfat-populate-stamp/sdfat-populate-test.rule
->>>>>>> aa20f60 (include all shit)

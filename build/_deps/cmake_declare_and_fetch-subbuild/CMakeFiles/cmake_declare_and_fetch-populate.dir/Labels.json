@@ -11,7 +11,6 @@
 			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/CMakeFiles/cmake_declare_and_fetch-populate-complete.rule"
 		},
 		{
-<<<<<<< HEAD
 			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-build.rule"
 		},
 		{
@@ -21,15 +20,12 @@
 			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-download.rule"
 		},
 		{
-=======
->>>>>>> aa20f60 (include all shit)
 			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-install.rule"
 		},
 		{
 			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-mkdir.rule"
 		},
 		{
-<<<<<<< HEAD
 			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-patch.rule"
 		},
 		{
@@ -37,24 +33,6 @@
 		},
 		{
 			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-update.rule"
-=======
-			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-download.rule"
-		},
-		{
-			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-update.rule"
-		},
-		{
-			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-patch.rule"
-		},
-		{
-			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-configure.rule"
-		},
-		{
-			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-build.rule"
-		},
-		{
-			"file" : "/home/klee/Github/VCU/build/_deps/cmake_declare_and_fetch-subbuild/cmake_declare_and_fetch-populate-prefix/src/cmake_declare_and_fetch-populate-stamp/cmake_declare_and_fetch-populate-test.rule"
->>>>>>> aa20f60 (include all shit)
 		}
 	],
 	"target" : 

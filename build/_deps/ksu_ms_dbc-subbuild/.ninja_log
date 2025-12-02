@@ -1,35 +1,21 @@
-<<<<<<< HEAD
 # ninja log v7
-1	24	1763938040330331392	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-mkdir	ec9e54548484d04e
-1	24	1763938040330331392	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-mkdir	ec9e54548484d04e
-24	372	1763938040678342444	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-download	3cff80cfef347b26
-24	372	1763938040678342444	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-download	3cff80cfef347b26
-372	393	1763938040702343206	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-update	b8532b7b18db38f3
-372	393	1763938040702343206	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-update	b8532b7b18db38f3
-393	410	1763938040718343714	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-patch	f7848def3d7b5b5f
-393	410	1763938040718343714	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-patch	f7848def3d7b5b5f
-410	428	1763938040734344222	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-configure	3d1d626d4274b448
-410	428	1763938040734344222	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-configure	3d1d626d4274b448
-428	446	1763938040754344857	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-build	de3b13d96ca48b3b
-428	446	1763938040754344857	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-build	de3b13d96ca48b3b
-446	464	1763938040770345365	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-install	c2f7da70bf388da3
-446	464	1763938040770345365	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-install	c2f7da70bf388da3
-464	482	1763938040790346000	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-test	c5a27a513144118e
-464	482	1763938040790346000	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-test	c5a27a513144118e
-482	509	1763938040818346889	CMakeFiles/ksu_ms_dbc-populate-complete	c4e610eb4a02edd2
-482	509	1763938040818346889	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-done	c4e610eb4a02edd2
-482	509	1763938040818346889	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/CMakeFiles/ksu_ms_dbc-populate-complete	c4e610eb4a02edd2
-482	509	1763938040818346889	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-done	c4e610eb4a02edd2
-=======
-# ninja log v5
-0	66	1763915567546422575	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-mkdir	9f16b8a2147e81e2
-66	446	1763915567926420023	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-download	df29cd93abc42b46
-446	466	1763915567942419916	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-update	9dfca65b95cc0a4f
-466	485	1763915567962419782	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-patch	e08f405f9dbef4b3
-485	502	1763915567982419648	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-configure	dcd4b77d1a9490c2
-502	520	1763915567998419540	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-build	bbaa59bb782946c8
-520	537	1763915568014419433	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-install	d6321428e86875a2
-537	554	1763915568030419325	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-test	88447eed19497133
-554	579	1763915568058419137	CMakeFiles/ksu_ms_dbc-populate-complete	421dfd04f5a2e0a4
-554	579	1763915568058419137	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-done	421dfd04f5a2e0a4
->>>>>>> aa20f60 (include all shit)
+1	20	1764714038243742189	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-mkdir	ec9e54548484d04e
+1	20	1764714038243742189	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-mkdir	ec9e54548484d04e
+20	337	1764714038559740246	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-download	3cff80cfef347b26
+20	337	1764714038559740246	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-download	3cff80cfef347b26
+338	356	1764714038579740124	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-update	b8532b7b18db38f3
+338	356	1764714038579740124	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-update	b8532b7b18db38f3
+356	374	1764714038595740025	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-patch	f7848def3d7b5b5f
+356	374	1764714038595740025	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-patch	f7848def3d7b5b5f
+374	392	1764714038615739902	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-configure	3d1d626d4274b448
+374	392	1764714038615739902	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-configure	3d1d626d4274b448
+392	409	1764714038631739804	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-build	de3b13d96ca48b3b
+392	409	1764714038631739804	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-build	de3b13d96ca48b3b
+409	427	1764714038647739706	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-install	c2f7da70bf388da3
+409	427	1764714038647739706	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-install	c2f7da70bf388da3
+427	445	1764714038667739583	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-test	c5a27a513144118e
+427	445	1764714038667739583	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-test	c5a27a513144118e
+445	472	1764714038695739410	CMakeFiles/ksu_ms_dbc-populate-complete	c4e610eb4a02edd2
+445	472	1764714038695739410	ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-done	c4e610eb4a02edd2
+445	472	1764714038695739410	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/CMakeFiles/ksu_ms_dbc-populate-complete	c4e610eb4a02edd2
+445	472	1764714038695739410	/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/ksu_ms_dbc-populate-prefix/src/ksu_ms_dbc-populate-stamp/ksu_ms_dbc-populate-done	c4e610eb4a02edd2

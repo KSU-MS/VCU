@@ -1,35 +1,21 @@
-<<<<<<< HEAD
 # ninja log v7
-0	18	1763938039410302167	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-mkdir	cc9d04e1bb9cb3c3
-0	18	1763938039410302167	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-mkdir	cc9d04e1bb9cb3c3
-18	527	1763938039918318307	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-download	31ff2e9d5936cd7f
-18	527	1763938039918318307	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-download	31ff2e9d5936cd7f
-527	722	1763938039922318434	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-update	939793e77edd8e3c
-527	722	1763938039922318434	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-update	939793e77edd8e3c
-722	741	1763938040134325168	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-patch	6b148cd15f5708b0
-722	741	1763938040134325168	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-patch	6b148cd15f5708b0
-741	760	1763938040154325802	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-configure	e76cdbde6549e156
-741	760	1763938040154325802	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-configure	e76cdbde6549e156
-760	777	1763938040170326311	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-build	6b184e072a9bb247
-760	777	1763938040170326311	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-build	6b184e072a9bb247
-777	794	1763938040186326819	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-install	dc3193da087d6ca0
-777	794	1763938040186326819	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-install	dc3193da087d6ca0
-794	812	1763938040206327454	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-test	21c727927a752e71
-794	812	1763938040206327454	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-test	21c727927a752e71
-812	837	1763938040230328217	CMakeFiles/ksu_fw_common-populate-complete	3d16951d686833bf
-812	837	1763938040230328217	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-done	3d16951d686833bf
-812	837	1763938040230328217	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/CMakeFiles/ksu_fw_common-populate-complete	3d16951d686833bf
-812	837	1763938040230328217	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-done	3d16951d686833bf
-=======
-# ninja log v5
-0	68	1763915566750427920	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-mkdir	32f7026e1c82416e
-68	382	1763915567062425824	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-download	d36c752ca3922bed
-382	607	0	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-update	ede1d269c3d17c24
-607	627	1763915567306424186	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-patch	4f84e0de70011f86
-627	644	1763915567326424052	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-configure	55d9b2583e2f1433
-644	663	1763915567346423917	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-build	cbffb163f4a8a89
-663	680	1763915567362423810	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-install	28dc016fc4182fa5
-680	697	1763915567378423703	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-test	121a46ba3b1bdca7
-697	723	1763915567406423514	CMakeFiles/ksu_fw_common-populate-complete	329ca15dfd68379e
-697	723	1763915567406423514	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-done	329ca15dfd68379e
->>>>>>> aa20f60 (include all shit)
+0	19	1764714037511746687	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-mkdir	cc9d04e1bb9cb3c3
+0	19	1764714037511746687	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-mkdir	cc9d04e1bb9cb3c3
+19	313	1764714037807744868	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-download	31ff2e9d5936cd7f
+19	313	1764714037807744868	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-download	31ff2e9d5936cd7f
+313	538	1764714037807744868	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-update	939793e77edd8e3c
+313	538	1764714037807744868	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-update	939793e77edd8e3c
+538	559	1764714038051743369	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-patch	6b148cd15f5708b0
+538	559	1764714038051743369	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-patch	6b148cd15f5708b0
+559	577	1764714038071743245	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-configure	e76cdbde6549e156
+559	577	1764714038071743245	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-configure	e76cdbde6549e156
+577	596	1764714038087743147	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-build	6b184e072a9bb247
+577	596	1764714038087743147	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-build	6b184e072a9bb247
+596	614	1764714038107743025	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-install	dc3193da087d6ca0
+596	614	1764714038107743025	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-install	dc3193da087d6ca0
+614	631	1764714038123742926	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-test	21c727927a752e71
+614	631	1764714038123742926	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-test	21c727927a752e71
+631	657	1764714038151742754	CMakeFiles/ksu_fw_common-populate-complete	3d16951d686833bf
+631	657	1764714038151742754	ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-done	3d16951d686833bf
+631	657	1764714038151742754	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/CMakeFiles/ksu_fw_common-populate-complete	3d16951d686833bf
+631	657	1764714038151742754	/home/klee/Github/VCU/build/_deps/ksu_fw_common-subbuild/ksu_fw_common-populate-prefix/src/ksu_fw_common-populate-stamp/ksu_fw_common-populate-done	3d16951d686833bf

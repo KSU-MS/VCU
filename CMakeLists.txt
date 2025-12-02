@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.17)
 project(vcu C CXX)
 
 # Common ARM/Teensy flags
-set(TEENSY_COMMON_FLAGS "-mthumb -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-d16 -Wno-overloaded-virtual -Wno-unused-function -Wno-tautological-compare -Wno-cpp")
+set(TEENSY_COMMON_FLAGS "-mthumb -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-d16 -Wno-unused-function -Wno-tautological-compare -Wno-cpp")
 
 # Make sure both C and C++ use the same ABI/FPU
 set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${TEENSY_COMMON_FLAGS}"   CACHE STRING "" FORCE)

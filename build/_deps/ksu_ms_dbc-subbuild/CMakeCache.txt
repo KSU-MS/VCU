@@ -14,7 +14,6 @@
 # EXTERNAL cache entries
 ########################
 
-<<<<<<< HEAD
 //Enable/Disable output of build database during the build.
 CMAKE_EXPORT_BUILD_DATABASE:BOOL=
 
@@ -24,11 +23,6 @@ CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=
 //Value Computed by CMake.
 CMAKE_FIND_PACKAGE_REDIRECTS_DIR:STATIC=/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild/CMakeFiles/pkgRedirects
 
-=======
-//Enable/Disable output of compile commands during generation.
-CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=
-
->>>>>>> aa20f60 (include all shit)
 //Install path prefix, prepended onto install directories.
 CMAKE_INSTALL_PREFIX:PATH=/usr/local
 
@@ -61,12 +55,9 @@ CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 ksu_ms_dbc-populate_BINARY_DIR:STATIC=/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild
 
 //Value Computed by CMake
-<<<<<<< HEAD
 ksu_ms_dbc-populate_IS_TOP_LEVEL:STATIC=ON
 
 //Value Computed by CMake
-=======
->>>>>>> aa20f60 (include all shit)
 ksu_ms_dbc-populate_SOURCE_DIR:STATIC=/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbuild
 
 
@@ -79,26 +70,17 @@ CMAKE_CACHEFILE_DIR:INTERNAL=/home/klee/Github/VCU/build/_deps/ksu_ms_dbc-subbui
 //Major version of cmake used to create the current loaded cache
 CMAKE_CACHE_MAJOR_VERSION:INTERNAL=3
 //Minor version of cmake used to create the current loaded cache
-<<<<<<< HEAD
 CMAKE_CACHE_MINOR_VERSION:INTERNAL=31
 //Patch version of cmake used to create the current loaded cache
 CMAKE_CACHE_PATCH_VERSION:INTERNAL=6
-=======
-CMAKE_CACHE_MINOR_VERSION:INTERNAL=18
-//Patch version of cmake used to create the current loaded cache
-CMAKE_CACHE_PATCH_VERSION:INTERNAL=4
->>>>>>> aa20f60 (include all shit)
 //Path to CMake executable.
 CMAKE_COMMAND:INTERNAL=/usr/bin/cmake
 //Path to cpack program executable.
 CMAKE_CPACK_COMMAND:INTERNAL=/usr/bin/cpack
 //Path to ctest program executable.
 CMAKE_CTEST_COMMAND:INTERNAL=/usr/bin/ctest
-<<<<<<< HEAD
 //ADVANCED property for variable: CMAKE_EXPORT_BUILD_DATABASE
 CMAKE_EXPORT_BUILD_DATABASE-ADVANCED:INTERNAL=1
-=======
->>>>>>> aa20f60 (include all shit)
 //ADVANCED property for variable: CMAKE_EXPORT_COMPILE_COMMANDS
 CMAKE_EXPORT_COMPILE_COMMANDS-ADVANCED:INTERNAL=1
 //Name of external makefile project generator.
@@ -121,11 +103,7 @@ CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=1
 //Platform information initialized
 CMAKE_PLATFORM_INFO_INITIALIZED:INTERNAL=1
 //Path to CMake installation.
-<<<<<<< HEAD
 CMAKE_ROOT:INTERNAL=/usr/share/cmake-3.31
-=======
-CMAKE_ROOT:INTERNAL=/usr/share/cmake-3.18
->>>>>>> aa20f60 (include all shit)
 //ADVANCED property for variable: CMAKE_SKIP_INSTALL_RPATH
 CMAKE_SKIP_INSTALL_RPATH-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_SKIP_RPATH

@@ -1,9 +1,3 @@
-<<<<<<< HEAD
 /home/klee/Github/VCU/build/_deps/sdfat-subbuild/CMakeFiles/sdfat-populate.dir
 /home/klee/Github/VCU/build/_deps/sdfat-subbuild/CMakeFiles/edit_cache.dir
 /home/klee/Github/VCU/build/_deps/sdfat-subbuild/CMakeFiles/rebuild_cache.dir
-=======
-/home/klee/Github/VCU/build/_deps/sdfat-subbuild/CMakeFiles/rebuild_cache.dir
-/home/klee/Github/VCU/build/_deps/sdfat-subbuild/CMakeFiles/edit_cache.dir
-/home/klee/Github/VCU/build/_deps/sdfat-subbuild/CMakeFiles/sdfat-populate.dir
->>>>>>> aa20f60 (include all shit)
