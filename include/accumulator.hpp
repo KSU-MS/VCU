@@ -1,12 +1,11 @@
 #pragma once
 
+#include <array>
 #include <can_tools.hpp>
 #include <car.h>
 #include <parameters.hpp>
-#include <array>
 
-class Accumulator
-{
+class Accumulator {
 private:
   uint32_t time_last_msec = 0;
 
@@ -28,8 +27,7 @@ private:
   double consumed_power_wh = 0;
 
 public:
-  Accumulator(std::array<parameter, 25> *params, can_obj_car_h_t *dbc, canMan *acc_can,
-              bool (*can_message_check)());
+  Accumulator(std::array<parameter, 25> *params);
 
   inline uint8_t get_precharge_state() { return this->precharge_state; }
   inline bool get_imd_ok_hs() { return imd_ok_hs; }

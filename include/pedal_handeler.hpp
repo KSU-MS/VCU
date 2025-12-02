@@ -1,11 +1,10 @@
 #pragma once
 
+#include <can_tools.hpp>
 #include <car.h>
 #include <stdint.h>
-#include <can_tools.hpp>
 
-class Pedals
-{
+class Pedals {
 private:
   uint16_t raw_apps1;
   uint16_t raw_apps2;
@@ -42,8 +41,7 @@ private:
 public:
   Pedals(uint16_t bse_low_fault, uint16_t brake_start, uint16_t brake_end,
          uint16_t bse_high_fault, uint16_t apps_low_fault, uint16_t apps1_start,
-         uint16_t apps1_end, uint16_t apps2_start, uint16_t apps2_end, can_obj_car_h_t *dbc, canMan *inv_can, canMan *daq_can)
-  {
+         uint16_t apps1_end, uint16_t apps2_start, uint16_t apps2_end) {
 
     this->brake_ratio = 1 / float(brake_end - brake_start);
     this->brake_start = brake_start;
@@ -60,26 +58,21 @@ public:
   };
 
   // TODO: Add additional pedal maps with diffrent curves?
-  double get_torque_request(double apps_travel, double max_torque)
-  {
+  double get_torque_request(double apps_travel, double max_torque) {
     return apps_travel * max_torque;
   };
 
   // TODO: Make the release and apps_bse values confgiurable
   void update_travel(uint16_t raw_apps1, uint16_t raw_apps2,
-                     uint16_t raw_brake)
-  {
+                     uint16_t raw_brake) {
     this->raw_apps1 = raw_apps1;
     this->raw_apps2 = raw_apps2;
     this->raw_brake = raw_brake;
 
     // Get the pedal percentage in its throw from 0 to 1
-    if (raw_apps1 < apps_low_fault)
-    {
+    if (raw_apps1 < apps_low_fault) {
       apps_fault = true;
-    }
-    else
-    {
+    } else {
       apps1_travel = (raw_apps1 - apps1_start) * apps1_ratio;
       if (apps1_travel < 0)
         apps1_travel = 0;
@@ -87,12 +80,9 @@ public:
         apps1_travel = 1;
     }
 
-    if (raw_apps2 < apps_low_fault)
-    {
+    if (raw_apps2 < apps_low_fault) {
       apps_fault = true;
-    }
-    else
-    {
+    } else {
       apps2_travel = (raw_apps2 - apps2_start) * apps2_ratio;
       if (apps2_travel < 0)
         apps2_travel = 0;
@@ -102,12 +92,9 @@ public:
 
     // T.4.3.4
     // BSE check to make sure its not shorting
-    if (raw_brake > bse_high_fault || raw_brake < bse_low_fault)
-    {
+    if (raw_brake > bse_high_fault || raw_brake < bse_low_fault) {
       bse_fault = true;
-    }
-    else
-    {
+    } else {
       bse_fault = false;
       brake_travel = (raw_brake - brake_start) * brake_ratio;
       if (brake_travel < 0)
@@ -117,43 +104,36 @@ public:
     }
 
     // Reset if the pedals are released
-    if (this->apps1_travel < 0.1 && this->apps2_travel < 0.1)
-    {
+    if (this->apps1_travel < 0.1 && this->apps2_travel < 0.1) {
       apps_fault = false;
       apps_bse_fault = false;
     }
 
     // T.4.2.4
     // Check that there is no apps related faults
-    if (apps_fault == false && bse_fault == false && apps_bse_fault == false)
-    {
+    if (apps_fault == false && bse_fault == false && apps_bse_fault == false) {
 
       // Check that the pedals are reading within 10%
-      if ((fabs(apps1_travel - apps2_travel) < 0.3))
-      {
+      if ((fabs(apps1_travel - apps2_travel) < 0.3)) {
         travel = (apps1_travel + apps2_travel) / 2;
 
         // Check that the driver isn't using both pedals at once
-        if ((travel > 0.3) && (brake_travel > 0.3))
-        {
+        if ((travel > 0.3) && (brake_travel > 0.3)) {
           apps_bse_fault = true;
           travel = 0;
         }
-      }
-      else
-      {
+      } else {
         apps_fault = true;
         travel = 0;
       }
-    }
-    else
-    {
+    } else {
       travel = 0;
     }
   }
 
   void send_pedal_travel_message();
-  void send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2, uint16_t raw_brake);
+  void send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
+                              uint16_t raw_brake);
 
   inline bool get_bse_fault_ok_low() { return bse_fault; }
   inline bool get_apps_fault_ok_low() { return apps_fault; }

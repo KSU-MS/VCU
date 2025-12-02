@@ -2,8 +2,7 @@
 #include "car.h"
 #include "core_pins.h"
 
-void setup()
-{
+void setup() {
   consol.logln("Booting...");
 
   vcu.init_state_machine();
@@ -20,8 +19,7 @@ void setup()
   consol.logln("Booted");
 }
 
-void loop()
-{
+void loop() {
   //
   //// ADC Stage
   apps1.update();
@@ -34,12 +32,11 @@ void loop()
 
   //
   //// CAN Stage
-  update_acc_can();
-  update_inv_can();
-  update_daq_can();
+  data_handler_obj.process_acc_message();
+  data_handler_obj.process_inv_message();
+  data_handler_obj.process_daq_message();
 
-  if (timer_1s.check())
-  {
+  if (timer_1s.check()) {
     vcu.send_firmware_status_message();
     vcu.send_status_message();
     pedals.send_status_message();
@@ -48,12 +45,10 @@ void loop()
                                 params[INVERTER_TORQUE_KD].parameter_value);
   }
 
-  if (timer_20hz.check())
-  {
+  if (timer_20hz.check()) {
     pedals.send_pedal_travel_message();
-    pedals.send_pedal_raw_message(pedals.get_apps1_raw(),
-                                  pedals.get_apps2_raw(),
-                                  pedals.get_brake_raw());
+    pedals.send_pedal_raw_message(
+        pedals.get_apps1_raw(), pedals.get_apps2_raw(), pedals.get_brake_raw());
 
     vcu.send_power_tracking_message();
 

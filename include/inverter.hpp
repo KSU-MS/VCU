@@ -46,10 +46,6 @@ private:
 
   std::array<parameter, 25> *params;
 
-  canMan *inv_can;
-  canMan *daq_can;
-  can_obj_car_h_t *dbc;
-
   enum inv_param_address : uint16_t {
     Motor_Overspeed_EEPROM_RPM = 0x006F,
     Max_Speed_EEPROM_RPM = 0x0080,
@@ -58,9 +54,7 @@ private:
   };
 
 public:
-  Inverter(bool (*timer_mc_kick)(), bool (*timer_current_limit)(),
-           bool (*timer_motor_controller_send)(), bool spin_direction, std::array<parameter, 25> *params,
-           canMan *can, canMan *daq_can, can_obj_car_h_t *dbc);
+  Inverter(bool spin_direction, std::array<parameter, 25> *params);
 
   inline bool get_inverter_enable() { return inverter_enable; }
   inline double get_bus_voltage() { return bus_voltage; }
@@ -75,9 +69,15 @@ public:
   inline void set_torque_limit(double limit) {
     (*params)[MAX_TORQUE].parameter_value = static_cast<uint64_t>(limit * 10.0);
   }
-  inline void set_soft_speed_limit(uint16_t limit) { (*params)[SOFT_RPM_LIMIT].parameter_value = static_cast<double>(limit); }
-  inline void set_hard_speed_limit(uint16_t limit) { (*params)[MAX_RPM_LIMIT].parameter_value = static_cast<double>(limit); }
-  inline void set_power_limit_kw(uint16_t limit) { (*params)[POWER_LIMIT].parameter_value = static_cast<double>(limit) * 10.0; }
+  inline void set_soft_speed_limit(uint16_t limit) {
+    (*params)[SOFT_RPM_LIMIT].parameter_value = static_cast<double>(limit);
+  }
+  inline void set_hard_speed_limit(uint16_t limit) {
+    (*params)[MAX_RPM_LIMIT].parameter_value = static_cast<double>(limit);
+  }
+  inline void set_power_limit_kw(uint16_t limit) {
+    (*params)[POWER_LIMIT].parameter_value = static_cast<double>(limit) * 10.0;
+  }
   inline void set_inverter_enable(bool enable) { inverter_enable = enable; }
   inline void calculate_pid_loop() { torquepid.Compute(); }
   inline void set_pid_parameters(int kp, int ki, int kd) {

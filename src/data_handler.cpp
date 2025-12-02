@@ -1,6 +1,14 @@
 #include "data_handler.hpp"
+#include "accumulator.hpp"
+#include "car.h"
+#include "vcu.hpp"
 
-void start_comms(void) {
+data_handler::data_handler(VCU *vcu, Accumulator *accumulator) {
+  this->vcu = vcu;
+  this->accumulator = accumulator;
+}
+
+void data_handler::start_comms(void) {
   // TODO: Maybe use mailboxes and interupts off the mailboxes to handle the ID
   // filtering? IMO we are not performace/reasource constrained and doing
   // interupts off specific messages doesn't really seem like something we need
@@ -25,21 +33,31 @@ void start_comms(void) {
   // acc_can.mailboxStatus();
 }
 
-void process_acc_message(void) {
+void data_handler::process_acc_message(void) {
+  if (!acc_can.check_controller_message()) {
+    return;
+  }
+
   can_message msg_in = acc_can.get_controller_message();
   daq_can.send_controller_message(msg_in);
 
   switch (msg_in.id) {
   case CAN_ID_ACU_SHUTDOWN_STATUS:
-    // accumulator.update_acu_status(msg_in.buf.val, msg_in.length);
+    if (accumulator != nullptr) {
+      accumulator->update_acu_status(msg_in.buf.val, msg_in.length);
+    }
     break;
 
   case CAN_ID_PRECHARGE_STATUS:
-    // accumulator.update_precharge_status(msg_in.buf.val, msg_in.length);
+    if (accumulator != nullptr) {
+      accumulator->update_precharge_status(msg_in.buf.val, msg_in.length);
+    }
     break;
 
   case CAN_ID_MSGID_0X6B1:
-    // accumulator.update_pack_power(msg_in.buf.val, msg_in.length);
+    if (accumulator != nullptr) {
+      accumulator->update_pack_power(msg_in.buf.val, msg_in.length);
+    }
     break;
 
   case CAN_ID_MSGID_0X6B3:
@@ -51,25 +69,37 @@ void process_acc_message(void) {
   }
 }
 
-void process_inv_message(void) {
+void data_handler::process_inv_message(void) {
+  if (!inv_can.check_controller_message()) {
+    return;
+  }
+
   can_message msg_in = inv_can.get_controller_message();
   daq_can.send_controller_message(msg_in);
 
   switch (msg_in.id) {
   case CAN_ID_DASH_BUTTONS:
-    // vcu.update_dash_buttons(msg_in.buf.val, msg_in.length);
+    if (vcu != nullptr) {
+      vcu->update_dash_buttons(msg_in.buf.val, msg_in.length);
+    }
     break;
 
   case CAN_ID_M165_MOTOR_POSITION_INFO:
-    // vcu.inverter->update_motor_feedback(msg_in.buf.val, msg_in.length);
+    if (vcu != nullptr && vcu->inverter != nullptr) {
+      vcu->inverter->update_motor_feedback(msg_in.buf.val, msg_in.length);
+    }
     break;
 
   case CAN_ID_M166_CURRENT_INFO:
-    // vcu.inverter->update_bus_current(msg_in.buf.val, msg_in.length);
+    if (vcu != nullptr && vcu->inverter != nullptr) {
+      vcu->inverter->update_bus_current(msg_in.buf.val, msg_in.length);
+    }
     break;
 
   case CAN_ID_M167_VOLTAGE_INFO:
-    // vcu.inverter->update_bus_voltage(msg_in.buf.val, msg_in.length);
+    if (vcu != nullptr && vcu->inverter != nullptr) {
+      vcu->inverter->update_bus_voltage(msg_in.buf.val, msg_in.length);
+    }
     acc_can.send_controller_message(msg_in);
     break;
 
@@ -78,13 +108,19 @@ void process_inv_message(void) {
   }
 }
 
-void process_daq_message(void) {
+void data_handler::process_daq_message(void) {
+  if (!daq_can.check_controller_message()) {
+    return;
+  }
+
   can_message msg_in = daq_can.get_controller_message();
 
   switch (msg_in.id) {
-  // case CAN_ID_VCU_SET_PARAMETER:
-  //   vcu.set_parameter(msg_in.buf.val, msg_in.length);
-  //   break;
+  case CAN_ID_VCU_SET_PARAMETER:
+    if (vcu != nullptr) {
+      vcu->set_parameter(msg_in.buf.val, msg_in.length);
+    }
+    break;
   case CAN_ID_M193_READ_WRITE_PARAM_COMMAND:
     inv_can.send_controller_message(msg_in);
     break;

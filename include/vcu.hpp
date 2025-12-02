@@ -4,13 +4,12 @@
 
 #include "accumulator.hpp"
 #include "inverter.hpp"
+#include "parameters.hpp"
 #include "pedal_handeler.hpp"
 #include "traction_control.hpp"
-#include "parameters.hpp"
 #include <array>
 
-enum state
-{
+enum state {
   STARTUP = 0,                   // VCU is powering on
   TRACTIVE_SYSTEM_DISABLED = 1,  // GLV is on, but not TSV
   TRACTIVE_SYSTEM_ENERGIZED = 2, // TSV is up, but RTD button isn't pressed
@@ -20,8 +19,7 @@ enum state
   LAUNCH = 6,                    // Accelerate, but faster
 };
 
-class VCU
-{
+class VCU {
 private:
   state current_state = STARTUP;
   uint8_t torque_mode = 0; // Legacy
@@ -52,20 +50,14 @@ public:
   Accumulator *accumulator;
   TractionController *tc;
   std::array<parameter, 25> *params;
-  parameter joe_smho[] = {
-      parameter{0, 1, "DUMMY_PARAM"},    
-  }
 
   can_obj_car_h_t *dbc;
   canMan *acc_can;
   canMan *inv_can;
   canMan *daq_can;
 
-  VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator, std::array<parameter, 25> *params,
-      can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can, canMan *daq_can,
-      bool (*timer_status_message)(), bool (*timer_pedal_message)(),
-      bool (*timer_inverter_ping)(), bool (*timer_inverter_command)(),
-      bool (*timer_current_limit)(), void (*reset_timer_current_limit)());
+  VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator,
+      std::array<parameter, 25> *params);
 
   inline void init_state_machine() { this->current_state = STARTUP; }
 
