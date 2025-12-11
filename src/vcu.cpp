@@ -1,5 +1,6 @@
 #include "vcu.hpp"
 #include "car.h"
+#include "data_handler.hpp"
 #include "parameters.hpp"
 #include <array>
 #include <logger.hpp>
@@ -7,16 +8,18 @@
 extern Logger consol;
 
 VCU::VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator,
-         std::array<parameter, 25> *params) {
+         std::array<parameter, 25> *params, VehicleData *vehicle_data) {
   this->pedals = pedals;
   this->inverter = inverter;
   this->accumulator = accumulator;
   this->params = params;
+  this->vehicle_data = vehicle_data;
 }
 
 bool VCU::try_ts_enabled() {
-  if (RTD_button_pressed &&
-      (pedals->get_brake_travel() > MINIMUM_BRAKE_FOR_RTD)) {
+  bool rtd_pressed =
+      vehicle_data ? vehicle_data->driver.rtd_button_pressed : false;
+  if (rtd_pressed && (pedals->get_brake_travel() > MINIMUM_BRAKE_FOR_RTD)) {
     return true;
   } else {
     return false;
@@ -175,35 +178,7 @@ bool VCU::set_state(state target_state) {
   }
 }
 
-void VCU::update_bspd(uint16_t raw_relay, uint16_t raw_current,
-                      uint16_t raw_brake) {
-  if (raw_relay > 500)
-    bspd_ok_hs = true;
-  else
-    bspd_ok_hs = false;
-
-  // TODO: Make the bspd_brake_high and bspd_current_high real
-  bspd_brake_high = true;
-  bspd_current_high = true;
-}
-
-void VCU::update_dash_buttons(uint64_t msg, uint8_t length) {
-  unpack_message(dbc, CAN_ID_DASH_BUTTONS, msg, length, 0);
-
-  uint8_t button_val;
-  decode_can_0x0eb_dash_button3status(dbc, &button_val);
-
-  RTD_button_pressed = button_val;
-}
-
-void VCU::set_parameter(uint64_t msg, uint8_t length) {
-  unpack_message(dbc, CAN_ID_VCU_SET_PARAMETER, msg, length, 0);
-
-  uint8_t target_parameter;
-  uint32_t parameter_value;
-  decode_can_0x0d6_vcu_target_parameter(dbc, &target_parameter);
-  decode_can_0x0d6_vcu_parameter_value(dbc, &parameter_value);
-
+void VCU::set_parameter(uint8_t target_parameter, uint32_t parameter_value) {
   // set the parameter in the list
   this->params->at(target_parameter).parameter_value =
       double(parameter_value) /
@@ -291,8 +266,9 @@ void VCU::handle_state_machine() {
   case READY_TO_DRIVE:
     if (ts_safe()) {
       if (timer_inverter_command != nullptr && timer_inverter_command()) {
-        inverter->command_torque(pedals->get_torque_request(
-            pedals->get_travel(), (*params)[MAX_TORQUE].parameter_value));
+        inverter->command_torque(
+            pedals->get_torque_request(pedals->get_throttle_travel(),
+                                       (*params)[MAX_TORQUE].parameter_value));
       }
 
       if (timer_current_limit != nullptr && timer_current_limit()) {
@@ -333,64 +309,25 @@ void VCU::handle_state_machine() {
 }
 
 void VCU::send_status_message() {
-  encode_can_0x0c3_VCU_BSPD_BRAKE_HIGH(dbc, bspd_brake_high);
-  encode_can_0x0c3_VCU_BSPD_CURRENT_HIGH(dbc, bspd_current_high);
-  encode_can_0x0c3_VCU_BSPD_OK_HIGH(dbc, bspd_ok_hs);
-  encode_can_0x0c3_VCU_BMS_OK_HIGH(dbc, accumulator->get_bms_ok_hs());
-  encode_can_0x0c3_VCU_IMD_OK_HIGH(dbc, accumulator->get_imd_ok_hs());
-  encode_can_0x0c3_VCU_SHUTDOWN_B_OK_HIGH(dbc, 0.0); // What
-  encode_can_0x0c3_VCU_SHUTDOWN_C_OK_HIGH(dbc, 0.0); // The
-  encode_can_0x0c3_VCU_SHUTDOWN_D_OK_HIGH(dbc, 0.0); // Fuck
-  encode_can_0x0c3_VCU_SHUTDOWN_E_OK_HIGH(dbc, 0.0); // Are these????
-  encode_can_0x0c3_VCU_SOFTWARE_OK_HIGH(dbc, true);  // later
-  encode_can_0x0c3_VCU_ACTIVATE_BUZZER(dbc, buzzer_active);
-  encode_can_0x0c3_VCU_SOFTWARE_OK(dbc, true);           // later
-  encode_can_0x0c3_VCU_DISTANCE_TRAVELLED(dbc, 0.0);     // later
-  encode_can_0x0c3_VCU_ENERGY_METER_PRESENT(dbc, false); // later
-  encode_can_0x0c3_VCU_INVERTER_POWERED(dbc, inverter->get_inverter_enable());
-  encode_can_0x0c3_VCU_LAUNCH_CONTROL_ACTIVE(dbc, 0); // later
-  encode_can_0x0c3_VCU_MAX_TORQUE(dbc,
-                                  this->params->at(MAX_TORQUE).parameter_value);
-  encode_can_0x0c3_VCU_TORQUE_MODE(dbc, torque_mode);
-  encode_can_0x0c3_VCU_STATEMACHINE_STATE(dbc, current_state);
-
-  // Init and pack the message
-  can_message out_msg;
-  out_msg.id = CAN_ID_VCU_STATUS;
-  out_msg.length = pack_message(dbc, CAN_ID_VCU_STATUS, &out_msg.buf.val);
-
-  inv_can->send_controller_message(out_msg);
-  daq_can->send_controller_message(out_msg);
+  data_handler::send_vcu_status_message(
+      bspd_brake_high, bspd_current_high, bspd_ok_hs,
+      accumulator->get_bms_ok_hs(), accumulator->get_imd_ok_hs(), buzzer_active,
+      inverter->get_inverter_enable(),
+      this->params->at(MAX_TORQUE).parameter_value, torque_mode,
+      static_cast<int>(current_state));
 }
 
 void VCU::send_firmware_status_message() {
   // TODO: Abstract this arduino call
-  encode_can_0x0c8_vcu_on_time_seconds(dbc, millis() / 1000);
-  encode_can_0x0c8_vcu_fw_version(dbc, AUTO_VERSION);
-  encode_can_0x0c8_vcu_project_is_dirty(dbc, FW_PROJECT_IS_DIRTY);
-  encode_can_0x0c8_vcu_project_on_main(dbc, FW_PROJECT_IS_MAIN_OR_MASTER);
-
-  can_message out_msg;
-  out_msg.id = CAN_ID_VCU_FIRMWARE_VERSION;
-  out_msg.length =
-      pack_message(dbc, CAN_ID_VCU_FIRMWARE_VERSION, &out_msg.buf.val);
-
-  inv_can->send_controller_message(out_msg);
-  daq_can->send_controller_message(out_msg);
+  data_handler::send_vcu_firmware_status_message(millis() / 1000, AUTO_VERSION,
+                                                 FW_PROJECT_IS_DIRTY,
+                                                 FW_PROJECT_IS_MAIN_OR_MASTER);
 }
 
 void VCU::send_power_tracking_message() {
-  encode_can_0x0d0_vcu_lifetime_distance(
-      dbc, uint32_t(inverter->get_motor_distance_M()));
-  encode_can_0x0d0_vcu_lifetime_ontime(dbc, accumulator->get_consumed_wh());
-
-  can_message out_msg;
-  out_msg.id = CAN_ID_VCU_LIFETIME_DISTANCE_AND_ONTIME;
-  out_msg.length = pack_message(dbc, CAN_ID_VCU_LIFETIME_DISTANCE_AND_ONTIME,
-                                &out_msg.buf.val);
-
-  inv_can->send_controller_message(out_msg);
-  daq_can->send_controller_message(out_msg);
+  data_handler::send_vcu_power_tracking_message(
+      uint32_t(inverter->get_motor_distance_M()),
+      accumulator->get_consumed_wh());
 }
 
 // void VCU::send_launch_control_status_message() {
@@ -404,6 +341,5 @@ void VCU::send_power_tracking_message() {
 //   out_msg.length =
 //       pack_message(dbc, CAN_ID_VCU_LAUNCHCONTROL_DIAGDATA, &out_msg.buf.val);
 //
-//   inv_can->send_controller_message(out_msg);
-//   daq_can->send_controller_message(out_msg);
+//   data_handler::send_inv_and_daq(out_msg);
 // }

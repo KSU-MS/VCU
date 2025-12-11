@@ -1,12 +1,13 @@
 #include "inverter.hpp"
-#include "car.h"
 #include "data_handler.hpp"
 #include "parameters.hpp"
 
-Inverter::Inverter(bool spin_direction, std::array<parameter, 25> *params) {
+Inverter::Inverter(bool spin_direction, std::array<parameter, 25> *params,
+                   VehicleData *vehicle_data) {
   this->spin_forward = spin_direction;
 
   this->params = params;
+  this->vehicle_data = vehicle_data;
 
   this->ping();
 
@@ -31,84 +32,52 @@ Inverter::Inverter(bool spin_direction, std::array<parameter, 25> *params) {
 
 void Inverter::set_current_limits(uint16_t charge_limit,
                                   uint16_t discharge_limit) {
-  encode_can_0x202_BMS_Max_Charge_Current(&kms_can, charge_limit);
-  encode_can_0x202_BMS_Max_Discharge_Current(&kms_can, discharge_limit);
-
-  can_message out_msg;
-  out_msg.id = CAN_ID_BMS_CURRENT_LIMIT;
-  out_msg.length =
-      pack_message(&kms_can, CAN_ID_BMS_CURRENT_LIMIT, &out_msg.buf.val);
-
-  inv_can.send_controller_message(out_msg);
-  daq_can.send_controller_message(out_msg);
-}
-
-void Inverter::update_bus_current(uint64_t msg_in, uint8_t length) {
-  unpack_message(&kms_can, CAN_ID_M166_CURRENT_INFO, msg_in, length, 0);
-
-  decode_can_0x0a6_INV_DC_Bus_Current(&kms_can, &bus_current);
-}
-
-void Inverter::update_bus_voltage(uint64_t msg_in, uint8_t length) {
-  unpack_message(&kms_can, CAN_ID_M167_VOLTAGE_INFO, msg_in, length, 0);
-
-  decode_can_0x0a7_INV_DC_Bus_Voltage(&kms_can, &bus_voltage);
+  data_handler::send_inverter_current_limits(charge_limit, discharge_limit);
 }
 
 void Inverter::calculate_power_output() {
   // power output is calculated as bus_current * bus_voltage
-  power_over_w = (bus_current * bus_voltage);
-}
+  if (vehicle_data == nullptr) {
+    return;
+  }
 
-void Inverter::update_motor_feedback(uint64_t msg_in, uint8_t length) {
-  unpack_message(&kms_can, CAN_ID_M165_MOTOR_POSITION_INFO, msg_in, length, 0);
-
-  decode_can_0x0a5_INV_Motor_Speed(&kms_can, &motor_rpm);
+  auto &inv_data = vehicle_data->inverter;
+  inv_data.power_output_w = inv_data.bus_current * inv_data.bus_voltage;
 }
 
 void Inverter::calculate_motor_distance_M(uint32_t time_msec) {
-  uint32_t time_elaped_msec = time_msec - time_last_msec;
+  if (vehicle_data == nullptr) {
+    return;
+  }
+
+  auto &inv_data = vehicle_data->inverter;
+  uint32_t time_elaped_msec =
+      time_msec - inv_data.last_distance_calc_timestamp_ms;
 
   double velocity_Msec =
-      (double(motor_rpm) / 60 / GEAR_RATIO) * WHEEL_CIRCUMFRANCE_M;
+      (double(inv_data.motor_rpm) / 60 / GEAR_RATIO) * WHEEL_CIRCUMFRANCE_M;
 
-  distance_M += (double(time_elaped_msec) / 1000) * velocity_Msec;
+  inv_data.motor_distance_m +=
+      (double(time_elaped_msec) / 1000) * velocity_Msec;
 
-  time_last_msec = time_msec;
+  inv_data.last_distance_calc_timestamp_ms = time_msec;
 }
 
 void Inverter::ping() {
-  encode_can_0x0c0_VCU_INV_Torque_Command(&kms_can, 0.0);
-  encode_can_0x0c0_VCU_INV_Torque_Limit_Command(&kms_can, 0.0);
-  encode_can_0x0c0_VCU_INV_Speed_Command(&kms_can, 0);
-  encode_can_0x0c0_VCU_INV_Speed_Mode_Enable(&kms_can, 0);
-  encode_can_0x0c0_VCU_INV_Direction_Command(&kms_can, spin_forward);
-  encode_can_0x0c0_VCU_INV_Inverter_Discharge(&kms_can, inverter_discharge);
-  encode_can_0x0c0_VCU_INV_Inverter_Enable(&kms_can, inverter_enable);
-
-  can_message out_msg;
-  out_msg.id = CAN_ID_M192_COMMAND_MESSAGE;
-  out_msg.length =
-      pack_message(&kms_can, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
-
-  inv_can.send_controller_message(out_msg);
-  daq_can.send_controller_message(out_msg);
+  data_handler::send_inverter_ping(spin_forward, inverter_enable,
+                                   inverter_discharge);
 }
 
 void Inverter::send_clear_faults() {
-  encode_can_0x0c1_VCU_INV_Parameter_Address(&kms_can, 20);
-  encode_can_0x0c1_VCU_INV_Parameter_RW_Command(&kms_can, 1);
-  encode_can_0x0c1_VCU_INV_Parameter_Data(&kms_can, 0);
-
-  can_message out_msg;
-  out_msg.length =
-      pack_message(&kms_can, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
-
-  inv_can.send_controller_message(out_msg);
-  daq_can.send_controller_message(out_msg);
+  data_handler::send_inverter_clear_faults();
 }
 
 void Inverter::command_torque(double torque_request) {
+  if (vehicle_data == nullptr) {
+    return;
+  }
+
+  auto &inv_data = vehicle_data->inverter;
   double torque_target = torque_request;
 
   // EV. 1.4.4 A violation is defined as using more than the specified maximum
@@ -121,13 +90,13 @@ void Inverter::command_torque(double torque_request) {
 
   // calculate excess power output
   double power_over_w = std::max(
-      0.0, power_output -
+      0.0, inv_data.power_output_w -
                (((*params)[POWER_LIMIT].parameter_value / 10.0) * 1000.0));
 
   if (power_over_w > 1e-6) {
     // calculate excess torque output from motor speed and excess power
     torque_over_nm =
-        power_over_w / std::max(1e-6, (motor_rpm / 60.0) * 2.0 * M_PI);
+        power_over_w / std::max(1e-6, (inv_data.motor_rpm / 60.0) * 2.0 * M_PI);
 
     // cap torque adjustment to 10% of max torque
     double torque_adjustment_capped =
@@ -172,59 +141,19 @@ void Inverter::command_torque(double torque_request) {
   //   speed_I *= 0.98;
   // }
 
-  encode_can_0x0c0_VCU_INV_Torque_Command(
-      &kms_can, torque_target); // torque command to INV
-
   // all of this should really be handled elsewhere, we call this function on a
   // 200hz interval
 
-  // encode_can_0x0c0_VCU_INV_Torque_Limit_Command(dbc,
-  // (*params)[MAX_TORQUE].parameter_value);
-  // encode_can_0x0c0_VCU_INV_Speed_Command(dbc, 0);
-  // encode_can_0x0c0_VCU_INV_Speed_Mode_Enable(dbc, 0);
-  // encode_can_0x0c0_VCU_INV_Direction_Command(dbc, spin_forward);
-  // encode_can_0x0c0_VCU_INV_Inverter_Discharge(dbc, inverter_discharge);
-  // encode_can_0x0c0_VCU_INV_Inverter_Enable(dbc, inverter_enable);
-
-  can_message out_msg;
-  out_msg.id = CAN_ID_M192_COMMAND_MESSAGE;
-  out_msg.length =
-      pack_message(&kms_can, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
-
-  inv_can.send_controller_message(out_msg);
-  daq_can.send_controller_message(out_msg);
+  data_handler::send_inverter_torque_command(torque_target);
 }
 
 void Inverter::command_speed(int16_t speed_request) // unused
 {
-  encode_can_0x0c0_VCU_INV_Torque_Command(&kms_can, 0.0);
-  encode_can_0x0c0_VCU_INV_Torque_Limit_Command(
-      &kms_can, (*params)[MAX_TORQUE].parameter_value);
-  encode_can_0x0c0_VCU_INV_Speed_Command(&kms_can, speed_request);
-  encode_can_0x0c0_VCU_INV_Speed_Mode_Enable(&kms_can, speed_mode);
-  encode_can_0x0c0_VCU_INV_Direction_Command(&kms_can, spin_forward);
-  encode_can_0x0c0_VCU_INV_Inverter_Discharge(&kms_can, inverter_discharge);
-  encode_can_0x0c0_VCU_INV_Inverter_Enable(&kms_can, inverter_enable);
-
-  can_message out_msg;
-  out_msg.id = CAN_ID_M192_COMMAND_MESSAGE;
-  out_msg.length =
-      pack_message(&kms_can, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
-
-  inv_can.send_controller_message(out_msg);
-  daq_can.send_controller_message(out_msg);
+  data_handler::send_inverter_speed_command(
+      speed_request, spin_forward, speed_mode, inverter_enable,
+      inverter_discharge, (*params)[MAX_TORQUE].parameter_value);
 }
 
 void Inverter::set_inv_parameter(uint16_t param_address, uint32_t param_data) {
-  encode_can_0x0c1_VCU_INV_Parameter_Address(&kms_can, param_address);
-  encode_can_0x0c1_VCU_INV_Parameter_RW_Command(&kms_can, 1); // write
-  encode_can_0x0c1_VCU_INV_Parameter_Data(&kms_can, param_data);
-
-  can_message out_msg;
-  out_msg.id = CAN_ID_M192_COMMAND_MESSAGE;
-  out_msg.length =
-      pack_message(&kms_can, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
-
-  inv_can.send_controller_message(out_msg);
-  daq_can.send_controller_message(out_msg);
+  data_handler::send_inverter_parameter(param_address, param_data);
 }

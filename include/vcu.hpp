@@ -3,6 +3,7 @@
 #include <car.h>
 
 #include "accumulator.hpp"
+#include "data.hpp"
 #include "inverter.hpp"
 #include "parameters.hpp"
 #include "pedal_handeler.hpp"
@@ -28,7 +29,6 @@ private:
   uint16_t bool_code = 0;  // Encode all the possible gateing factors into a val
   uint16_t error_code = 0; // This gives us error codes when transitions fail
   bool buzzer_active = false;
-  bool RTD_button_pressed = false;
   bool bspd_ok_hs = false;
   bool bspd_brake_high = false;
   bool bspd_current_high = false;
@@ -44,6 +44,8 @@ private:
   bool launch_state;
   uint8_t launch_mode = 0;
 
+  VehicleData *vehicle_data;
+
 public:
   Pedals *pedals;
   Inverter *inverter;
@@ -51,13 +53,8 @@ public:
   TractionController *tc;
   std::array<parameter, 25> *params;
 
-  can_obj_car_h_t *dbc;
-  canMan *acc_can;
-  canMan *inv_can;
-  canMan *daq_can;
-
   VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator,
-      std::array<parameter, 25> *params);
+      std::array<parameter, 25> *params, VehicleData *vehicle_data);
 
   inline void init_state_machine() { this->current_state = STARTUP; }
 
@@ -67,7 +64,9 @@ public:
   inline bool get_launch_state() { return this->launch_state; }
   inline bool get_buzzer_state() { return this->buzzer_active; }
   inline bool get_bspd_ok_hs() { return this->bspd_ok_hs; }
-  inline bool get_rtd_fella() { return this->RTD_button_pressed; }
+  inline bool get_rtd_fella() {
+    return vehicle_data ? vehicle_data->driver.rtd_button_pressed : false;
+  }
 
   void handle_state_machine();
 
@@ -76,8 +75,7 @@ public:
   bool try_ts_enabled();
   bool ts_safe();
 
-  void set_parameter(uint64_t msg, uint8_t length);
-  void update_dash_buttons(uint64_t msg, uint8_t length);
+  void set_parameter(uint8_t target_parameter, uint32_t parameter_value);
   void update_bspd(uint16_t raw_relay, uint16_t raw_current,
                    uint16_t raw_brake);
 

@@ -2,13 +2,23 @@
 
 #include <can_tools.hpp>
 #include <car.h>
+#include <cmath>
 #include <stdint.h>
 
+#include "adc.hpp"
+#include "data.hpp"
+#include "parameters.hpp"
+
 class Pedals {
+
 private:
-  uint16_t raw_apps1;
-  uint16_t raw_apps2;
-  uint16_t raw_brake;
+  // Pots
+  adc apps1 = adc(mcp, ADC_CS, ADC_ACCEL_1_CHANNEL, 0.980483996877);
+  adc apps2 = adc(mcp, ADC_CS, ADC_ACCEL_2_CHANNEL, 0.980483996877);
+  adc bse = adc(mcp, ADC_CS, ADC_BSE_CHANNEL, 0.980483996877);
+  adc vsense_bspd = adc(avr, BSPD_SENSE);
+
+  VehicleData *vehicle_data = nullptr;
 
   float brake_ratio;
   uint16_t brake_start;
@@ -23,25 +33,22 @@ private:
   float apps2_ratio;
   uint16_t apps2_start;
 
-  double brake_travel;
-  double apps1_travel;
-  double apps2_travel;
-  double travel;
-
-  // EV.4.7
-  bool bse_fault;      // BSE is reading too high or too low
-  bool apps_fault;     // Not reading within 10% of each other
-  bool apps_bse_fault; // Screenshot (too much brake and gas (before BSPD))
-
-  can_obj_car_h_t *dbc;
-
-  canMan *inv_can;
-  canMan *daq_can;
-
 public:
+  enum class PedalFaults {
+    APPS_FAULT = 0,
+    BSE_FAULT = 1,
+    APPS_BSE_FAULT = 2,
+    APPS_FAULT_AND_BSE_FAULT = 3,
+    APPS_FAULT_AND_APPS_BSE_FAULT = 4,
+    BSE_FAULT_AND_APPS_BSE_FAULT = 5,
+    APPS_FAULT_AND_BSE_FAULT_AND_APPS_BSE_FAULT = 6,
+    NO_FAULT = 7,
+    UNKNOWN_FAULT = 8,
+  };
   Pedals(uint16_t bse_low_fault, uint16_t brake_start, uint16_t brake_end,
          uint16_t bse_high_fault, uint16_t apps_low_fault, uint16_t apps1_start,
-         uint16_t apps1_end, uint16_t apps2_start, uint16_t apps2_end) {
+         uint16_t apps1_end, uint16_t apps2_start, uint16_t apps2_end,
+         VehicleData *vehicle_data) {
 
     this->brake_ratio = 1 / float(brake_end - brake_start);
     this->brake_start = brake_start;
@@ -55,97 +62,97 @@ public:
 
     apps2_ratio = 1 / float(apps2_end - apps2_start);
     this->apps2_start = apps2_start;
+
+    this->vehicle_data = vehicle_data;
   };
 
   // TODO: Add additional pedal maps with diffrent curves?
-  double get_torque_request(double apps_travel, double max_torque) {
-    return apps_travel * max_torque;
+  inline double get_torque_request(double throttle_travel, double max_torque) {
+    return throttle_travel * max_torque;
   };
 
-  // TODO: Make the release and apps_bse values confgiurable
+  // TODO: Make the release and apps_bse values configurable
   void update_travel(uint16_t raw_apps1, uint16_t raw_apps2,
-                     uint16_t raw_brake) {
-    this->raw_apps1 = raw_apps1;
-    this->raw_apps2 = raw_apps2;
-    this->raw_brake = raw_brake;
+                     uint16_t raw_brake);
 
-    // Get the pedal percentage in its throw from 0 to 1
-    if (raw_apps1 < apps_low_fault) {
-      apps_fault = true;
-    } else {
-      apps1_travel = (raw_apps1 - apps1_start) * apps1_ratio;
-      if (apps1_travel < 0)
-        apps1_travel = 0;
-      else if (apps1_travel > 1)
-        apps1_travel = 1;
-    }
-
-    if (raw_apps2 < apps_low_fault) {
-      apps_fault = true;
-    } else {
-      apps2_travel = (raw_apps2 - apps2_start) * apps2_ratio;
-      if (apps2_travel < 0)
-        apps2_travel = 0;
-      else if (apps2_travel > 1)
-        apps2_travel = 1;
-    }
-
-    // T.4.3.4
-    // BSE check to make sure its not shorting
-    if (raw_brake > bse_high_fault || raw_brake < bse_low_fault) {
-      bse_fault = true;
-    } else {
-      bse_fault = false;
-      brake_travel = (raw_brake - brake_start) * brake_ratio;
-      if (brake_travel < 0)
-        brake_travel = 0;
-      else if (brake_travel > 1)
-        brake_travel = 1;
-    }
-
-    // Reset if the pedals are released
-    if (this->apps1_travel < 0.1 && this->apps2_travel < 0.1) {
-      apps_fault = false;
-      apps_bse_fault = false;
-    }
-
-    // T.4.2.4
-    // Check that there is no apps related faults
-    if (apps_fault == false && bse_fault == false && apps_bse_fault == false) {
-
-      // Check that the pedals are reading within 10%
-      if ((fabs(apps1_travel - apps2_travel) < 0.3)) {
-        travel = (apps1_travel + apps2_travel) / 2;
-
-        // Check that the driver isn't using both pedals at once
-        if ((travel > 0.3) && (brake_travel > 0.3)) {
-          apps_bse_fault = true;
-          travel = 0;
-        }
-      } else {
-        apps_fault = true;
-        travel = 0;
-      }
-    } else {
-      travel = 0;
-    }
+  inline bool get_bse_fault_ok_low() const {
+    return vehicle_data ? vehicle_data->pedals.bse_fault : false;
+  }
+  inline bool get_apps_fault_ok_low() const {
+    return vehicle_data ? vehicle_data->pedals.apps_fault : false;
+  }
+  inline bool get_apps_bse_fault_ok_low() const {
+    return vehicle_data ? vehicle_data->pedals.apps_bse_fault : false;
   }
 
-  void send_pedal_travel_message();
-  void send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
-                              uint16_t raw_brake);
+  inline uint16_t get_apps1_raw() const {
+    return vehicle_data ? vehicle_data->pedals.raw_apps1 : 0;
+  }
+  inline uint16_t get_apps2_raw() const {
+    return vehicle_data ? vehicle_data->pedals.raw_apps2 : 0;
+  }
+  inline uint16_t get_brake_raw() const {
+    return vehicle_data ? vehicle_data->pedals.raw_brake : 0;
+  }
+  inline double get_apps1_travel() const {
+    return vehicle_data ? vehicle_data->pedals.apps1_travel : 0.0;
+  }
+  inline double get_apps2_travel() const {
+    return vehicle_data ? vehicle_data->pedals.apps2_travel : 0.0;
+  }
+  inline double get_brake_travel() const {
+    return vehicle_data ? vehicle_data->pedals.brake_travel : 0.0;
+  }
+  inline double get_throttle_travel() const {
+    return vehicle_data ? vehicle_data->pedals.throttle_travel : 0.0;
+  }
 
-  inline bool get_bse_fault_ok_low() { return bse_fault; }
-  inline bool get_apps_fault_ok_low() { return apps_fault; }
-  inline bool get_apps_bse_fault_ok_low() { return apps_bse_fault; }
+  void pedal_200hz_loop();
 
-  inline uint16_t get_apps1_raw() { return raw_apps1; }
-  inline uint16_t get_apps2_raw() { return raw_apps2; }
-  inline uint16_t get_brake_raw() { return raw_brake; }
-  inline double get_apps1_travel() { return apps1_travel; }
-  inline double get_apps2_travel() { return apps2_travel; }
-  inline double get_brake_travel() { return brake_travel; }
-  inline double get_travel() { return travel; }
+  void pedal_10hz_loop();
 
-  void send_status_message();
+  void check_hard_faults();
 };
+
+// Yes, this works, but the "combined faults" values (e.g.,
+// APPS_FAULT_AND_BSE_FAULT, etc.) are not actually used by the logic of
+// get_pedal_faults(). Instead, it just bitwise-or's the base faults together
+// and returns the combined bits as a PedalFaults value.
+
+// In C++ enum/bitflags, this is fine if you are just checking (faults &
+// SOME_FAULT), but the "combined" names are unused and not necessary unless you
+// want to explicitly check for exactly those combinations. The current
+// get_pedal_faults() function is valid and will return a bit pattern with each
+// fault it sees set.
+
+// If you want to clean it up a bit, you can drop the combined names, or just
+// clarify your intended usage/documenting below.
+
+enum PedalFaults {
+  NO_FAULT = 0,
+  APPS_FAULT = 1 << 1,
+  BSE_FAULT = 1 << 2,
+  APPS_BSE_FAULT = 1 << 3,
+  // The following are not needed for bitmask use; you can determine
+  // combinations by bitwise-or
+  APPS_FAULT_AND_BSE_FAULT = APPS_FAULT | BSE_FAULT,
+  APPS_FAULT_AND_APPS_BSE_FAULT = APPS_FAULT | APPS_BSE_FAULT,
+  BSE_FAULT_AND_APPS_BSE_FAULT = BSE_FAULT | APPS_BSE_FAULT,
+  APPS_FAULT_AND_BSE_FAULT_AND_APPS_BSE_FAULT =
+      APPS_FAULT | BSE_FAULT | APPS_BSE_FAULT,
+};
+
+static PedalFaults get_pedal_faults(bool apps_fault, bool bse_fault,
+                                    bool apps_bse_fault) {
+  int faults = NO_FAULT;
+  if (apps_fault) {
+    faults |= APPS_FAULT;
+  }
+  if (bse_fault) {
+    faults |= BSE_FAULT;
+  }
+  if (apps_bse_fault) {
+    faults |= APPS_BSE_FAULT;
+  }
+  return static_cast<PedalFaults>(faults);
+}

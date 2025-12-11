@@ -18,4 +18,5 @@ Diagnostics:
       - ovl_diff_return_type
       - variable_object_no_init
       - pp_including_mainfile_in_preamble
+      - expected_unqualified_id
 

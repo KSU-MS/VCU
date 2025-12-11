@@ -20,15 +20,6 @@ void setup() {
 }
 
 void loop() {
-  //
-  //// ADC Stage
-  apps1.update();
-  apps2.update();
-  bse.update();
-  pedals.update_travel(apps1.value.in, apps2.value.in, bse.value.in);
-
-  vsense_bspd.update();
-  vcu.update_bspd(vsense_bspd.value.in, 0, 0);
 
   //
   //// CAN Stage
@@ -39,15 +30,16 @@ void loop() {
   if (timer_1s.check()) {
     vcu.send_firmware_status_message();
     vcu.send_status_message();
-    pedals.send_status_message();
     inverter.set_pid_parameters(params[INVERTER_TORQUE_KP].parameter_value,
                                 params[INVERTER_TORQUE_KI].parameter_value,
                                 params[INVERTER_TORQUE_KD].parameter_value);
   }
 
   if (timer_20hz.check()) {
-    pedals.send_pedal_travel_message();
-    pedals.send_pedal_raw_message(
+    data_handler_obj.send_pedal_travel_message(
+        pedals.get_apps1_travel(), pedals.get_apps2_travel(),
+        pedals.get_brake_travel());
+    data_handler_obj.send_pedal_raw_message(
         pedals.get_apps1_raw(), pedals.get_apps2_raw(), pedals.get_brake_raw());
 
     vcu.send_power_tracking_message();

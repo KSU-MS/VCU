@@ -11,6 +11,7 @@ can_obj_car_h_t kms_can;
 
 // Local
 #include "accumulator.hpp"
+#include "data.hpp"
 #include "data_handler.hpp"
 #include "inverter.hpp"
 #include "parameters.hpp"
@@ -108,6 +109,8 @@ std::array<parameter, 25> params = {
     parameter{INVERTER_DISCHARGE_LIMIT, 1, "INVERTER_DISCHARGE_LIMIT"},
 };
 
+VehicleData vehicle_data;
+
 //
 //// Comms
 // loggers
@@ -116,24 +119,19 @@ Logger consol(serial);
 
 // CAN controllers handled through data_handler
 
-// Pots
-adc apps1(mcp, ADC_CS, ADC_ACCEL_1_CHANNEL, 0.980483996877);
-adc apps2(mcp, ADC_CS, ADC_ACCEL_2_CHANNEL, 0.980483996877);
-adc bse(mcp, ADC_CS, ADC_BSE_CHANNEL, 0.980483996877);
-
 //
 //// Critical components
 Pedals pedals(MIN_BRAKE_PEDAL, START_BRAKE_PEDAL, END_BRAKE_PEDAL,
               MAX_BRAKE_PEDAL, MIN_APPS_PEDAL, START_ACCELERATOR_PEDAL_1,
               END_ACCELERATOR_PEDAL_1, START_ACCELERATOR_PEDAL_2,
-              END_ACCELERATOR_PEDAL_2);
+              END_ACCELERATOR_PEDAL_2, &vehicle_data);
 
-Inverter inverter(false, &params);
+Inverter inverter(false, &params, &vehicle_data);
 
-Accumulator accumulator(&params);
+Accumulator accumulator(&params, &vehicle_data);
 
-VCU vcu(&pedals, &inverter, &accumulator, &params);
-data_handler data_handler_obj(&vcu, &accumulator);
+VCU vcu(&pedals, &inverter, &accumulator, &params, &vehicle_data);
+data_handler data_handler_obj(&vcu, &vehicle_data);
 
 //
 //// Gizmos
@@ -142,12 +140,8 @@ adc steering_angle(mcp, static_cast<uint8_t>(ADC_CS),
                    static_cast<uint8_t>(ADC_STEERING_CHANNEL));
 
 // Voltage / Current sense lines
-adc vsense_bspd(avr, BSPD_SENSE);
 adc vsense_sdc(avr, VSENSE_SDC);
 adc isense_sdc(avr, ISENSE_SDC);
 adc vsense_12v(avr, VSENSE_GLV);
 adc isense_12v(avr, ISENSE_GLV);
 adc vsense_5v(avr, VSENSE_5V);
-
-adc sense_lines[] = {vsense_bspd, vsense_sdc, isense_sdc,
-                     vsense_12v,  isense_12v, vsense_5v};
