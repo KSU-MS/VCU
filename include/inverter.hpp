@@ -1,12 +1,16 @@
 #pragma once
 
-#include <Metro.h>
-#include <QuickPID.h>
-#include <can_tools.hpp>
-#include <car.h>
-#include <parameters.hpp>
+#include "parameters.hpp"
 
+#include <FlexCAN_T4.h>
+#include <car.h>
+
+#include "Metro.h"
+#include "QuickPID.h"
 #include "data.hpp"
+
+// Inverter gets special treatment in the state machine because its a black box
+// that requires specific configuration and communication.
 
 class Inverter {
 private:
@@ -24,7 +28,7 @@ private:
   const int speed_ki_x100 = 0; // tune this variable
 
   double power_output_w = 0.0;
-  
+
   double torque_over_nm = 0.0;
   double power_over_w = 0.0;
   double angular_vel_over_rad_s = 0.0;
@@ -52,18 +56,7 @@ public:
            VehicleData *vehicle_data);
 
   inline bool get_inverter_enable() { return inverter_enable; }
-  inline double get_bus_voltage() const {
-    return vehicle_data ? vehicle_data->inverter.bus_voltage : 0.0;
-  }
-  inline double get_bus_current() const {
-    return vehicle_data ? vehicle_data->inverter.bus_current : 0.0;
-  }
-  inline double get_power_output_kw() const {
-    return vehicle_data ? vehicle_data->inverter.power_output_w : 0.0;
-  }
-  inline double get_motor_distance_M() const {
-    return vehicle_data ? vehicle_data->inverter.motor_distance_m : 0.0;
-  }
+
   uint16_t get_instant_current_limit(float voltage) {
     return static_cast<uint16_t>(
         ((*params)[POWER_LIMIT].parameter_value * 1000.0) / voltage);
@@ -102,4 +95,9 @@ public:
 
   void set_inv_parameter(uint16_t param_address, uint32_t param_data);
   void read_inv_parameter(uint16_t param_address);
+
+  void inverter_main_loop();
+  void inverter_200hz_loop();
+  void inverter_10hz_loop();
+  void inverter_1hz_loop();
 };

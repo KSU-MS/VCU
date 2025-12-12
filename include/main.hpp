@@ -16,7 +16,7 @@ can_obj_car_h_t kms_can;
 #include "inverter.hpp"
 #include "parameters.hpp"
 #include "pedal_handeler.hpp"
-#include "vcu.hpp"
+#include "state_machine.hpp"
 
 #ifdef ARDUINO
 #include <Arduino.h>
@@ -117,9 +117,6 @@ VehicleData vehicle_data;
 Logger consol(serial);
 // FILE std_out_wrap;
 
-// CAN controllers handled through data_handler
-
-//
 //// Critical components
 Pedals pedals(MIN_BRAKE_PEDAL, START_BRAKE_PEDAL, END_BRAKE_PEDAL,
               MAX_BRAKE_PEDAL, MIN_APPS_PEDAL, START_ACCELERATOR_PEDAL_1,
@@ -130,18 +127,21 @@ Inverter inverter(false, &params, &vehicle_data);
 
 Accumulator accumulator(&params, &vehicle_data);
 
-VCU vcu(&pedals, &inverter, &accumulator, &params, &vehicle_data);
-data_handler data_handler_obj(&vcu, &vehicle_data);
+StateMachine state_machine(&inverter, &params, &vehicle_data);
+
+data_handler data_handler(&state_machine, &vehicle_data);
 
 //
 //// Gizmos
 // Aditional ADC chanels
-adc steering_angle(mcp, static_cast<uint8_t>(ADC_CS),
-                   static_cast<uint8_t>(ADC_STEERING_CHANNEL));
 
-// Voltage / Current sense lines
-adc vsense_sdc(avr, VSENSE_SDC);
-adc isense_sdc(avr, ISENSE_SDC);
-adc vsense_12v(avr, VSENSE_GLV);
-adc isense_12v(avr, ISENSE_GLV);
-adc vsense_5v(avr, VSENSE_5V);
+// unused
+// adc steering_angle(mcp, static_cast<uint8_t>(ADC_CS),
+//                    static_cast<uint8_t>(ADC_STEERING_CHANNEL));
+
+// // Voltage / Current sense lines
+// adc vsense_sdc(avr, VSENSE_SDC);
+// adc isense_sdc(avr, ISENSE_SDC);
+// adc vsense_12v(avr, VSENSE_GLV);
+// adc isense_12v(avr, ISENSE_GLV);
+// adc vsense_5v(avr, VSENSE_5V);

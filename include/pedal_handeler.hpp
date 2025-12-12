@@ -1,11 +1,13 @@
 #pragma once
 
+#ifndef ADC_HPP
+#include <adc.hpp>
+#endif
 #include <can_tools.hpp>
 #include <car.h>
 #include <cmath>
 #include <stdint.h>
 
-#include "adc.hpp"
 #include "data.hpp"
 #include "parameters.hpp"
 
@@ -66,11 +68,6 @@ public:
     this->vehicle_data = vehicle_data;
   };
 
-  // TODO: Add additional pedal maps with diffrent curves?
-  inline double get_torque_request(double throttle_travel, double max_torque) {
-    return throttle_travel * max_torque;
-  };
-
   // TODO: Make the release and apps_bse values configurable
   void update_travel(uint16_t raw_apps1, uint16_t raw_apps2,
                      uint16_t raw_brake);
@@ -107,52 +104,9 @@ public:
     return vehicle_data ? vehicle_data->pedals.throttle_travel : 0.0;
   }
 
-  void pedal_200hz_loop();
-
-  void pedal_10hz_loop();
-
   void check_hard_faults();
+
+  void pedal_main_loop();
+  void pedal_200hz_loop();
+  void pedal_10hz_loop();
 };
-
-// Yes, this works, but the "combined faults" values (e.g.,
-// APPS_FAULT_AND_BSE_FAULT, etc.) are not actually used by the logic of
-// get_pedal_faults(). Instead, it just bitwise-or's the base faults together
-// and returns the combined bits as a PedalFaults value.
-
-// In C++ enum/bitflags, this is fine if you are just checking (faults &
-// SOME_FAULT), but the "combined" names are unused and not necessary unless you
-// want to explicitly check for exactly those combinations. The current
-// get_pedal_faults() function is valid and will return a bit pattern with each
-// fault it sees set.
-
-// If you want to clean it up a bit, you can drop the combined names, or just
-// clarify your intended usage/documenting below.
-
-enum PedalFaults {
-  NO_FAULT = 0,
-  APPS_FAULT = 1 << 1,
-  BSE_FAULT = 1 << 2,
-  APPS_BSE_FAULT = 1 << 3,
-  // The following are not needed for bitmask use; you can determine
-  // combinations by bitwise-or
-  APPS_FAULT_AND_BSE_FAULT = APPS_FAULT | BSE_FAULT,
-  APPS_FAULT_AND_APPS_BSE_FAULT = APPS_FAULT | APPS_BSE_FAULT,
-  BSE_FAULT_AND_APPS_BSE_FAULT = BSE_FAULT | APPS_BSE_FAULT,
-  APPS_FAULT_AND_BSE_FAULT_AND_APPS_BSE_FAULT =
-      APPS_FAULT | BSE_FAULT | APPS_BSE_FAULT,
-};
-
-static PedalFaults get_pedal_faults(bool apps_fault, bool bse_fault,
-                                    bool apps_bse_fault) {
-  int faults = NO_FAULT;
-  if (apps_fault) {
-    faults |= APPS_FAULT;
-  }
-  if (bse_fault) {
-    faults |= BSE_FAULT;
-  }
-  if (apps_bse_fault) {
-    faults |= APPS_BSE_FAULT;
-  }
-  return static_cast<PedalFaults>(faults);
-}

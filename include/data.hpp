@@ -51,6 +51,24 @@ struct PedalData {
                                   // current high side fault (not real)
 };
 
+struct StateMachineData {
+  enum state {
+    STARTUP = 0,
+    TRACTIVE_SYSTEM_DISABLED = 1,
+    TRACTIVE_SYSTEM_ENERGIZED = 2,
+    TRACTIVE_SYSTEM_ENABLED = 3,
+    READY_TO_DRIVE = 4,
+    LAUNCH_WAIT = 5,
+    LAUNCH = 6,
+  } current_state;
+  uint16_t bool_code = 0;
+  uint16_t error_code = 0;
+  bool buzzer_active = false;
+  bool bspd_ok_hs = false;
+  bool bspd_brake_high = false;
+  bool bspd_current_high = false;
+};
+
 struct VehicleData {
   AccumulatorData accumulator;
   InverterData inverter;

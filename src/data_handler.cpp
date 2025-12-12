@@ -1,12 +1,13 @@
 #include "data_handler.hpp"
 #include "car.h"
 #include "data.hpp"
-#include "vcu.hpp" // For state enum definition
+#include "state_machine.hpp" // For state enum definition
 
 data_handler *data_handler::active_instance = nullptr;
 
-data_handler::data_handler(VCU *vcu, VehicleData *vehicle_data) {
-  this->vcu = vcu;
+data_handler::data_handler(StateMachine *state_machine,
+                           VehicleData *vehicle_data) {
+  this->state_machine = state_machine;
   this->vehicle_data = vehicle_data;
   active_instance = this;
 }
@@ -164,7 +165,7 @@ void data_handler::process_daq_message(void) {
 
   switch (msg_in.id) {
   case CAN_ID_VCU_SET_PARAMETER: {
-    if (vcu != nullptr) {
+    if (state_machine != nullptr) {
       unpack_message(&kms_can, CAN_ID_VCU_SET_PARAMETER, msg_in.buf.val,
                      msg_in.length, 0);
 
@@ -173,7 +174,7 @@ void data_handler::process_daq_message(void) {
       decode_can_0x0d6_vcu_target_parameter(&kms_can, &target_parameter);
       decode_can_0x0d6_vcu_parameter_value(&kms_can, &parameter_value);
 
-      vcu->set_parameter(target_parameter, parameter_value);
+      state_machine->set_parameter(target_parameter, parameter_value);
     }
     break;
   }
@@ -492,4 +493,11 @@ void data_handler::send_pedal_raw_message(uint16_t raw_apps1,
 
   active_instance->send_inv_impl(out_msg);
   active_instance->send_daq_impl(out_msg);
+}
+
+void data_handler::data_handler_main_loop() {
+
+  active_instance->process_acc_message();
+  active_instance->process_inv_message();
+  active_instance->process_daq_message();
 }

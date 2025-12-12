@@ -1,11 +1,11 @@
 #include "main.hpp"
-#include "car.h"
-#include "core_pins.h"
+#include <car.h>
+#include <core_pins.h>
 
 void setup() {
   consol.logln("Booting...");
 
-  vcu.init_state_machine();
+  state_machine.init_state_machine();
 
   // TODO: Get rid of these evil arduino calls for the buzzer
   pinMode(BUZZER, OUTPUT);
@@ -21,43 +21,34 @@ void setup() {
 
 void loop() {
 
-  //
-  //// CAN Stage
-  data_handler_obj.process_acc_message();
-  data_handler_obj.process_inv_message();
-  data_handler_obj.process_daq_message();
+  data_handler.data_handler_main_loop();
+  pedals.pedal_main_loop();
+  inverter.inverter_main_loop();
+  accumulator.accumulator_main_loop();
+  state_machine.state_machine_main_loop();
 
   if (timer_1s.check()) {
-    vcu.send_firmware_status_message();
-    vcu.send_status_message();
-    inverter.set_pid_parameters(params[INVERTER_TORQUE_KP].parameter_value,
-                                params[INVERTER_TORQUE_KI].parameter_value,
-                                params[INVERTER_TORQUE_KD].parameter_value);
+
+    inverter.inverter_1hz_loop();
+    state_machine.state_machine_1hz_loop();
   }
 
   if (timer_20hz.check()) {
-    data_handler_obj.send_pedal_travel_message(
-        pedals.get_apps1_travel(), pedals.get_apps2_travel(),
-        pedals.get_brake_travel());
-    data_handler_obj.send_pedal_raw_message(
-        pedals.get_apps1_raw(), pedals.get_apps2_raw(), pedals.get_brake_raw());
-
-    vcu.send_power_tracking_message();
 
     consol.log("\n\rraw_apps1: ");
-    consol.log(vcu.pedals->get_apps1_raw());
+    consol.log(vehicle_data.pedals.raw_apps1);
     consol.log("\n\rraw_apps2: ");
-    consol.log(vcu.pedals->get_apps2_raw());
+    consol.log(vehicle_data.pedals.raw_apps2);
     consol.log("\n\rraw_brake: ");
-    consol.log(vcu.pedals->get_brake_raw());
+    consol.log(vehicle_data.pedals.raw_brake);
   }
 
-  //
-  //// Math Stage
-  accumulator.calculate_energy_consumed_wh(millis());
-  inverter.calculate_power_output();
-  inverter.calculate_motor_distance_M(millis());
-  inverter.calculate_pid_loop();
+  if (timer_200hz.check()) {
 
-  vcu.handle_state_machine();
+    data_handler.data_handler_200hz_loop();
+    pedals.pedal_200hz_loop();
+    inverter.inverter_200hz_loop();
+    accumulator.accumulator_200hz_loop();
+    state_machine.state_machine_200hz_loop();
+  }
 }

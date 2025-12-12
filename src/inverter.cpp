@@ -157,3 +157,19 @@ void Inverter::command_speed(int16_t speed_request) // unused
 void Inverter::set_inv_parameter(uint16_t param_address, uint32_t param_data) {
   data_handler::send_inverter_parameter(param_address, param_data);
 }
+
+void Inverter::inverter_main_loop() {
+  this->calculate_pid_loop();
+  this->calculate_power_output();
+  this->calculate_motor_distance_M(millis());
+}
+
+void Inverter::inverter_200hz_loop() {}
+
+void Inverter::inverter_10hz_loop() {}
+
+void Inverter::inverter_1hz_loop() {
+  this->set_pid_parameters((*params)[INVERTER_TORQUE_KP].parameter_value,
+                           (*params)[INVERTER_TORQUE_KI].parameter_value,
+                           (*params)[INVERTER_TORQUE_KD].parameter_value);
+}

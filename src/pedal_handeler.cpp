@@ -76,6 +76,8 @@ void Pedals::check_hard_faults() {
   pedal_data.bspd_ok_hs = vsense_bspd.value.in > 500 || pedal_data.bspd_ok_hs;
 }
 
+void Pedals::pedal_main_loop() {}
+
 void Pedals::pedal_200hz_loop() {
   if (vehicle_data == nullptr) {
     return;

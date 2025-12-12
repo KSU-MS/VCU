@@ -5,7 +5,7 @@
 #include <car.h>
 #include <cstdint>
 
-class VCU;
+class StateMachine;
 class Accumulator;
 class Inverter;
 struct VehicleData;
@@ -18,7 +18,7 @@ private:
   canMan inv_can = canMan(TEENSY_CAN2, INVERTER_CAN_BAUD_RATE);
   canMan daq_can = canMan(TEENSY_CAN3, DAQ_CAN_BAUD_RATE);
   can_obj_car_h_t kms_can;
-  VCU *vcu = nullptr;
+  StateMachine *state_machine = nullptr;
   VehicleData *vehicle_data = nullptr;
 
   void send_acc_impl(const can_message &msg);
@@ -26,7 +26,7 @@ private:
   void send_daq_impl(const can_message &msg);
 
 public:
-  data_handler(VCU *vcu, VehicleData *vehicle_data);
+  data_handler(StateMachine *state_machine, VehicleData *vehicle_data);
   void start_comms(void);
   void process_acc_message(void);
   void process_inv_message(void);
@@ -75,4 +75,8 @@ public:
                                         double brake_travel);
   static void send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
                                      uint16_t raw_brake);
+
+  static void data_handler_main_loop();
+  static void data_handler_200hz_loop();
+  static void data_handler_10hz_loop();
 };

@@ -26,7 +26,7 @@ import_arduino_library_git(Time https://github.com/PaulStoffregen/Time.git maste
 # 	https://github.com/KSU-MS/ksu-ms-dbc/releases/download/105/can_lib.tar.gz
 
 import_arduino_library_git(FlexCAN_T4 https://github.com/tonton81/FlexCAN_T4.git master "")
-import_arduino_library_git(ksu_fw_common https://github.com/KSU-MS/ksu-fw-common.git main "")
+import_arduino_library_git(ksu_fw_common https://github.com/KSU-MS/ksu-fw-common.git adc_inline_fix "")
 fetch_and_add_url_lib(ksu_ms_dbc https://github.com/KSU-MS/ksu-ms-dbc/releases/latest/download/can_lib.tar.gz "")
 
 add_subdirectory(src)

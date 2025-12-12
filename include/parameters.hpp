@@ -45,7 +45,7 @@
 
 //
 //// Teensy pins
-#define ADC_CS 10
+// #define ADC_CS 10
 
 #define WSFL 28 // Digital input pullup
 #define WSFR 29 // Digital input pullup
@@ -56,8 +56,8 @@
 #define VSENSE_SDC 39 // Analog signal
 #define VSENSE_5V 40  // Analog signal
 #define VSENSE_GLV 41 // Analog signal
-#define A9 27         // Analog signal
-#define A10 26        // Analog signal
+// #define A9 27         // Analog signal
+// #define A10 26        // Analog signal
 
 #define BUZZER 4   // Output
 #define LOWSIDE1 5 // Output
@@ -93,24 +93,22 @@
 #define FW_PROJECT_IS_MAIN_OR_MASTER 0
 #endif
 
-struct parameter
-{
-    double parameter_value;
-    uint8_t scale;
-    std::string parameter_name;
+struct parameter {
+  double parameter_value;
+  uint8_t scale;
+  std::string parameter_name;
 };
 
-enum parameter_definitions : uint8_t
-{
-    MAX_TORQUE = 0,
-    SOFT_RPM_LIMIT = 1,
-    MAX_RPM_LIMIT = 2,
-    BRAKE_SPEED_LIMIT = 3,
-    POWER_LIMIT = 4,
-    CURRENT_CHARGE_LIMIT = 5,
-    CURRENT_DISCHARGE_LIMIT = 6,
-    INSTANT_CURRENT_LIMIT = 7,
-    INVERTER_TORQUE_KP = 8,
-    INVERTER_TORQUE_KI = 9,
-    INVERTER_TORQUE_KD = 10
+enum parameter_definitions : uint8_t {
+  MAX_TORQUE = 0,
+  SOFT_RPM_LIMIT = 1,
+  MAX_RPM_LIMIT = 2,
+  BRAKE_SPEED_LIMIT = 3,
+  POWER_LIMIT = 4,
+  CURRENT_CHARGE_LIMIT = 5,
+  CURRENT_DISCHARGE_LIMIT = 6,
+  INSTANT_CURRENT_LIMIT = 7,
+  INVERTER_TORQUE_KP = 8,
+  INVERTER_TORQUE_KI = 9,
+  INVERTER_TORQUE_KD = 10
 };
