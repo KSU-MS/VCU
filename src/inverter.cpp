@@ -3,11 +3,8 @@
 #include "parameters.hpp"
 
 Inverter::Inverter(bool spin_direction, std::array<parameter, 25> *params,
-                   VehicleData *vehicle_data) {
-  this->spin_forward = spin_direction;
-
-  this->params = params;
-  this->vehicle_data = vehicle_data;
+                   VehicleData *vehicle_data)
+    : spin_forward(spin_direction), params(params), vehicle_data(vehicle_data) {
 
   this->ping();
 
@@ -41,26 +38,23 @@ void Inverter::calculate_power_output() {
     return;
   }
 
-  auto &inv_data = vehicle_data->inverter;
-  inv_data.power_output_w = inv_data.bus_current * inv_data.bus_voltage;
+  vehicle_data->inverter.power_output_w =
+      vehicle_data->inverter.bus_current * vehicle_data->inverter.bus_voltage;
 }
 
 void Inverter::calculate_motor_distance_M(uint32_t time_msec) {
-  if (vehicle_data == nullptr) {
-    return;
-  }
 
-  auto &inv_data = vehicle_data->inverter;
   uint32_t time_elaped_msec =
-      time_msec - inv_data.last_distance_calc_timestamp_ms;
+      time_msec - vehicle_data->inverter.last_distance_calc_timestamp_ms;
 
   double velocity_Msec =
-      (double(inv_data.motor_rpm) / 60 / GEAR_RATIO) * WHEEL_CIRCUMFRANCE_M;
+      (double(vehicle_data->inverter.motor_rpm) / 60 / GEAR_RATIO) *
+      WHEEL_CIRCUMFRANCE_M;
 
-  inv_data.motor_distance_m +=
+  vehicle_data->inverter.motor_distance_m +=
       (double(time_elaped_msec) / 1000) * velocity_Msec;
 
-  inv_data.last_distance_calc_timestamp_ms = time_msec;
+  vehicle_data->inverter.last_distance_calc_timestamp_ms = time_msec;
 }
 
 void Inverter::ping() {
@@ -73,11 +67,6 @@ void Inverter::send_clear_faults() {
 }
 
 void Inverter::command_torque(double torque_request) {
-  if (vehicle_data == nullptr) {
-    return;
-  }
-
-  auto &inv_data = vehicle_data->inverter;
   double torque_target = torque_request;
 
   // EV. 1.4.4 A violation is defined as using more than the specified maximum
@@ -90,13 +79,14 @@ void Inverter::command_torque(double torque_request) {
 
   // calculate excess power output
   double power_over_w = std::max(
-      0.0, inv_data.power_output_w -
+      0.0, vehicle_data->inverter.power_output_w -
                (((*params)[POWER_LIMIT].parameter_value / 10.0) * 1000.0));
 
   if (power_over_w > 1e-6) {
     // calculate excess torque output from motor speed and excess power
     torque_over_nm =
-        power_over_w / std::max(1e-6, (inv_data.motor_rpm / 60.0) * 2.0 * M_PI);
+        power_over_w /
+        std::max(1e-6, (vehicle_data->inverter.motor_rpm / 60.0) * 2.0 * M_PI);
 
     // cap torque adjustment to 10% of max torque
     double torque_adjustment_capped =

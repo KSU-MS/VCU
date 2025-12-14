@@ -21,10 +21,6 @@ private:
   StateMachine *state_machine = nullptr;
   VehicleData *vehicle_data = nullptr;
 
-  void send_acc_impl(const can_message &msg);
-  void send_inv_impl(const can_message &msg);
-  void send_daq_impl(const can_message &msg);
-
 public:
   data_handler(StateMachine *state_machine, VehicleData *vehicle_data);
   void start_comms(void);
@@ -38,7 +34,6 @@ public:
   static void send_acc(const can_message &msg);
   static void send_inv(const can_message &msg);
   static void send_daq(const can_message &msg);
-  static void send_inv_and_daq(const can_message &msg);
 
   // Inverter encoding methods
   static void send_inverter_ping(bool spin_forward, bool inverter_enable,

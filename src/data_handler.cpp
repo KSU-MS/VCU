@@ -3,6 +3,8 @@
 #include "data.hpp"
 #include "state_machine.hpp" // For state enum definition
 
+
+// wierd static member initialization so we can just call the static functions from anywhere
 data_handler *data_handler::active_instance = nullptr;
 
 data_handler::data_handler(StateMachine *state_machine,
@@ -187,24 +189,12 @@ void data_handler::process_daq_message(void) {
   }
 }
 
-void data_handler::send_acc_impl(const can_message &msg) {
-  acc_can.send_controller_message(msg);
-}
-
-void data_handler::send_inv_impl(const can_message &msg) {
-  inv_can.send_controller_message(msg);
-}
-
-void data_handler::send_daq_impl(const can_message &msg) {
-  daq_can.send_controller_message(msg);
-}
-
 void data_handler::send_acc(const can_message &msg) {
   if (active_instance == nullptr) {
     return;
   }
 
-  active_instance->send_acc_impl(msg);
+  active_instance->send_acc(msg);
 }
 
 void data_handler::send_inv(const can_message &msg) {
@@ -212,7 +202,7 @@ void data_handler::send_inv(const can_message &msg) {
     return;
   }
 
-  active_instance->send_inv_impl(msg);
+  active_instance->send_inv(msg);
 }
 
 void data_handler::send_daq(const can_message &msg) {
@@ -220,16 +210,7 @@ void data_handler::send_daq(const can_message &msg) {
     return;
   }
 
-  active_instance->send_daq_impl(msg);
-}
-
-void data_handler::send_inv_and_daq(const can_message &msg) {
-  if (active_instance == nullptr) {
-    return;
-  }
-
-  active_instance->send_inv_impl(msg);
-  active_instance->send_daq_impl(msg);
+  active_instance->send_daq(msg);
 }
 
 // Inverter encoding methods
@@ -255,8 +236,8 @@ void data_handler::send_inverter_ping(bool spin_forward, bool inverter_enable,
   out_msg.length = pack_message(&active_instance->kms_can,
                                 CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
 
-  active_instance->send_inv_impl(out_msg);
-  active_instance->send_daq_impl(out_msg);
+  active_instance->send_inv(out_msg);
+  active_instance->send_daq(out_msg);
 }
 
 void data_handler::send_inverter_torque_command(double torque_target) {
@@ -272,8 +253,8 @@ void data_handler::send_inverter_torque_command(double torque_target) {
   out_msg.length = pack_message(&active_instance->kms_can,
                                 CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
 
-  active_instance->send_inv_impl(out_msg);
-  active_instance->send_daq_impl(out_msg);
+  active_instance->send_inv(out_msg);
+  active_instance->send_daq(out_msg);
 }
 
 void data_handler::send_inverter_speed_command(
@@ -302,8 +283,8 @@ void data_handler::send_inverter_speed_command(
   out_msg.length = pack_message(&active_instance->kms_can,
                                 CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
 
-  active_instance->send_inv_impl(out_msg);
-  active_instance->send_daq_impl(out_msg);
+  active_instance->send_inv(out_msg);
+  active_instance->send_daq(out_msg);
 }
 
 void data_handler::send_inverter_current_limits(uint16_t charge_limit,
@@ -322,8 +303,8 @@ void data_handler::send_inverter_current_limits(uint16_t charge_limit,
   out_msg.length = pack_message(&active_instance->kms_can,
                                 CAN_ID_BMS_CURRENT_LIMIT, &out_msg.buf.val);
 
-  active_instance->send_inv_impl(out_msg);
-  active_instance->send_daq_impl(out_msg);
+  active_instance->send_inv(out_msg);
+  active_instance->send_daq(out_msg);
 }
 
 void data_handler::send_inverter_parameter(uint16_t param_address,
@@ -344,8 +325,8 @@ void data_handler::send_inverter_parameter(uint16_t param_address,
   out_msg.length = pack_message(&active_instance->kms_can,
                                 CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
 
-  active_instance->send_inv_impl(out_msg);
-  active_instance->send_daq_impl(out_msg);
+  active_instance->send_inv(out_msg);
+  active_instance->send_daq(out_msg);
 }
 
 void data_handler::send_inverter_clear_faults() {
@@ -362,8 +343,8 @@ void data_handler::send_inverter_clear_faults() {
   out_msg.length = pack_message(&active_instance->kms_can,
                                 CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
 
-  active_instance->send_inv_impl(out_msg);
-  active_instance->send_daq_impl(out_msg);
+  active_instance->send_inv(out_msg);
+  active_instance->send_daq(out_msg);
 }
 
 // VCU encoding methods
@@ -405,8 +386,8 @@ void data_handler::send_vcu_status_message(
   out_msg.length = pack_message(&active_instance->kms_can, CAN_ID_VCU_STATUS,
                                 &out_msg.buf.val);
 
-  active_instance->send_inv_impl(out_msg);
-  active_instance->send_daq_impl(out_msg);
+  active_instance->send_inv(out_msg);
+  active_instance->send_daq(out_msg);
 }
 
 void data_handler::send_vcu_firmware_status_message(uint32_t on_time_seconds,
@@ -430,8 +411,8 @@ void data_handler::send_vcu_firmware_status_message(uint32_t on_time_seconds,
   out_msg.length = pack_message(&active_instance->kms_can,
                                 CAN_ID_VCU_FIRMWARE_VERSION, &out_msg.buf.val);
 
-  active_instance->send_inv_impl(out_msg);
-  active_instance->send_daq_impl(out_msg);
+  active_instance->send_inv(out_msg);
+  active_instance->send_daq(out_msg);
 }
 
 void data_handler::send_vcu_power_tracking_message(uint32_t lifetime_distance,
@@ -451,8 +432,8 @@ void data_handler::send_vcu_power_tracking_message(uint32_t lifetime_distance,
       pack_message(&active_instance->kms_can,
                    CAN_ID_VCU_LIFETIME_DISTANCE_AND_ONTIME, &out_msg.buf.val);
 
-  active_instance->send_inv_impl(out_msg);
-  active_instance->send_daq_impl(out_msg);
+  active_instance->send_inv(out_msg);
+  active_instance->send_daq(out_msg);
 }
 
 // Pedal encoding methods
@@ -472,8 +453,8 @@ void data_handler::send_pedal_travel_message(double apps1_travel,
   out_msg.length = pack_message(&active_instance->kms_can,
                                 CAN_ID_VCU_PEDALS_TRAVEL, &out_msg.buf.val);
 
-  active_instance->send_inv_impl(out_msg);
-  active_instance->send_daq_impl(out_msg);
+  active_instance->send_inv(out_msg);
+  active_instance->send_daq(out_msg);
 }
 
 void data_handler::send_pedal_raw_message(uint16_t raw_apps1,
@@ -491,8 +472,8 @@ void data_handler::send_pedal_raw_message(uint16_t raw_apps1,
   out_msg.length = pack_message(&active_instance->kms_can,
                                 CAN_ID_VCU_PEDAL_READINGS, &out_msg.buf.val);
 
-  active_instance->send_inv_impl(out_msg);
-  active_instance->send_daq_impl(out_msg);
+  active_instance->send_inv(out_msg);
+  active_instance->send_daq(out_msg);
 }
 
 void data_handler::data_handler_main_loop() {

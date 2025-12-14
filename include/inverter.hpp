@@ -8,12 +8,15 @@
 #include "Metro.h"
 #include "QuickPID.h"
 #include "data.hpp"
+#include "data_handler.hpp"
 
 // Inverter gets special treatment in the state machine because its a black box
 // that requires specific configuration and communication.
 
 class Inverter {
 private:
+  data_handler *data_handler;
+
   bool spin_forward = true;
   bool inverter_enable = false;
   bool inverter_discharge = false;

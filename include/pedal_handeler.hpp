@@ -20,7 +20,7 @@ private:
   adc bse = adc(mcp, ADC_CS, ADC_BSE_CHANNEL, 0.980483996877);
   adc vsense_bspd = adc(avr, BSPD_SENSE);
 
-  VehicleData *vehicle_data = nullptr;
+  VehicleData *vehicle_data;
 
   float brake_ratio;
   uint16_t brake_start;

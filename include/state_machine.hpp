@@ -2,11 +2,9 @@
 #include <can_tools.hpp>
 #include <car.h>
 
-#include "accumulator.hpp"
 #include "data.hpp"
 #include "inverter.hpp"
 #include "parameters.hpp"
-#include "pedal_handeler.hpp"
 #include "traction_control.hpp"
 #include <array>
 
@@ -22,8 +20,6 @@ enum state {
 
 class StateMachine {
 private:
-  StateMachineData state_machine_data;
-
   VehicleData *vehicle_data;
 
 public:
@@ -35,7 +31,8 @@ public:
                VehicleData *vehicle_data);
 
   inline void init_state_machine() {
-    state_machine_data.current_state = StateMachineData::state::STARTUP;
+    vehicle_data->state_machine.current_state =
+        StateMachineData::state::STARTUP;
   }
 
   bool set_state(state target_state);

@@ -74,4 +74,5 @@ struct VehicleData {
   InverterData inverter;
   DriverInterfaceData driver;
   PedalData pedals;
+  StateMachineData state_machine;
 };
