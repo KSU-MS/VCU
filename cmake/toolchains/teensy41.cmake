@@ -2,9 +2,9 @@ set(TEENSY_VERSION 41 CACHE STRING "Set to the Teensy version corresponding to y
 set(CPU_CORE_SPEED 600000000 CACHE STRING "Set to 24000000, 48000000, 72000000 or 96000000 to set CPU core speed" FORCE) # Derived variables
 set(CMAKE_EXE_LINKER_FLAGS "--specs=nosys.specs" CACHE INTERNAL "")
 
-#teensy compiler options
-set(COMPILERPATH "/home/klee/tools/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/bin/")
+#teensy compiler options, fill this out if you aren't using the nix flake to manage your build tools
 #set(COMPILERPATH "/Applications/ARM/bin/")
+set(COMPILERPATH "/nix/store/zl327dqnvg3ynlpdhpphm1cppassbnq4-gcc-arm-embedded-14.3.rel1/bin/")
 
 set(BUILD_FOR_TEENSY ON)
 set(CMAKE_SYSTEM_NAME Generic)
