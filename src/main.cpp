@@ -1,6 +1,5 @@
 #include "main.hpp"
 #include "car.h"
-#include "core_pins.h"
 
 void setup() {
   consol.logln("Booting...");
@@ -19,6 +18,9 @@ void setup() {
   digitalWrite(LOWSIDE2, LOW);
 
   consol.logln("Booted");
+
+  rearLeft.init(WSFL, &rearLeftISR, &rl_pulseCount);
+  rearRight.init(WSFR, &rearRightISR, &rr_pulseCount);
 }
 
 void loop() {
@@ -49,6 +51,7 @@ void loop() {
                                vcu.pedals->get_brake_raw());
 
     vcu.send_power_tracking_message();
+    vcu.send_wheelspeeds(rearLeft.get_rpms(), rearRight.get_rpms());
 
     consol.log("\n\rraw_apps1: ");
     consol.log(vcu.pedals->get_apps1_raw());
@@ -56,6 +59,10 @@ void loop() {
     consol.log(vcu.pedals->get_apps2_raw());
     consol.log("\n\rraw_brake: ");
     consol.log(vcu.pedals->get_brake_raw());
+    consol.log("\n\rleft_wheel: ");
+    consol.log(rearLeft.get_rpms());
+    consol.log("\n\rright_wheel: ");
+    consol.log(rearRight.get_rpms());
   }
 
   //

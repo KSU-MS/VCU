@@ -404,6 +404,16 @@ void VCU::send_power_tracking_message() {
   daq_can->send_controller_message(out_msg);
 }
 
+void VCU::send_wheelspeeds(uint16_t left, uint16_t right) {
+  encode_can_0x0c6_vcu_rpm_front_left(dbc, left);
+  encode_can_0x0c6_vcu_rpm_front_right(dbc, right);
+
+  can_message out_msg;
+  out_msg.id = CAN_ID_VCU_WHEELSPEED_READINGS;
+  out_msg.length =
+      pack_message(dbc, CAN_ID_VCU_WHEELSPEED_READINGS, &out_msg.buf.val);
+}
+
 // void VCU::send_launch_control_status_message() {
 //   encode_can_0x0cb_vcu_launchcontrol_elapsed_time(dbc, 0);
 //   encode_can_0x0cb_vcu_launchcontrol_outputtorqueco(dbc, 0);

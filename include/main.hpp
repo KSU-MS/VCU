@@ -85,6 +85,16 @@ bool wrapped_200hz() {
     return false;
   }
 }
+
+#include "ws.hpp"
+
+uint64_t rl_pulseCount, rr_pulseCount;
+
+void rearLeftISR() { rl_pulseCount++; }
+void rearRightISR() { rr_pulseCount++; }
+
+wheel_speed rearLeft;
+wheel_speed rearRight;
 #endif
 
 //

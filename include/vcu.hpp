@@ -97,4 +97,5 @@ public:
   void send_launch_control_status_message();
 
   void send_power_tracking_message();
+  void send_wheelspeeds(uint16_t left, uint16_t right);
 };
