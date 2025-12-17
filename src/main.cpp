@@ -5,7 +5,7 @@
 void setup() {
   consol.logln("Booting...");
 
-  state_machine.init_state_machine();
+  // state_machine.init_state_machine();
 
   // TODO: Get rid of these evil arduino calls for the buzzer
   pinMode(BUZZER, OUTPUT);
@@ -45,7 +45,7 @@ void loop() {
 
   if (timer_200hz.check()) {
 
-    // data_handler.data_handler_200hz_loop();
+    data_handler.data_handler_200hz_loop();
     pedals.pedal_200hz_loop();
     inverter.inverter_200hz_loop();
     accumulator.accumulator_200hz_loop();

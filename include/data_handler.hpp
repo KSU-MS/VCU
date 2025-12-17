@@ -3,26 +3,21 @@
 #include <FlexCAN_T4.h>
 #include <can_tools.hpp>
 #include <car.h>
-#include <cstdint>
 
-class StateMachine;
-class Accumulator;
-class Inverter;
 struct VehicleData;
 
 class data_handler {
 private:
   static data_handler *active_instance;
-
+  std::array<parameter, 25> *params;
   canMan acc_can = canMan(TEENSY_CAN1, ACCUMULATOR_CAN_BAUD_RATE);
   canMan inv_can = canMan(TEENSY_CAN2, INVERTER_CAN_BAUD_RATE);
   canMan daq_can = canMan(TEENSY_CAN3, DAQ_CAN_BAUD_RATE);
   can_obj_car_h_t kms_can;
-  StateMachine *state_machine = nullptr;
   VehicleData *vehicle_data = nullptr;
 
 public:
-  data_handler(StateMachine *state_machine, VehicleData *vehicle_data);
+  data_handler(std::array<parameter, 25> *params, VehicleData *vehicle_data);
   void start_comms(void);
   void process_acc_message(void);
   void process_inv_message(void);

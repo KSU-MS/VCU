@@ -3,11 +3,6 @@
 #ifndef ADC_HPP
 #include <adc.hpp>
 #endif
-#include <can_tools.hpp>
-#include <car.h>
-#include <cmath>
-#include <stdint.h>
-
 #include "data.hpp"
 #include "parameters.hpp"
 
@@ -15,10 +10,10 @@ class Pedals {
 
 private:
   // Pots
-  adc apps1 = adc(mcp, ADC_CS, ADC_ACCEL_1_CHANNEL, 0.980483996877);
-  adc apps2 = adc(mcp, ADC_CS, ADC_ACCEL_2_CHANNEL, 0.980483996877);
-  adc bse = adc(mcp, ADC_CS, ADC_BSE_CHANNEL, 0.980483996877);
-  adc vsense_bspd = adc(avr, BSPD_SENSE);
+  // adc apps1 = adc(mcp, ADC_CS, ADC_ACCEL_1_CHANNEL, 0.980483996877);
+  // adc apps2 = adc(mcp, ADC_CS, ADC_ACCEL_2_CHANNEL, 0.980483996877);
+  // adc bse = adc(mcp, ADC_CS, ADC_BSE_CHANNEL, 0.980483996877);
+  // adc vsense_bspd = adc(avr, BSPD_SENSE);
 
   VehicleData *vehicle_data;
 

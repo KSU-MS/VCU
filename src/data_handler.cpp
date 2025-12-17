@@ -1,16 +1,14 @@
 #include "data_handler.hpp"
 #include "car.h"
 #include "data.hpp"
-#include "state_machine.hpp" // For state enum definition
 
-
-// wierd static member initialization so we can just call the static functions from anywhere
+// wierd static member initialization so we can just call the static functions
+// from anywhere
 data_handler *data_handler::active_instance = nullptr;
 
-data_handler::data_handler(StateMachine *state_machine,
-                           VehicleData *vehicle_data) {
-  this->state_machine = state_machine;
-  this->vehicle_data = vehicle_data;
+data_handler::data_handler(std::array<parameter, 25> *params,
+                           VehicleData *vehicle_data)
+    : params(params), vehicle_data(vehicle_data) {
   active_instance = this;
 }
 
@@ -167,7 +165,7 @@ void data_handler::process_daq_message(void) {
 
   switch (msg_in.id) {
   case CAN_ID_VCU_SET_PARAMETER: {
-    if (state_machine != nullptr) {
+    if (params != nullptr) {
       unpack_message(&kms_can, CAN_ID_VCU_SET_PARAMETER, msg_in.buf.val,
                      msg_in.length, 0);
 
@@ -175,8 +173,7 @@ void data_handler::process_daq_message(void) {
       uint32_t parameter_value;
       decode_can_0x0d6_vcu_target_parameter(&kms_can, &target_parameter);
       decode_can_0x0d6_vcu_parameter_value(&kms_can, &parameter_value);
-
-      state_machine->set_parameter(target_parameter, parameter_value);
+      (*params)[target_parameter].parameter_value = parameter_value;
     }
     break;
   }
@@ -481,4 +478,12 @@ void data_handler::data_handler_main_loop() {
   active_instance->process_acc_message();
   active_instance->process_inv_message();
   active_instance->process_daq_message();
+}
+
+void data_handler::data_handler_200hz_loop() {
+
+}
+
+void data_handler::data_handler_10hz_loop() {
+
 }

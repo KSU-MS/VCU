@@ -117,7 +117,7 @@ VehicleData vehicle_data;
 Logger consol(serial);
 // FILE std_out_wrap;
 
-//// Critical components
+// Critical components
 Pedals pedals(MIN_BRAKE_PEDAL, START_BRAKE_PEDAL, END_BRAKE_PEDAL,
               MAX_BRAKE_PEDAL, MIN_APPS_PEDAL, START_ACCELERATOR_PEDAL_1,
               END_ACCELERATOR_PEDAL_1, START_ACCELERATOR_PEDAL_2,
@@ -129,7 +129,7 @@ Accumulator accumulator(&params, &vehicle_data);
 
 StateMachine state_machine(&inverter, &params, &vehicle_data);
 
-data_handler data_handler(&state_machine, &vehicle_data);
+data_handler data_handler(&params, &vehicle_data);
 
 //
 //// Gizmos

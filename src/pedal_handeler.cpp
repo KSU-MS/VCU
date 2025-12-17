@@ -1,6 +1,5 @@
 #include "pedal_handeler.hpp"
 #include "data_handler.hpp"
-#include <cstdint>
 
 void Pedals::update_travel(uint16_t raw_apps1, uint16_t raw_apps2,
                            uint16_t raw_brake) {
@@ -74,21 +73,23 @@ void Pedals::check_hard_faults() {
 
   // Check BSPD high side fault, do not reset fault if it is already set
   vehicle_data->pedals.bspd_ok_hs =
-      vsense_bspd.value.in > 500 || vehicle_data->pedals.bspd_ok_hs;
+      // vsense_bspd.value.in > 500 || vehicle_data->pedals.bspd_ok_hs;
+      0;
 }
 
 void Pedals::pedal_main_loop() {}
 
 void Pedals::pedal_200hz_loop() {
 
-  apps1.update();
-  apps2.update();
-  bse.update();
-  vsense_bspd.update();
+  // apps1.update();
+  // apps2.update();
+  // bse.update();
+  // vsense_bspd.update();
 
   check_hard_faults();
 
-  update_travel(apps1.value.in, apps2.value.in, bse.value.in);
+  // update_travel(apps1.value.in, apps2.value.in, bse.value.in);
+  update_travel(0, 0, 0);
 }
 
 void Pedals::pedal_10hz_loop() {
