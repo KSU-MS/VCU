@@ -15,7 +15,7 @@
 
 class Inverter {
 private:
-  data_handler *data_handler;
+  DataHandler *data_handler;
 
   bool spin_forward = true;
   bool inverter_enable = false;

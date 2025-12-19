@@ -6,9 +6,9 @@
 
 struct VehicleData;
 
-class data_handler {
+class DataHandler {
 private:
-  static data_handler *active_instance;
+  static DataHandler *active_instance;
   std::array<parameter, 25> *params;
   canMan acc_can = canMan(TEENSY_CAN1, ACCUMULATOR_CAN_BAUD_RATE);
   canMan inv_can = canMan(TEENSY_CAN2, INVERTER_CAN_BAUD_RATE);
@@ -17,7 +17,7 @@ private:
   VehicleData *vehicle_data = nullptr;
 
 public:
-  data_handler(std::array<parameter, 25> *params, VehicleData *vehicle_data);
+  DataHandler(std::array<parameter, 25> *params, VehicleData *vehicle_data);
   void start_comms(void);
   void process_acc_message(void);
   void process_inv_message(void);

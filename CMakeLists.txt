@@ -5,8 +5,8 @@ project(vcu C CXX)
 set(TEENSY_COMMON_FLAGS "-mthumb -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-d16 -Wno-unused-function -Wno-tautological-compare -Wno-cpp")
 
 # Make sure both C and C++ use the same ABI/FPU
-set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${TEENSY_COMMON_FLAGS}"   CACHE STRING "" FORCE)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TEENSY_COMMON_FLAGS}" CACHE STRING "" FORCE)
+set(CMAKE_C_FLAGS   "${TEENSY_COMMON_FLAGS}"   CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS "${TEENSY_COMMON_FLAGS}" CACHE STRING "" FORCE)
 
 include(${CMAKE_SOURCE_DIR}/cmake_declare_and_fetch.cmake.in)
 include(${CMAKE_SOURCE_DIR}/cmake/libdeps.cmake)

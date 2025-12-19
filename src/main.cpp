@@ -1,11 +1,21 @@
 #include "main.hpp"
 #include <car.h>
-#include <core_pins.h>
 
 void setup() {
   consol.logln("Booting...");
 
-  // state_machine.init_state_machine();
+  pedals = std::make_unique<Pedals>(
+      MIN_BRAKE_PEDAL, START_BRAKE_PEDAL, END_BRAKE_PEDAL, MAX_BRAKE_PEDAL,
+      MIN_APPS_PEDAL, START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1,
+      START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2, &vehicle_data);
+
+  inverter = std::make_unique<Inverter>(false, &params, &vehicle_data);
+  accumulator = std::make_unique<Accumulator>(&params, &vehicle_data);
+  state_machine =
+      std::make_unique<StateMachine>(inverter.get(), &params, &vehicle_data);
+  data_handler = std::make_unique<DataHandler>(&params, &vehicle_data);
+
+  state_machine->init_state_machine();
 
   // TODO: Get rid of these evil arduino calls for the buzzer
   pinMode(BUZZER, OUTPUT);
@@ -21,16 +31,28 @@ void setup() {
 
 void loop() {
 
-  data_handler.data_handler_main_loop();
-  pedals.pedal_main_loop();
-  inverter.inverter_main_loop();
-  accumulator.accumulator_main_loop();
-  state_machine.state_machine_main_loop();
+  data_handler->data_handler_main_loop();
+  if (pedals) {
+    pedals->pedal_main_loop();
+  }
+  if (inverter) {
+    inverter->inverter_main_loop();
+  }
+  if (accumulator) {
+    accumulator->accumulator_main_loop();
+  }
+  if (state_machine) {
+    state_machine->state_machine_main_loop();
+  }
 
   if (timer_1s.check()) {
 
-    inverter.inverter_1hz_loop();
-    state_machine.state_machine_1hz_loop();
+    if (inverter) {
+      inverter->inverter_1hz_loop();
+    }
+    if (state_machine) {
+      state_machine->state_machine_1hz_loop();
+    }
   }
 
   if (timer_20hz.check()) {
@@ -45,10 +67,18 @@ void loop() {
 
   if (timer_200hz.check()) {
 
-    data_handler.data_handler_200hz_loop();
-    pedals.pedal_200hz_loop();
-    inverter.inverter_200hz_loop();
-    accumulator.accumulator_200hz_loop();
-    state_machine.state_machine_200hz_loop();
+    data_handler->data_handler_200hz_loop();
+    if (pedals) {
+      pedals->pedal_200hz_loop();
+    }
+    if (inverter) {
+      inverter->inverter_200hz_loop();
+    }
+    if (accumulator) {
+      accumulator->accumulator_200hz_loop();
+    }
+    if (state_machine) {
+      state_machine->state_machine_200hz_loop();
+    }
   }
 }

@@ -1,4 +1,9 @@
 #pragma once
+#include <memory>
+
+#ifndef ARDUINO
+#define ARDUINO
+#endif
 
 // ksu-fw-common
 #include <adc.hpp>
@@ -118,18 +123,11 @@ Logger consol(serial);
 // FILE std_out_wrap;
 
 // Critical components
-Pedals pedals(MIN_BRAKE_PEDAL, START_BRAKE_PEDAL, END_BRAKE_PEDAL,
-              MAX_BRAKE_PEDAL, MIN_APPS_PEDAL, START_ACCELERATOR_PEDAL_1,
-              END_ACCELERATOR_PEDAL_1, START_ACCELERATOR_PEDAL_2,
-              END_ACCELERATOR_PEDAL_2, &vehicle_data);
-
-Inverter inverter(false, &params, &vehicle_data);
-
-Accumulator accumulator(&params, &vehicle_data);
-
-StateMachine state_machine(&inverter, &params, &vehicle_data);
-
-data_handler data_handler(&params, &vehicle_data);
+std::unique_ptr<Pedals> pedals;
+std::unique_ptr<Inverter> inverter;
+std::unique_ptr<Accumulator> accumulator;
+std::unique_ptr<StateMachine> state_machine;
+std::unique_ptr<DataHandler> data_handler;
 
 //
 //// Gizmos

@@ -1,7 +1,6 @@
 #include "state_machine.hpp"
 #include "data_handler.hpp"
 #include "parameters.hpp"
-#include <array>
 #include <car.h>
 #include <logger.hpp>
 
@@ -293,7 +292,7 @@ void StateMachine::state_machine_main_loop() {
 }
 
 void StateMachine::send_status_message() {
-  data_handler::send_vcu_status_message(
+  DataHandler::send_vcu_status_message(
       vehicle_data->state_machine.bspd_brake_high,
       vehicle_data->state_machine.bspd_current_high,
       vehicle_data->state_machine.bspd_ok_hs,
@@ -307,13 +306,13 @@ void StateMachine::send_status_message() {
 
 void StateMachine::send_firmware_status_message() {
   // TODO: Abstract this arduino call
-  data_handler::send_vcu_firmware_status_message(millis() / 1000, AUTO_VERSION,
-                                                 FW_PROJECT_IS_DIRTY,
-                                                 FW_PROJECT_IS_MAIN_OR_MASTER);
+  DataHandler::send_vcu_firmware_status_message(millis() / 1000, AUTO_VERSION,
+                                                FW_PROJECT_IS_DIRTY,
+                                                FW_PROJECT_IS_MAIN_OR_MASTER);
 }
 
 void StateMachine::send_power_tracking_message() {
-  data_handler::send_vcu_power_tracking_message(
+  DataHandler::send_vcu_power_tracking_message(
       uint32_t(vehicle_data->inverter.motor_distance_m),
       vehicle_data->accumulator.consumed_power_wh);
 }

@@ -4,15 +4,15 @@
 
 // wierd static member initialization so we can just call the static functions
 // from anywhere
-data_handler *data_handler::active_instance = nullptr;
+DataHandler *DataHandler::active_instance = nullptr;
 
-data_handler::data_handler(std::array<parameter, 25> *params,
-                           VehicleData *vehicle_data)
+DataHandler::DataHandler(std::array<parameter, 25> *params,
+                         VehicleData *vehicle_data)
     : params(params), vehicle_data(vehicle_data) {
   active_instance = this;
 }
 
-void data_handler::start_comms(void) {
+void DataHandler::start_comms(void) {
   // TODO: Maybe use mailboxes and interupts off the mailboxes to handle the ID
   // filtering? IMO we are not performace/reasource constrained and doing
   // interupts off specific messages doesn't really seem like something we need
@@ -37,7 +37,7 @@ void data_handler::start_comms(void) {
   // acc_can.mailboxStatus();
 }
 
-void data_handler::process_acc_message(void) {
+void DataHandler::process_acc_message(void) {
   if (!acc_can.check_controller_message()) {
     return;
   }
@@ -95,7 +95,7 @@ void data_handler::process_acc_message(void) {
   }
 }
 
-void data_handler::process_inv_message(void) {
+void DataHandler::process_inv_message(void) {
   if (!inv_can.check_controller_message()) {
     return;
   }
@@ -156,7 +156,7 @@ void data_handler::process_inv_message(void) {
   }
 }
 
-void data_handler::process_daq_message(void) {
+void DataHandler::process_daq_message(void) {
   if (!daq_can.check_controller_message()) {
     return;
   }
@@ -186,7 +186,7 @@ void data_handler::process_daq_message(void) {
   }
 }
 
-void data_handler::send_acc(const can_message &msg) {
+void DataHandler::send_acc(const can_message &msg) {
   if (active_instance == nullptr) {
     return;
   }
@@ -194,7 +194,7 @@ void data_handler::send_acc(const can_message &msg) {
   active_instance->send_acc(msg);
 }
 
-void data_handler::send_inv(const can_message &msg) {
+void DataHandler::send_inv(const can_message &msg) {
   if (active_instance == nullptr) {
     return;
   }
@@ -202,7 +202,7 @@ void data_handler::send_inv(const can_message &msg) {
   active_instance->send_inv(msg);
 }
 
-void data_handler::send_daq(const can_message &msg) {
+void DataHandler::send_daq(const can_message &msg) {
   if (active_instance == nullptr) {
     return;
   }
@@ -211,8 +211,8 @@ void data_handler::send_daq(const can_message &msg) {
 }
 
 // Inverter encoding methods
-void data_handler::send_inverter_ping(bool spin_forward, bool inverter_enable,
-                                      bool inverter_discharge) {
+void DataHandler::send_inverter_ping(bool spin_forward, bool inverter_enable,
+                                     bool inverter_discharge) {
   if (active_instance == nullptr) {
     return;
   }
@@ -237,7 +237,7 @@ void data_handler::send_inverter_ping(bool spin_forward, bool inverter_enable,
   active_instance->send_daq(out_msg);
 }
 
-void data_handler::send_inverter_torque_command(double torque_target) {
+void DataHandler::send_inverter_torque_command(double torque_target) {
   if (active_instance == nullptr) {
     return;
   }
@@ -254,7 +254,7 @@ void data_handler::send_inverter_torque_command(double torque_target) {
   active_instance->send_daq(out_msg);
 }
 
-void data_handler::send_inverter_speed_command(
+void DataHandler::send_inverter_speed_command(
     int16_t speed_request, bool spin_forward, bool speed_mode,
     bool inverter_enable, bool inverter_discharge, double max_torque) {
   if (active_instance == nullptr) {
@@ -284,8 +284,8 @@ void data_handler::send_inverter_speed_command(
   active_instance->send_daq(out_msg);
 }
 
-void data_handler::send_inverter_current_limits(uint16_t charge_limit,
-                                                uint16_t discharge_limit) {
+void DataHandler::send_inverter_current_limits(uint16_t charge_limit,
+                                               uint16_t discharge_limit) {
   if (active_instance == nullptr) {
     return;
   }
@@ -304,8 +304,8 @@ void data_handler::send_inverter_current_limits(uint16_t charge_limit,
   active_instance->send_daq(out_msg);
 }
 
-void data_handler::send_inverter_parameter(uint16_t param_address,
-                                           uint32_t param_data) {
+void DataHandler::send_inverter_parameter(uint16_t param_address,
+                                          uint32_t param_data) {
   if (active_instance == nullptr) {
     return;
   }
@@ -326,7 +326,7 @@ void data_handler::send_inverter_parameter(uint16_t param_address,
   active_instance->send_daq(out_msg);
 }
 
-void data_handler::send_inverter_clear_faults() {
+void DataHandler::send_inverter_clear_faults() {
   if (active_instance == nullptr) {
     return;
   }
@@ -345,7 +345,7 @@ void data_handler::send_inverter_clear_faults() {
 }
 
 // VCU encoding methods
-void data_handler::send_vcu_status_message(
+void DataHandler::send_vcu_status_message(
     bool bspd_brake_high, bool bspd_current_high, bool bspd_ok_hs,
     bool bms_ok_hs, bool imd_ok_hs, bool buzzer_active, bool inverter_enable,
     double max_torque, uint8_t torque_mode, int current_state) {
@@ -387,10 +387,10 @@ void data_handler::send_vcu_status_message(
   active_instance->send_daq(out_msg);
 }
 
-void data_handler::send_vcu_firmware_status_message(uint32_t on_time_seconds,
-                                                    uint32_t fw_version,
-                                                    bool project_is_dirty,
-                                                    bool project_on_main) {
+void DataHandler::send_vcu_firmware_status_message(uint32_t on_time_seconds,
+                                                   uint32_t fw_version,
+                                                   bool project_is_dirty,
+                                                   bool project_on_main) {
   if (active_instance == nullptr) {
     return;
   }
@@ -412,8 +412,8 @@ void data_handler::send_vcu_firmware_status_message(uint32_t on_time_seconds,
   active_instance->send_daq(out_msg);
 }
 
-void data_handler::send_vcu_power_tracking_message(uint32_t lifetime_distance,
-                                                   double lifetime_ontime) {
+void DataHandler::send_vcu_power_tracking_message(uint32_t lifetime_distance,
+                                                  double lifetime_ontime) {
   if (active_instance == nullptr) {
     return;
   }
@@ -434,9 +434,9 @@ void data_handler::send_vcu_power_tracking_message(uint32_t lifetime_distance,
 }
 
 // Pedal encoding methods
-void data_handler::send_pedal_travel_message(double apps1_travel,
-                                             double apps2_travel,
-                                             double brake_travel) {
+void DataHandler::send_pedal_travel_message(double apps1_travel,
+                                            double apps2_travel,
+                                            double brake_travel) {
   if (active_instance == nullptr) {
     return;
   }
@@ -454,9 +454,8 @@ void data_handler::send_pedal_travel_message(double apps1_travel,
   active_instance->send_daq(out_msg);
 }
 
-void data_handler::send_pedal_raw_message(uint16_t raw_apps1,
-                                          uint16_t raw_apps2,
-                                          uint16_t raw_brake) {
+void DataHandler::send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
+                                         uint16_t raw_brake) {
   if (active_instance == nullptr) {
     return;
   }
@@ -473,17 +472,13 @@ void data_handler::send_pedal_raw_message(uint16_t raw_apps1,
   active_instance->send_daq(out_msg);
 }
 
-void data_handler::data_handler_main_loop() {
+void DataHandler::data_handler_main_loop() {
 
   active_instance->process_acc_message();
   active_instance->process_inv_message();
   active_instance->process_daq_message();
 }
 
-void data_handler::data_handler_200hz_loop() {
+void DataHandler::data_handler_200hz_loop() {}
 
-}
-
-void data_handler::data_handler_10hz_loop() {
-
-}
+void DataHandler::data_handler_10hz_loop() {}

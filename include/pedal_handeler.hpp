@@ -1,19 +1,17 @@
 #pragma once
 
-#ifndef ADC_HPP
-#include <adc.hpp>
-#endif
 #include "data.hpp"
 #include "parameters.hpp"
+#include <adc.hpp>
 
 class Pedals {
 
 private:
   // Pots
-  // adc apps1 = adc(mcp, ADC_CS, ADC_ACCEL_1_CHANNEL, 0.980483996877);
-  // adc apps2 = adc(mcp, ADC_CS, ADC_ACCEL_2_CHANNEL, 0.980483996877);
-  // adc bse = adc(mcp, ADC_CS, ADC_BSE_CHANNEL, 0.980483996877);
-  // adc vsense_bspd = adc(avr, BSPD_SENSE);
+  adc apps1 = adc(mcp, ADC_CS, ADC_ACCEL_1_CHANNEL, 0.980483996877);
+  adc apps2 = adc(mcp, ADC_CS, ADC_ACCEL_2_CHANNEL, 0.980483996877);
+  adc bse = adc(mcp, ADC_CS, ADC_BSE_CHANNEL, 0.980483996877);
+  adc vsense_bspd = adc(avr, BSPD_SENSE);
 
   VehicleData *vehicle_data;
 
@@ -66,38 +64,6 @@ public:
   // TODO: Make the release and apps_bse values configurable
   void update_travel(uint16_t raw_apps1, uint16_t raw_apps2,
                      uint16_t raw_brake);
-
-  inline bool get_bse_fault_ok_low() const {
-    return vehicle_data ? vehicle_data->pedals.bse_fault : false;
-  }
-  inline bool get_apps_fault_ok_low() const {
-    return vehicle_data ? vehicle_data->pedals.apps_fault : false;
-  }
-  inline bool get_apps_bse_fault_ok_low() const {
-    return vehicle_data ? vehicle_data->pedals.apps_bse_fault : false;
-  }
-
-  inline uint16_t get_apps1_raw() const {
-    return vehicle_data ? vehicle_data->pedals.raw_apps1 : 0;
-  }
-  inline uint16_t get_apps2_raw() const {
-    return vehicle_data ? vehicle_data->pedals.raw_apps2 : 0;
-  }
-  inline uint16_t get_brake_raw() const {
-    return vehicle_data ? vehicle_data->pedals.raw_brake : 0;
-  }
-  inline double get_apps1_travel() const {
-    return vehicle_data ? vehicle_data->pedals.apps1_travel : 0.0;
-  }
-  inline double get_apps2_travel() const {
-    return vehicle_data ? vehicle_data->pedals.apps2_travel : 0.0;
-  }
-  inline double get_brake_travel() const {
-    return vehicle_data ? vehicle_data->pedals.brake_travel : 0.0;
-  }
-  inline double get_throttle_travel() const {
-    return vehicle_data ? vehicle_data->pedals.throttle_travel : 0.0;
-  }
 
   void check_hard_faults();
 

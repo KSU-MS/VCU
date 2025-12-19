@@ -29,7 +29,7 @@ Inverter::Inverter(bool spin_direction, std::array<parameter, 25> *params,
 
 void Inverter::set_current_limits(uint16_t charge_limit,
                                   uint16_t discharge_limit) {
-  data_handler::send_inverter_current_limits(charge_limit, discharge_limit);
+  DataHandler::send_inverter_current_limits(charge_limit, discharge_limit);
 }
 
 void Inverter::calculate_power_output() {
@@ -58,12 +58,12 @@ void Inverter::calculate_motor_distance_M(uint32_t time_msec) {
 }
 
 void Inverter::ping() {
-  data_handler::send_inverter_ping(spin_forward, inverter_enable,
-                                   inverter_discharge);
+  DataHandler::send_inverter_ping(spin_forward, inverter_enable,
+                                  inverter_discharge);
 }
 
 void Inverter::send_clear_faults() {
-  data_handler::send_inverter_clear_faults();
+  DataHandler::send_inverter_clear_faults();
 }
 
 void Inverter::command_torque(double torque_request) {
@@ -134,18 +134,18 @@ void Inverter::command_torque(double torque_request) {
   // all of this should really be handled elsewhere, we call this function on a
   // 200hz interval
 
-  data_handler::send_inverter_torque_command(torque_target);
+  DataHandler::send_inverter_torque_command(torque_target);
 }
 
 void Inverter::command_speed(int16_t speed_request) // unused
 {
-  data_handler::send_inverter_speed_command(
+  DataHandler::send_inverter_speed_command(
       speed_request, spin_forward, speed_mode, inverter_enable,
       inverter_discharge, (*params)[MAX_TORQUE].parameter_value);
 }
 
 void Inverter::set_inv_parameter(uint16_t param_address, uint32_t param_data) {
-  data_handler::send_inverter_parameter(param_address, param_data);
+  DataHandler::send_inverter_parameter(param_address, param_data);
 }
 
 void Inverter::inverter_main_loop() {
