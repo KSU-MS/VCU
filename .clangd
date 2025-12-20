@@ -5,12 +5,12 @@ CompileFlags:
   # resolve when clang (rather than arm-none-eabi-g++) parses sources.
   Add: [
     "--target=arm-none-eabi",
-    "-isystem/home/emeltzer/tools/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/arm-none-eabi/include/c++/14.3.1",
-    "-isystem/home/emeltzer/tools/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/arm-none-eabi/include/c++/14.3.1/arm-none-eabi",
-    "-isystem/home/emeltzer/tools/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/arm-none-eabi/include/c++/14.3.1/backward",
-    "-isystem/home/emeltzer/tools/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/lib/gcc/arm-none-eabi/14.3.1/include",
-    "-isystem/home/emeltzer/tools/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/lib/gcc/arm-none-eabi/14.3.1/include-fixed",
-    "-isystem/home/emeltzer/tools/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi/arm-none-eabi/include",
+    "-isystem/nix/store/zl327dqnvg3ynlpdhpphm1cppassbnq4-gcc-arm-embedded-14.3.rel1/arm-none-eabi/include/c++/14.3.1",
+    "-isystem/nix/store/zl327dqnvg3ynlpdhpphm1cppassbnq4-gcc-arm-embedded-14.3.rel1/arm-none-eabi/include/c++/14.3.1/arm-none-eabi",
+    "-isystem/nix/store/zl327dqnvg3ynlpdhpphm1cppassbnq4-gcc-arm-embedded-14.3.rel1/arm-none-eabi/include/c++/14.3.1/backward",
+    "-isystem/nix/store/zl327dqnvg3ynlpdhpphm1cppassbnq4-gcc-arm-embedded-14.3.rel1/lib/gcc/arm-none-eabi/14.3.1/include",
+    "-isystem/nix/store/zl327dqnvg3ynlpdhpphm1cppassbnq4-gcc-arm-embedded-14.3.rel1/lib/gcc/arm-none-eabi/14.3.1/include-fixed",
+    "-isystem/nix/store/zl327dqnvg3ynlpdhpphm1cppassbnq4-gcc-arm-embedded-14.3.rel1/arm-none-eabi/include",
     "-ferror-limit=0",
   ]
 Diagnostics:

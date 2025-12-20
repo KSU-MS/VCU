@@ -27,7 +27,7 @@
 
         shellHook = ''
           echo "Use flash-teensy to upload a built firmware hex"
-          alias flash-teensy='teensy-loader-cli --mcu=TEENSY41 -w -r ./build/src/firmware.hex'
+          alias flash-teensy='teensy-loader-cli --mcu=TEENSY41 -w -s ./build/src/firmware.hex'
         '';
       };
 

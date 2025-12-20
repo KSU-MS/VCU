@@ -191,7 +191,7 @@ void DataHandler::send_acc(const can_message &msg) {
     return;
   }
 
-  active_instance->send_acc(msg);
+  active_instance->acc_can.send_controller_message(msg);
 }
 
 void DataHandler::send_inv(const can_message &msg) {
@@ -199,7 +199,7 @@ void DataHandler::send_inv(const can_message &msg) {
     return;
   }
 
-  active_instance->send_inv(msg);
+  active_instance->inv_can.send_controller_message(msg);
 }
 
 void DataHandler::send_daq(const can_message &msg) {
@@ -207,7 +207,7 @@ void DataHandler::send_daq(const can_message &msg) {
     return;
   }
 
-  active_instance->send_daq(msg);
+  active_instance->daq_can.send_controller_message(msg);
 }
 
 // Inverter encoding methods

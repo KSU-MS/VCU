@@ -4,8 +4,7 @@
 .ccls
 .cache/clangd/index
 compile_commands.json
-.vscode/c_cpp_properties.json
-.vscode/extensions.json
-.vscode/launch.json
+.vscode
 build
 .cache
+.clangd
