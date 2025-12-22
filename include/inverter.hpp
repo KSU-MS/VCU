@@ -44,7 +44,7 @@ private:
 
   Metro *timer_overpower_decay;
 
-  std::array<parameter, 25> *params;
+  std::array<Parameter, 25> *params;
   VehicleData *vehicle_data;
 
   enum inv_param_address : uint16_t {
@@ -55,27 +55,14 @@ private:
   };
 
 public:
-  Inverter(bool spin_direction, std::array<parameter, 25> *params,
+  Inverter(bool spin_direction, std::array<Parameter, 25> *params,
            VehicleData *vehicle_data);
 
   inline bool get_inverter_enable() { return inverter_enable; }
 
   uint16_t get_instant_current_limit(float voltage) {
     return static_cast<uint16_t>(
-        ((*params)[POWER_LIMIT].parameter_value * 1000.0) / voltage);
-  }
-
-  inline void set_torque_limit(double limit) {
-    (*params)[MAX_TORQUE].parameter_value = static_cast<uint64_t>(limit * 10.0);
-  }
-  inline void set_soft_speed_limit(uint16_t limit) {
-    (*params)[SOFT_RPM_LIMIT].parameter_value = static_cast<double>(limit);
-  }
-  inline void set_hard_speed_limit(uint16_t limit) {
-    (*params)[MAX_RPM_LIMIT].parameter_value = static_cast<double>(limit);
-  }
-  inline void set_power_limit_kw(uint16_t limit) {
-    (*params)[POWER_LIMIT].parameter_value = static_cast<double>(limit) * 10.0;
+        (as<double>(params->at(POWER_LIMIT_ID)) * 1000.0) / voltage);
   }
   inline void set_inverter_enable(bool enable) { inverter_enable = enable; }
   inline void calculate_pid_loop() { torquepid.Compute(); }
@@ -83,9 +70,6 @@ public:
     torquepid.SetTunings(double(kp) / 100.0, double(ki) / 100.0,
                          double(kd) / 100.0);
   }
-  inline int get_pid_kp() { return torque_kp_x100; }
-  inline int get_pid_ki() { return torque_ki_x100; }
-  inline int get_pid_kd() { return torque_kd_x100; }
   void set_current_limits(uint16_t charge_limit, uint16_t discharge_limit);
 
   void calculate_motor_distance_M(uint32_t time_msec);
@@ -95,6 +79,8 @@ public:
   void send_clear_faults();
   void command_torque(double torque_request);
   void command_speed(int16_t speed_request);
+  void set_command_mode_to_torque();
+  void set_command_mode_to_speed();
 
   void set_inv_parameter(uint16_t param_address, uint32_t param_data);
   void read_inv_parameter(uint16_t param_address);

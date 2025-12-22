@@ -8,16 +8,6 @@
 #include "traction_control.hpp"
 #include <array>
 
-enum state {
-  STARTUP = 0,                   // VCU is powering on
-  TRACTIVE_SYSTEM_DISABLED = 1,  // GLV is on, but not TSV
-  TRACTIVE_SYSTEM_ENERGIZED = 2, // TSV is up, but RTD button isn't pressed
-  TRACTIVE_SYSTEM_ENABLED = 3,   // Enable everything required to go fast
-  READY_TO_DRIVE = 4,            // Try not to hit a curb plz
-  LAUNCH_WAIT = 5,               // Make sure everything is chill for launch
-  LAUNCH = 6,                    // Accelerate, but faster
-};
-
 class StateMachine {
 private:
   VehicleData *vehicle_data;
@@ -25,9 +15,9 @@ private:
 public:
   Inverter *inverter;
   TractionController *tc;
-  std::array<parameter, 25> *params;
+  std::array<Parameter, 25> *params;
 
-  StateMachine(Inverter *inverter, std::array<parameter, 25> *params,
+  StateMachine(Inverter *inverter, std::array<Parameter, 25> *params,
                VehicleData *vehicle_data);
 
   inline void init_state_machine() {
@@ -35,12 +25,11 @@ public:
         StateMachineData::state::STARTUP;
   }
 
-  bool set_state(state target_state);
+  bool set_state(StateMachineData::state target_state);
   bool try_ts_energized();
   bool try_ts_enabled();
   bool ts_safe();
 
-  void set_parameter(uint8_t target_parameter, uint32_t parameter_value);
   void update_bspd(uint16_t raw_relay, uint16_t raw_current,
                    uint16_t raw_brake);
 
@@ -51,7 +40,8 @@ public:
   void send_power_tracking_message();
 
   // TODO: Add additional pedal maps with diffrent curves?
-  inline double get_torque_request(double throttle_travel, double max_torque) {
+  inline double get_inverter_request(double throttle_travel,
+                                     double max_torque) {
     return throttle_travel * max_torque;
   };
 

@@ -2,21 +2,18 @@
 #include "data_handler.hpp"
 #include "parameters.hpp"
 
-Inverter::Inverter(bool spin_direction, std::array<parameter, 25> *params,
+Inverter::Inverter(bool spin_direction, std::array<Parameter, 25> *params,
                    VehicleData *vehicle_data)
     : spin_forward(spin_direction), params(params), vehicle_data(vehicle_data) {
 
   this->ping();
 
-  this->set_inv_parameter(
-      Motor_Overspeed_EEPROM_RPM,
-      static_cast<uint32_t>(params->at(MAX_RPM_LIMIT).parameter_value));
-  this->set_inv_parameter(
-      Max_Speed_EEPROM_RPM,
-      static_cast<uint32_t>(params->at(SOFT_RPM_LIMIT).parameter_value));
-  this->set_inv_parameter(
-      Break_Speed_EEPROM_RPM,
-      static_cast<uint32_t>(params->at(BRAKE_SPEED_LIMIT).parameter_value));
+  this->set_inv_parameter(Motor_Overspeed_EEPROM_RPM,
+                          as<uint32_t>(params->at(MAX_RPM_LIMIT_ID)));
+  this->set_inv_parameter(Max_Speed_EEPROM_RPM,
+                          as<uint32_t>(params->at(SOFT_RPM_LIMIT_ID)));
+  this->set_inv_parameter(Break_Speed_EEPROM_RPM,
+                          as<uint32_t>(params->at(BRAKE_SPEED_LIMIT_ID)));
   // this->set_inv_parameter(Speed_Rate_Limit_EEPROM_RPM_per_s,
   // SPEED_RATE_LIMIT_RPM_PER_S);
 
@@ -80,7 +77,7 @@ void Inverter::command_torque(double torque_request) {
   // calculate excess power output
   double power_over_w = std::max(
       0.0, vehicle_data->inverter.power_output_w -
-               (((*params)[POWER_LIMIT].parameter_value / 10.0) * 1000.0));
+               (as<double>(params->at(POWER_LIMIT_ID)) / 10.0) * 1000.0);
 
   if (power_over_w > 1e-6) {
     // calculate excess torque output from motor speed and excess power
@@ -90,7 +87,7 @@ void Inverter::command_torque(double torque_request) {
 
     // cap torque adjustment to 10% of max torque
     double torque_adjustment_capped =
-        std::min(torque_over_nm, (*params)[MAX_TORQUE].parameter_value * 0.1);
+        std::min(torque_over_nm, as<double>(params->at(MAX_TORQUE_ID)) * 0.1);
 
     // ensure torque subtracted is not negative
     torque_adjustment_capped = std::max(0.0, torque_adjustment_capped);
@@ -139,9 +136,15 @@ void Inverter::command_torque(double torque_request) {
 
 void Inverter::command_speed(int16_t speed_request) // unused
 {
-  DataHandler::send_inverter_speed_command(
-      speed_request, spin_forward, speed_mode, inverter_enable,
-      inverter_discharge, (*params)[MAX_TORQUE].parameter_value);
+  DataHandler::send_inverter_speed_command(speed_request);
+}
+
+void Inverter::set_command_mode_to_torque() {
+  DataHandler::send_inverter_set_command_mode(true);
+}
+
+void Inverter::set_command_mode_to_speed() {
+  DataHandler::send_inverter_set_command_mode(false);
 }
 
 void Inverter::set_inv_parameter(uint16_t param_address, uint32_t param_data) {
@@ -159,7 +162,7 @@ void Inverter::inverter_200hz_loop() {}
 void Inverter::inverter_10hz_loop() {}
 
 void Inverter::inverter_1hz_loop() {
-  this->set_pid_parameters((*params)[INVERTER_TORQUE_KP].parameter_value,
-                           (*params)[INVERTER_TORQUE_KI].parameter_value,
-                           (*params)[INVERTER_TORQUE_KD].parameter_value);
+  this->set_pid_parameters(as<uint32_t>(params->at(INVERTER_TORQUE_KP_ID)),
+                           as<uint32_t>(params->at(INVERTER_TORQUE_KI_ID)),
+                           as<uint32_t>(params->at(INVERTER_TORQUE_KD_ID)));
 }

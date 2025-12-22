@@ -7,7 +7,7 @@
 extern Logger consol;
 
 StateMachine::StateMachine(Inverter *inverter,
-                           std::array<parameter, 25> *params,
+                           std::array<Parameter, 25> *params,
                            VehicleData *vehicle_data)
     : vehicle_data(vehicle_data), inverter(inverter), params(params) {}
 
@@ -24,17 +24,17 @@ bool StateMachine::ts_safe() {
       vehicle_data->inverter.bus_voltage > TRACTIVE_SYSTEM_MINIMUM_VOLTAGE) {
     return true;
   } else {
-    set_state(TRACTIVE_SYSTEM_DISABLED);
+    set_state(StateMachineData::state::TRACTIVE_SYSTEM_DISABLED);
     return false;
   }
 }
 
-bool StateMachine::set_state(state target_state) {
+bool StateMachine::set_state(StateMachineData::state target_state) {
   switch (vehicle_data->state_machine.current_state) {
 
   // This is just a catch for evil starts
   case StateMachineData::state::STARTUP:
-    if (target_state == TRACTIVE_SYSTEM_DISABLED) {
+    if (target_state == StateMachineData::state::TRACTIVE_SYSTEM_DISABLED) {
       vehicle_data->state_machine.current_state =
           StateMachineData::state::TRACTIVE_SYSTEM_DISABLED;
 
@@ -52,7 +52,8 @@ bool StateMachine::set_state(state target_state) {
     break;
 
   case StateMachineData::state::TRACTIVE_SYSTEM_DISABLED:
-    if (target_state == TRACTIVE_SYSTEM_ENERGIZED && ts_safe()) {
+    if (target_state == StateMachineData::state::TRACTIVE_SYSTEM_ENERGIZED &&
+        ts_safe()) {
       vehicle_data->state_machine.current_state =
           StateMachineData::state::TRACTIVE_SYSTEM_ENERGIZED;
 
@@ -74,7 +75,8 @@ bool StateMachine::set_state(state target_state) {
     break;
 
   case StateMachineData::state::TRACTIVE_SYSTEM_ENERGIZED:
-    if (target_state == TRACTIVE_SYSTEM_ENABLED && ts_safe()) {
+    if (target_state == StateMachineData::state::TRACTIVE_SYSTEM_ENABLED &&
+        ts_safe()) {
       vehicle_data->state_machine.current_state =
           StateMachineData::state::TRACTIVE_SYSTEM_ENABLED;
 
@@ -101,9 +103,16 @@ bool StateMachine::set_state(state target_state) {
     break;
 
   case StateMachineData::state::TRACTIVE_SYSTEM_ENABLED:
-    if (target_state == READY_TO_DRIVE && ts_safe()) {
-      vehicle_data->state_machine.current_state =
-          StateMachineData::state::READY_TO_DRIVE;
+    if ((target_state == StateMachineData::state::READY_TO_DRIVE_TORQUE ||
+         target_state == StateMachineData::state::READY_TO_DRIVE_SPEED) &&
+        ts_safe()) {
+      vehicle_data->state_machine.current_state = target_state;
+      if (target_state == StateMachineData::state::READY_TO_DRIVE_TORQUE) {
+        inverter->set_command_mode_to_torque();
+      } else if (target_state ==
+                 StateMachineData::state::READY_TO_DRIVE_SPEED) {
+        inverter->set_command_mode_to_speed();
+      }
 
       vehicle_data->state_machine.buzzer_active = false;
 
@@ -133,8 +142,21 @@ bool StateMachine::set_state(state target_state) {
     }
     break;
 
-  case StateMachineData::state::READY_TO_DRIVE: // We want to be able to leave
-                                                // no matter what
+  case StateMachineData::state::READY_TO_DRIVE_TORQUE: // We want to be able to
+                                                       // leave no matter what
+    inverter->set_inverter_enable(false);
+
+    vehicle_data->state_machine.buzzer_active = false;
+
+    digitalWrite(LOWSIDE1, LOW);
+    digitalWrite(LOWSIDE2, LOW);
+
+    vehicle_data->state_machine.current_state =
+        StateMachineData::state::TRACTIVE_SYSTEM_DISABLED;
+    return true;
+    break;
+  case StateMachineData::state::READY_TO_DRIVE_SPEED: // We want to be able to
+                                                      // leave no matter what
     inverter->set_inverter_enable(false);
 
     vehicle_data->state_machine.buzzer_active = false;
@@ -148,16 +170,16 @@ bool StateMachine::set_state(state target_state) {
     break;
 
   case StateMachineData::state::LAUNCH_WAIT:
-    if (target_state == READY_TO_DRIVE && ts_safe()) {
+    if ((target_state == StateMachineData::state::READY_TO_DRIVE_TORQUE ||
+         target_state == StateMachineData::state::READY_TO_DRIVE_SPEED) &&
+        ts_safe()) {
 
       // TODO: Figure out what needs to get turned off
-      vehicle_data->state_machine.current_state =
-          StateMachineData::state::READY_TO_DRIVE;
-    } else if (target_state == LAUNCH && ts_safe()) {
+      vehicle_data->state_machine.current_state = target_state;
+    } else if (target_state == StateMachineData::state::LAUNCH && ts_safe()) {
 
       // TODO: Get some pre-lim logic goin
-      vehicle_data->state_machine.current_state =
-          StateMachineData::state::LAUNCH;
+      vehicle_data->state_machine.current_state = target_state;
     } else {
       inverter->set_inverter_enable(false);
 
@@ -170,8 +192,9 @@ bool StateMachine::set_state(state target_state) {
     break;
 
   case StateMachineData::state::LAUNCH:
-    if (target_state == READY_TO_DRIVE && ts_safe() &&
-        !vehicle_data->state_machine.bool_code) {
+    if ((target_state == StateMachineData::state::READY_TO_DRIVE_TORQUE ||
+         target_state == StateMachineData::state::READY_TO_DRIVE_SPEED) &&
+        ts_safe() && !vehicle_data->state_machine.bool_code) {
     } else {
       vehicle_data->state_machine.current_state =
           StateMachineData::state::TRACTIVE_SYSTEM_DISABLED;
@@ -190,18 +213,10 @@ bool StateMachine::set_state(state target_state) {
   }
 }
 
-void StateMachine::set_parameter(uint8_t target_parameter,
-                                 uint32_t parameter_value) {
-  // set the parameter in the list
-  this->params->at(target_parameter).parameter_value =
-      double(parameter_value) /
-      double(this->params->at(target_parameter).scale);
-}
-
 void StateMachine::state_machine_main_loop() {
   switch (vehicle_data->state_machine.current_state) {
   case StateMachineData::state::STARTUP:
-    if (set_state(TRACTIVE_SYSTEM_DISABLED)) {
+    if (set_state(StateMachineData::state::TRACTIVE_SYSTEM_DISABLED)) {
       consol.logln("Tractive system disabled, waiting for TS voltage");
     } else {
       consol.log("Failed to boot, ERROR: ");
@@ -211,7 +226,7 @@ void StateMachine::state_machine_main_loop() {
 
   case StateMachineData::state::TRACTIVE_SYSTEM_DISABLED:
     if (ts_safe()) {
-      if (set_state(TRACTIVE_SYSTEM_ENERGIZED)) {
+      if (set_state(StateMachineData::state::TRACTIVE_SYSTEM_ENERGIZED)) {
         consol.logln("Entering TRACTIVE_SYSTEM_ENERGIZED");
         consol.logln("Car is waiting on driver...");
       } else {
@@ -223,7 +238,7 @@ void StateMachine::state_machine_main_loop() {
 
   case StateMachineData::state::TRACTIVE_SYSTEM_ENERGIZED:
     if (try_ts_enabled()) {
-      if (set_state(TRACTIVE_SYSTEM_ENABLED)) {
+      if (set_state(StateMachineData::state::TRACTIVE_SYSTEM_ENABLED)) {
         consol.logln("Entering TRACTIVE_SYSTEM_ENABLED");
         consol.logln("Car is preping to Rip");
       } else {
@@ -235,59 +250,79 @@ void StateMachine::state_machine_main_loop() {
     if (!ts_safe()) {
       consol.log("Something isn't safe, leaving ENERGIZED, ERROR: ");
       consol.logln(vehicle_data->state_machine.error_code);
-      set_state(TRACTIVE_SYSTEM_DISABLED);
+      set_state(StateMachineData::state::TRACTIVE_SYSTEM_DISABLED);
     }
     break;
 
   case StateMachineData::state::TRACTIVE_SYSTEM_ENABLED:
     inverter->set_current_limits(
-        static_cast<uint16_t>((*params)[CURRENT_CHARGE_LIMIT].parameter_value),
-        static_cast<uint16_t>(
-            (*params)[CURRENT_DISCHARGE_LIMIT].parameter_value));
+        as<uint32_t>(this->params->at(CURRENT_CHARGE_LIMIT_ID)),
+        as<uint32_t>(this->params->at(CURRENT_DISCHARGE_LIMIT_ID)));
 
     digitalWrite(BUZZER, vehicle_data->state_machine.buzzer_active);
     delay(2151);
+    if (as<bool>(this->params->at(INVERTER_CONTROL_MODE_TORQUE_ID))) {
+      if (set_state(StateMachineData::state::READY_TO_DRIVE_TORQUE)) {
+        consol.logln("Ready to Rip");
 
-    if (set_state(READY_TO_DRIVE)) {
-      consol.logln("Ready to Rip");
+        digitalWrite(BUZZER, vehicle_data->state_machine.buzzer_active);
+      } else {
+        consol.log("Failed to enter READY_TO_DRIVE, ERROR: ");
+        consol.logln(vehicle_data->state_machine.error_code);
 
-      digitalWrite(BUZZER, vehicle_data->state_machine.buzzer_active);
+        digitalWrite(BUZZER, vehicle_data->state_machine.buzzer_active);
+      }
     } else {
-      consol.log("Failed to enter READY_TO_DRIVE, ERROR: ");
-      consol.logln(vehicle_data->state_machine.error_code);
+      if (set_state(StateMachineData::state::READY_TO_DRIVE_SPEED)) {
+        consol.logln("Ready to Rip");
 
-      digitalWrite(BUZZER, vehicle_data->state_machine.buzzer_active);
+        digitalWrite(BUZZER, vehicle_data->state_machine.buzzer_active);
+      } else {
+        consol.log("Failed to enter READY_TO_DRIVE, ERROR: ");
+        consol.logln(vehicle_data->state_machine.error_code);
+
+        digitalWrite(BUZZER, vehicle_data->state_machine.buzzer_active);
+      }
     }
     break;
 
-  case StateMachineData::state::READY_TO_DRIVE:
+  case StateMachineData::state::READY_TO_DRIVE_TORQUE:
     if (ts_safe()) {
-      inverter->command_torque(
-          get_torque_request(vehicle_data->pedals.throttle_travel,
-                             this->params->at(MAX_TORQUE).parameter_value));
+      inverter->command_torque(vehicle_data->pedals.throttle_travel *
+                               as<double>(this->params->at(MAX_TORQUE_ID)));
     } else {
       consol.log("Something isn't safe, leaving RTD, ERROR: ");
       consol.logln(vehicle_data->state_machine.error_code);
-      set_state(TRACTIVE_SYSTEM_DISABLED);
+      set_state(StateMachineData::state::TRACTIVE_SYSTEM_DISABLED);
     }
     break;
 
-  case StateMachineData::state::LAUNCH_WAIT:
-    if (set_state(LAUNCH)) {
+  case StateMachineData::state::READY_TO_DRIVE_SPEED:
+    if (ts_safe()) {
+      inverter->command_speed(
+          vehicle_data->pedals.throttle_travel *
+          as<uint32_t>(this->params->at(SOFT_RPM_LIMIT_ID)));
     } else {
-      consol.log("Aborting launch, ERROR: ");
+      consol.log("Something isn't safe, leaving RTD, ERROR: ");
       consol.logln(vehicle_data->state_machine.error_code);
-      set_state(READY_TO_DRIVE);
-    }
-    break;
+      set_state(StateMachineData::state::TRACTIVE_SYSTEM_DISABLED);
+    case StateMachineData::state::LAUNCH_WAIT:
+      if (set_state(StateMachineData::state::LAUNCH)) {
+      } else {
+        consol.log("Aborting launch, ERROR: ");
+        consol.logln(vehicle_data->state_machine.error_code);
+        set_state(StateMachineData::state::READY_TO_DRIVE_TORQUE);
+      }
+      break;
 
-  case StateMachineData::state::LAUNCH:
-    if (vehicle_data->state_machine.bool_code) {
-    } else {
-      consol.log("Exiting launch");
-      set_state(READY_TO_DRIVE);
+    case StateMachineData::state::LAUNCH:
+      if (vehicle_data->state_machine.bool_code) {
+      } else {
+        consol.log("Exiting launch");
+        set_state(StateMachineData::state::READY_TO_DRIVE_TORQUE);
+      }
+      break;
     }
-    break;
   }
 }
 
@@ -299,7 +334,7 @@ void StateMachine::send_status_message() {
       vehicle_data->accumulator.bms_ok_hs, vehicle_data->accumulator.imd_ok_hs,
       vehicle_data->state_machine.buzzer_active,
       inverter->get_inverter_enable(),
-      this->params->at(MAX_TORQUE).parameter_value,
+      as<double>(this->params->at(MAX_TORQUE_ID)),
       vehicle_data->state_machine.bool_code,
       static_cast<int>(vehicle_data->state_machine.current_state));
 }

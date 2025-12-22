@@ -57,9 +57,10 @@ struct StateMachineData {
     TRACTIVE_SYSTEM_DISABLED = 1,
     TRACTIVE_SYSTEM_ENERGIZED = 2,
     TRACTIVE_SYSTEM_ENABLED = 3,
-    READY_TO_DRIVE = 4,
-    LAUNCH_WAIT = 5,
-    LAUNCH = 6,
+    READY_TO_DRIVE_TORQUE = 4,
+    READY_TO_DRIVE_SPEED = 5,
+    LAUNCH_WAIT = 6,
+    LAUNCH = 7,
   } current_state;
   uint16_t bool_code = 0;
   uint16_t error_code = 0;

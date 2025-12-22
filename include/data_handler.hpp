@@ -9,7 +9,7 @@ struct VehicleData;
 class DataHandler {
 private:
   static DataHandler *active_instance;
-  std::array<parameter, 25> *params;
+  std::array<Parameter, 25> *params;
   canMan acc_can = canMan(TEENSY_CAN1, ACCUMULATOR_CAN_BAUD_RATE);
   canMan inv_can = canMan(TEENSY_CAN2, INVERTER_CAN_BAUD_RATE);
   canMan daq_can = canMan(TEENSY_CAN3, DAQ_CAN_BAUD_RATE);
@@ -17,7 +17,7 @@ private:
   VehicleData *vehicle_data = nullptr;
 
 public:
-  DataHandler(std::array<parameter, 25> *params, VehicleData *vehicle_data);
+  DataHandler(std::array<Parameter, 25> *params, VehicleData *vehicle_data);
   void start_comms(void);
   void process_acc_message(void);
   void process_inv_message(void);
@@ -34,11 +34,8 @@ public:
   static void send_inverter_ping(bool spin_forward, bool inverter_enable,
                                  bool inverter_discharge);
   static void send_inverter_torque_command(double torque_target);
-  static void send_inverter_speed_command(int16_t speed_request,
-                                          bool spin_forward, bool speed_mode,
-                                          bool inverter_enable,
-                                          bool inverter_discharge,
-                                          double max_torque);
+  static void send_inverter_speed_command(int16_t speed_request);
+  static void send_inverter_set_command_mode(bool torque_mode);
   static void send_inverter_current_limits(uint16_t charge_limit,
                                            uint16_t discharge_limit);
   static void send_inverter_parameter(uint16_t param_address,

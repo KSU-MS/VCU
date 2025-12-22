@@ -1,7 +1,7 @@
 #include "accumulator.hpp"
 #include "core_pins.h"
 
-Accumulator::Accumulator(std::array<parameter, 25> *params,
+Accumulator::Accumulator(std::array<Parameter, 25> *params,
                          VehicleData *vehicle_data)
     : params(params), vehicle_data(vehicle_data) {}
 

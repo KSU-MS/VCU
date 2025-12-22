@@ -104,15 +104,20 @@ bool wrapped_10hz_2() {
 void reset_wrapped_10hz_2() { timer_10hz_2.reset(); }
 #endif
 
-std::array<parameter, 25> params = {
-    parameter{MAX_TORQUE_LIMIT_NM_x10 / 10.0, 10, "TORQUE_LIMIT_NM_x10"},
-    parameter{SOFT_MOTOR_RPM_LIMIT_x10 / 10.0, 10, "SOFT_MOTOR_RPM_LIMIT_x10"},
-    parameter{MAX_MOTOR_RPM_LIMIT_x10 / 10.0, 10, "MAX_MOTOR_RPM_LIMIT_x10"},
-    parameter{BRAKE_SPEED_RPM_x10 / 10.0, 10, "BRAKE_SPEED_RPM_x10"},
-    parameter{POWER_LIMIT_KW_x10 / 10.0, 10, "POWER_LIMIT_KW_x10"},
-    parameter{INVERTER_CHARGE_LIMIT, 1, "INVERTER_CHARGE_LIMIT"},
-    parameter{INVERTER_DISCHARGE_LIMIT, 1, "INVERTER_DISCHARGE_LIMIT"},
-};
+std::array<Parameter, 25> params = {{
+    {double{MAX_TORQUE_LIMIT_NM}, 10, "MAX_TORQUE"},
+    {uint32_t{SOFT_MOTOR_RPM_LIMIT}, 1, "SOFT_RPM_LIMIT"},
+    {uint32_t{MAX_MOTOR_RPM_LIMIT}, 1, "MAX_RPM_LIMIT"},
+    {uint32_t{BRAKE_SPEED_RPM}, 1, "BRAKE_SPEED_LIMIT"},
+    {double{POWER_LIMIT_KW}, 10, "POWER_LIMIT"},
+    {uint32_t{INVERTER_CHARGE_LIMIT_A}, 1, "CURRENT_CHARGE_LIMIT"},
+    {uint32_t{INVERTER_DISCHARGE_LIMIT_A}, 1, "CURRENT_DISCHARGE_LIMIT"},
+    {uint32_t{0}, 1, "INSTANT_CURRENT_LIMIT"},
+    {double{INVERTER_TORQUE_KP}, 100, "INVERTER_TORQUE_KP"},
+    {double{INVERTER_TORQUE_KI}, 100, "INVERTER_TORQUE_KI"},
+    {double{INVERTER_TORQUE_KD}, 100, "INVERTER_TORQUE_KD"},
+    {bool{INVERTER_CONTROL_MODE_TORQUE}, 1, "INVERTER_CONTROL_MODE_TORQUE"},
+}};
 
 VehicleData vehicle_data;
 
