@@ -256,12 +256,12 @@ void StateMachine::state_machine_main_loop() {
 
   case StateMachineData::state::TRACTIVE_SYSTEM_ENABLED:
     inverter->set_current_limits(
-        as<uint32_t>(this->params->at(CURRENT_CHARGE_LIMIT_ID)),
-        as<uint32_t>(this->params->at(CURRENT_DISCHARGE_LIMIT_ID)));
+        this->params->at(CURRENT_CHARGE_LIMIT_ID).value,
+        this->params->at(CURRENT_DISCHARGE_LIMIT_ID).value);
 
     digitalWrite(BUZZER, vehicle_data->state_machine.buzzer_active);
     delay(2151);
-    if (as<bool>(this->params->at(INVERTER_CONTROL_MODE_TORQUE_ID))) {
+    if (this->params->at(INVERTER_CONTROL_MODE_TORQUE_ID).value) {
       if (set_state(StateMachineData::state::READY_TO_DRIVE_TORQUE)) {
         consol.logln("Ready to Rip");
 
@@ -289,7 +289,7 @@ void StateMachine::state_machine_main_loop() {
   case StateMachineData::state::READY_TO_DRIVE_TORQUE:
     if (ts_safe()) {
       inverter->command_torque(vehicle_data->pedals.throttle_travel *
-                               as<double>(this->params->at(MAX_TORQUE_ID)));
+                               this->params->at(MAX_TORQUE_ID).value);
     } else {
       consol.log("Something isn't safe, leaving RTD, ERROR: ");
       consol.logln(vehicle_data->state_machine.error_code);
@@ -299,9 +299,8 @@ void StateMachine::state_machine_main_loop() {
 
   case StateMachineData::state::READY_TO_DRIVE_SPEED:
     if (ts_safe()) {
-      inverter->command_speed(
-          vehicle_data->pedals.throttle_travel *
-          as<uint32_t>(this->params->at(SOFT_RPM_LIMIT_ID)));
+      inverter->command_speed(vehicle_data->pedals.throttle_travel *
+                              this->params->at(SOFT_RPM_LIMIT_ID).value);
     } else {
       consol.log("Something isn't safe, leaving RTD, ERROR: ");
       consol.logln(vehicle_data->state_machine.error_code);
@@ -333,8 +332,7 @@ void StateMachine::send_status_message() {
       vehicle_data->state_machine.bspd_ok_hs,
       vehicle_data->accumulator.bms_ok_hs, vehicle_data->accumulator.imd_ok_hs,
       vehicle_data->state_machine.buzzer_active,
-      inverter->get_inverter_enable(),
-      as<double>(this->params->at(MAX_TORQUE_ID)),
+      inverter->get_inverter_enable(), this->params->at(MAX_TORQUE_ID).value,
       vehicle_data->state_machine.bool_code,
       static_cast<int>(vehicle_data->state_machine.current_state));
 }

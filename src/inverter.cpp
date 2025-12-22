@@ -9,11 +9,11 @@ Inverter::Inverter(bool spin_direction, std::array<Parameter, 25> *params,
   this->ping();
 
   this->set_inv_parameter(Motor_Overspeed_EEPROM_RPM,
-                          as<uint32_t>(params->at(MAX_RPM_LIMIT_ID)));
+                          this->params->at(MAX_RPM_LIMIT_ID).value);
   this->set_inv_parameter(Max_Speed_EEPROM_RPM,
-                          as<uint32_t>(params->at(SOFT_RPM_LIMIT_ID)));
+                          this->params->at(SOFT_RPM_LIMIT_ID).value);
   this->set_inv_parameter(Break_Speed_EEPROM_RPM,
-                          as<uint32_t>(params->at(BRAKE_SPEED_LIMIT_ID)));
+                          this->params->at(BRAKE_SPEED_LIMIT_ID).value);
   // this->set_inv_parameter(Speed_Rate_Limit_EEPROM_RPM_per_s,
   // SPEED_RATE_LIMIT_RPM_PER_S);
 
@@ -77,7 +77,7 @@ void Inverter::command_torque(double torque_request) {
   // calculate excess power output
   double power_over_w = std::max(
       0.0, vehicle_data->inverter.power_output_w -
-               (as<double>(params->at(POWER_LIMIT_ID)) / 10.0) * 1000.0);
+               (this->params->at(POWER_LIMIT_ID).value / 10.0) * 1000.0);
 
   if (power_over_w > 1e-6) {
     // calculate excess torque output from motor speed and excess power
@@ -87,7 +87,7 @@ void Inverter::command_torque(double torque_request) {
 
     // cap torque adjustment to 10% of max torque
     double torque_adjustment_capped =
-        std::min(torque_over_nm, as<double>(params->at(MAX_TORQUE_ID)) * 0.1);
+        std::min(torque_over_nm, this->params->at(MAX_TORQUE_ID).value * 0.1);
 
     // ensure torque subtracted is not negative
     torque_adjustment_capped = std::max(0.0, torque_adjustment_capped);
@@ -162,7 +162,7 @@ void Inverter::inverter_200hz_loop() {}
 void Inverter::inverter_10hz_loop() {}
 
 void Inverter::inverter_1hz_loop() {
-  this->set_pid_parameters(as<uint32_t>(params->at(INVERTER_TORQUE_KP_ID)),
-                           as<uint32_t>(params->at(INVERTER_TORQUE_KI_ID)),
-                           as<uint32_t>(params->at(INVERTER_TORQUE_KD_ID)));
+  this->set_pid_parameters(this->params->at(INVERTER_TORQUE_KP_X100_ID).value,
+                           this->params->at(INVERTER_TORQUE_KI_X100_ID).value,
+                           this->params->at(INVERTER_TORQUE_KD_X100_ID).value);
 }

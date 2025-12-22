@@ -3,8 +3,8 @@
 
 //
 // Some car values
-#define MAX_TORQUE_LIMIT_NM 190.0
-#define POWER_LIMIT_KW 80.0
+#define MAX_TORQUE_LIMIT_NM 190
+#define POWER_LIMIT_W 80000
 #define SOFT_MOTOR_RPM_LIMIT 6000
 #define MAX_MOTOR_RPM_LIMIT 7000
 #define BRAKE_SPEED_RPM 5000
@@ -12,9 +12,9 @@
 
 #define INVERTER_CONTROL_MODE_TORQUE 1
 
-#define INVERTER_TORQUE_KP 3.0
-#define INVERTER_TORQUE_KI 0.0
-#define INVERTER_TORQUE_KD 0.0
+#define INVERTER_TORQUE_KP_X100 300
+#define INVERTER_TORQUE_KI_X100 1
+#define INVERTER_TORQUE_KD_X100 0
 
 #define TRACTIVE_SYSTEM_MINIMUM_VOLTAGE 400
 #define PRECHARGE_OK_STATE 2
@@ -97,9 +97,6 @@
 #define FW_PROJECT_IS_MAIN_OR_MASTER 0
 #endif
 
-#include <type_traits>
-#include <variant>
-
 enum parameterId : uint8_t {
   MAX_TORQUE_ID = 0,
   SOFT_RPM_LIMIT_ID = 1,
@@ -109,54 +106,13 @@ enum parameterId : uint8_t {
   CURRENT_CHARGE_LIMIT_ID = 5,
   CURRENT_DISCHARGE_LIMIT_ID = 6,
   INSTANT_CURRENT_LIMIT_ID = 7,
-  INVERTER_TORQUE_KP_ID = 8,
-  INVERTER_TORQUE_KI_ID = 9,
-  INVERTER_TORQUE_KD_ID = 10,
+  INVERTER_TORQUE_KP_X100_ID = 8,
+  INVERTER_TORQUE_KI_X100_ID = 9,
+  INVERTER_TORQUE_KD_X100_ID = 10,
   INVERTER_CONTROL_MODE_TORQUE_ID = 11,
 };
 
-// parameter values can be integer type uint32_t, double with scale, or bool
-using ParameterValue = std::variant<uint32_t, double, bool>;
-
 struct Parameter {
-  ParameterValue value;
-  double scale;
+  uint32_t value;
   const char *name;
 };
-
-inline uint32_t encode_for_can(const Parameter &p) {
-  return std::visit(
-      [&](auto v) -> uint32_t {
-        using T = std::decay_t<decltype(v)>;
-        if constexpr (std::is_same_v<T, bool>)
-          return v ? 1u : 0u;
-        if constexpr (std::is_same_v<T, uint32_t>)
-          return v;
-        if constexpr (std::is_floating_point_v<T>)
-          return static_cast<uint32_t>(v * p.scale);
-      },
-      p.value);
-}
-
-inline void decode_from_can(Parameter &p, uint32_t raw) {
-  std::visit(
-      [&](auto &v) {
-        using T = std::decay_t<decltype(v)>;
-        if constexpr (std::is_same_v<T, bool>)
-          v = (raw != 0);
-        else if constexpr (std::is_same_v<T, uint32_t>)
-          v = raw;
-        else if constexpr (std::is_floating_point_v<T>)
-          v = static_cast<T>(raw) / p.scale;
-      },
-      p.value);
-}
-
-// Safely extract a value as the desired type. Performs a static_cast so we
-// can ask for narrower / wider integral types without tripping a variant
-// compile-time check.
-template <typename T> inline T as(const Parameter &p) {
-  static_assert(std::is_arithmetic_v<T> || std::is_same_v<T, bool>,
-                "as<T> only supports arithmetic or bool types");
-  return std::visit([](auto v) -> T { return static_cast<T>(v); }, p.value);
-}

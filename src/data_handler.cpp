@@ -173,7 +173,7 @@ void DataHandler::process_daq_message(void) {
       uint32_t parameter_value;
       decode_can_0x0d6_vcu_target_parameter(&kms_can, &target_parameter);
       decode_can_0x0d6_vcu_parameter_value(&kms_can, &parameter_value);
-      decode_from_can(params->at(target_parameter), parameter_value);
+      params->at(target_parameter).value = parameter_value;
     }
     break;
   }
@@ -344,7 +344,7 @@ void DataHandler::send_inverter_clear_faults() {
 void DataHandler::send_vcu_status_message(
     bool bspd_brake_high, bool bspd_current_high, bool bspd_ok_hs,
     bool bms_ok_hs, bool imd_ok_hs, bool buzzer_active, bool inverter_enable,
-    double max_torque, uint8_t torque_mode, int current_state) {
+    uint32_t max_torque, uint8_t torque_mode, uint8_t current_state) {
   if (active_instance == nullptr) {
     return;
   }

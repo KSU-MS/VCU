@@ -47,8 +47,8 @@ public:
                                       bool bspd_current_high, bool bspd_ok_hs,
                                       bool bms_ok_hs, bool imd_ok_hs,
                                       bool buzzer_active, bool inverter_enable,
-                                      double max_torque, uint8_t torque_mode,
-                                      int current_state);
+                                      uint32_t max_torque, uint8_t torque_mode,
+                                      uint8_t current_state);
   static void send_vcu_firmware_status_message(uint32_t on_time_seconds,
                                                uint32_t fw_version,
                                                bool project_is_dirty,
