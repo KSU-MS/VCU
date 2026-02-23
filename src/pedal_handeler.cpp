@@ -58,13 +58,6 @@ void Pedals::update_travel(uint16_t raw_apps1, uint16_t raw_apps2,
           (vehicle_data->pedals.apps1_travel +
            vehicle_data->pedals.apps2_travel) /
           2;
-
-      // Check that the driver isn't using both pedals at once
-      if ((vehicle_data->pedals.throttle_travel > 0.3) &&
-          (vehicle_data->pedals.brake_travel > 0.3)) {
-        vehicle_data->pedals.apps_bse_fault = true;
-        vehicle_data->pedals.throttle_travel = 0;
-      }
     }
   }
 }
@@ -72,8 +65,7 @@ void Pedals::update_travel(uint16_t raw_apps1, uint16_t raw_apps2,
 void Pedals::check_hard_faults() {
 
   // Check BSPD high side fault, do not reset fault if it is already set
-  vehicle_data->pedals.bspd_ok_hs =
-      vsense_bspd.value.in > 500;
+  vehicle_data->pedals.bspd_ok_hs = vsense_bspd.value.in > 500;
   // 0;
 }
 
@@ -89,7 +81,6 @@ void Pedals::pedal_200hz_loop() {
   check_hard_faults();
 
   update_travel(apps1.value.in, apps2.value.in, bse.value.in);
-
 }
 
 void Pedals::pedal_10hz_loop() {

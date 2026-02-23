@@ -4,7 +4,8 @@
 
 Inverter::Inverter(bool spin_direction, std::array<Parameter, 25> *params,
                    VehicleData *vehicle_data)
-    : spin_forward(spin_direction), params(params), vehicle_data(vehicle_data) {
+    : params(params), vehicle_data(vehicle_data) {
+  vehicle_data->inverter.spin_forward = spin_direction;
 
   this->ping();
 
@@ -24,8 +25,8 @@ Inverter::Inverter(bool spin_direction, std::array<Parameter, 25> *params,
   this->torquepid.SetSampleTimeUs(5000);
 }
 
-void Inverter::set_current_limits(uint16_t charge_limit,
-                                  uint16_t discharge_limit) {
+void Inverter::set_inverter_current_limits(uint16_t charge_limit,
+                                           uint16_t discharge_limit) {
   DataHandler::send_inverter_current_limits(charge_limit, discharge_limit);
 }
 
@@ -54,17 +55,22 @@ void Inverter::calculate_motor_distance_M(uint32_t time_msec) {
   vehicle_data->inverter.last_distance_calc_timestamp_ms = time_msec;
 }
 
-void Inverter::ping() {
-  DataHandler::send_inverter_ping(spin_forward, inverter_enable,
-                                  inverter_discharge);
-}
+void Inverter::ping() { DataHandler::send_inverter_ping(); }
 
 void Inverter::send_clear_faults() {
   DataHandler::send_inverter_clear_faults();
 }
 
-void Inverter::command_torque(double torque_request) {
-  double torque_target = torque_request;
+void Inverter::request_torque(double torque_request) {
+  if (vehicle_data == nullptr) {
+    return;
+  }
+
+  vehicle_data->inverter.torque_target_nm = torque_request;
+}
+
+void Inverter::command_torque() {
+  double torque_target = vehicle_data->inverter.torque_target_nm;
 
   // EV. 1.4.4 A violation is defined as using more than the specified maximum
   // power OR exceeding the maximum voltage EITHER: a. Continuously for 100 ms
@@ -134,19 +140,6 @@ void Inverter::command_torque(double torque_request) {
   DataHandler::send_inverter_torque_command(torque_target);
 }
 
-void Inverter::command_speed(int16_t speed_request) // unused
-{
-  DataHandler::send_inverter_speed_command(speed_request);
-}
-
-void Inverter::set_command_mode_to_torque() {
-  DataHandler::send_inverter_set_command_mode(true);
-}
-
-void Inverter::set_command_mode_to_speed() {
-  DataHandler::send_inverter_set_command_mode(false);
-}
-
 void Inverter::set_inv_parameter(uint16_t param_address, uint32_t param_data) {
   DataHandler::send_inverter_parameter(param_address, param_data);
 }
@@ -157,7 +150,16 @@ void Inverter::inverter_main_loop() {
   this->calculate_motor_distance_M(millis());
 }
 
-void Inverter::inverter_200hz_loop() {}
+void Inverter::inverter_200hz_loop() {
+  if (vehicle_data->state_machine.current_state !=
+      StateMachineData::state::READY_TO_DRIVE) {
+    this->ping();
+    vehicle_data->inverter.inverter_enable = false;
+  } else {
+    vehicle_data->inverter.inverter_enable = true;
+    this->command_torque();
+  }
+}
 
 void Inverter::inverter_10hz_loop() {}
 

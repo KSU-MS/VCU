@@ -29,17 +29,6 @@ private:
   uint16_t apps2_start;
 
 public:
-  enum class PedalFaults {
-    APPS_FAULT = 0,
-    BSE_FAULT = 1,
-    APPS_BSE_FAULT = 2,
-    APPS_FAULT_AND_BSE_FAULT = 3,
-    APPS_FAULT_AND_APPS_BSE_FAULT = 4,
-    BSE_FAULT_AND_APPS_BSE_FAULT = 5,
-    APPS_FAULT_AND_BSE_FAULT_AND_APPS_BSE_FAULT = 6,
-    NO_FAULT = 7,
-    UNKNOWN_FAULT = 8,
-  };
   Pedals(uint16_t bse_low_fault, uint16_t brake_start, uint16_t brake_end,
          uint16_t bse_high_fault, uint16_t apps_low_fault, uint16_t apps1_start,
          uint16_t apps1_end, uint16_t apps2_start, uint16_t apps2_end,

@@ -13,12 +13,16 @@ struct AccumulatorData {
 };
 
 struct InverterData {
+  double torque_target_nm = 0.0;
   double bus_voltage = 0.0;
   double bus_current = 0.0;
   int16_t motor_rpm = 0;
   double motor_distance_m = 0.0;
   double power_output_w = 0.0;
   uint32_t last_distance_calc_timestamp_ms = 0;
+  bool spin_forward = true;
+  bool inverter_enable = false;
+  bool inverter_discharge = false;
 };
 
 struct DriverInterfaceData {
@@ -57,17 +61,11 @@ struct StateMachineData {
     TRACTIVE_SYSTEM_DISABLED = 1,
     TRACTIVE_SYSTEM_ENERGIZED = 2,
     TRACTIVE_SYSTEM_ENABLED = 3,
-    READY_TO_DRIVE_TORQUE = 4,
-    READY_TO_DRIVE_SPEED = 5,
-    LAUNCH_WAIT = 6,
-    LAUNCH = 7,
+    READY_TO_DRIVE = 4,
   } current_state;
   uint16_t bool_code = 0;
   uint16_t error_code = 0;
   bool buzzer_active = false;
-  bool bspd_ok_hs = false;
-  bool bspd_brake_high = false;
-  bool bspd_current_high = false;
 };
 
 struct VehicleData {

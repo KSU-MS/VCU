@@ -17,11 +17,6 @@ class Inverter {
 private:
   DataHandler *data_handler;
 
-  bool spin_forward = true;
-  bool inverter_enable = false;
-  bool inverter_discharge = false;
-
-  bool speed_mode = false;
   double torque_adjustment = 0;
 
   const int torque_kp_x100 = 300; // tune this variable
@@ -58,30 +53,26 @@ public:
   Inverter(bool spin_direction, std::array<Parameter, 25> *params,
            VehicleData *vehicle_data);
 
-  inline bool get_inverter_enable() { return inverter_enable; }
-
   uint16_t get_instant_current_limit(float voltage) {
     return static_cast<uint16_t>((this->params->at(POWER_LIMIT_ID).value) /
                                  voltage);
   }
-  inline void set_inverter_enable(bool enable) { inverter_enable = enable; }
   inline void calculate_pid_loop() { torquepid.Compute(); }
   inline void set_pid_parameters(uint32_t kp_x100, uint32_t ki_x100,
                                  uint32_t kd_x100) {
     torquepid.SetTunings(double(kp_x100) / 100.0, double(ki_x100) / 100.0,
                          double(kd_x100) / 100.0);
   }
-  void set_current_limits(uint16_t charge_limit, uint16_t discharge_limit);
+  void set_inverter_current_limits(uint16_t charge_limit,
+                                   uint16_t discharge_limit);
 
   void calculate_motor_distance_M(uint32_t time_msec);
   void calculate_power_output();
 
   void ping();
   void send_clear_faults();
-  void command_torque(double torque_request);
-  void command_speed(int16_t speed_request);
-  void set_command_mode_to_torque();
-  void set_command_mode_to_speed();
+  void request_torque(double torque_request);
+  void command_torque();
 
   void set_inv_parameter(uint16_t param_address, uint32_t param_data);
   void read_inv_parameter(uint16_t param_address);

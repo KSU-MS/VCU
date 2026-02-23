@@ -31,11 +31,9 @@ public:
   static void send_daq(const can_message &msg);
 
   // Inverter encoding methods
-  static void send_inverter_ping(bool spin_forward, bool inverter_enable,
-                                 bool inverter_discharge);
+  static void send_inverter_ping();
   static void send_inverter_torque_command(double torque_target);
   static void send_inverter_speed_command(int16_t speed_request);
-  static void send_inverter_set_command_mode(bool torque_mode);
   static void send_inverter_current_limits(uint16_t charge_limit,
                                            uint16_t discharge_limit);
   static void send_inverter_parameter(uint16_t param_address,

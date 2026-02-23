@@ -211,22 +211,18 @@ void DataHandler::send_daq(const can_message &msg) {
 }
 
 // Inverter encoding methods
-void DataHandler::send_inverter_ping(bool spin_forward, bool inverter_enable,
-                                     bool inverter_discharge) {
+void DataHandler::send_inverter_ping() {
   if (active_instance == nullptr) {
     return;
   }
 
   encode_can_0x0c0_VCU_INV_Torque_Command(&active_instance->kms_can, 0.0);
   encode_can_0x0c0_VCU_INV_Torque_Limit_Command(&active_instance->kms_can, 0.0);
-  encode_can_0x0c0_VCU_INV_Speed_Command(&active_instance->kms_can, 0);
-  encode_can_0x0c0_VCU_INV_Speed_Mode_Enable(&active_instance->kms_can, 0);
-  encode_can_0x0c0_VCU_INV_Direction_Command(&active_instance->kms_can,
-                                             spin_forward);
-  encode_can_0x0c0_VCU_INV_Inverter_Discharge(&active_instance->kms_can,
-                                              inverter_discharge);
-  encode_can_0x0c0_VCU_INV_Inverter_Enable(&active_instance->kms_can,
-                                           inverter_enable);
+  encode_can_0x0c0_VCU_INV_Speed_Command(&active_instance->kms_can, 0.0);
+  encode_can_0x0c0_VCU_INV_Speed_Mode_Enable(&active_instance->kms_can, false);
+  encode_can_0x0c0_VCU_INV_Direction_Command(&active_instance->kms_can, true);
+  encode_can_0x0c0_VCU_INV_Inverter_Discharge(&active_instance->kms_can, false);
+  encode_can_0x0c0_VCU_INV_Inverter_Enable(&active_instance->kms_can, false);
 
   can_message out_msg;
   out_msg.id = CAN_ID_M192_COMMAND_MESSAGE;
@@ -244,6 +240,12 @@ void DataHandler::send_inverter_torque_command(double torque_target) {
 
   encode_can_0x0c0_VCU_INV_Torque_Command(&active_instance->kms_can,
                                           torque_target);
+  encode_can_0x0c0_VCU_INV_Torque_Limit_Command(&active_instance->kms_can, 0.0);
+  encode_can_0x0c0_VCU_INV_Inverter_Enable(&active_instance->kms_can, true);
+  encode_can_0x0c0_VCU_INV_Speed_Command(&active_instance->kms_can, 0);
+  encode_can_0x0c0_VCU_INV_Speed_Mode_Enable(&active_instance->kms_can, 0);
+  encode_can_0x0c0_VCU_INV_Direction_Command(&active_instance->kms_can, true);
+  encode_can_0x0c0_VCU_INV_Inverter_Discharge(&active_instance->kms_can, false);
 
   can_message out_msg;
   out_msg.id = CAN_ID_M192_COMMAND_MESSAGE;
@@ -259,8 +261,14 @@ void DataHandler::send_inverter_speed_command(int16_t speed_request) {
     return;
   }
 
+  encode_can_0x0c0_VCU_INV_Torque_Command(&active_instance->kms_can, 0.0);
+  encode_can_0x0c0_VCU_INV_Torque_Limit_Command(&active_instance->kms_can, 0.0);
+  encode_can_0x0c0_VCU_INV_Inverter_Enable(&active_instance->kms_can, true);
   encode_can_0x0c0_VCU_INV_Speed_Command(&active_instance->kms_can,
                                          speed_request);
+  encode_can_0x0c0_VCU_INV_Speed_Mode_Enable(&active_instance->kms_can, 0);
+  encode_can_0x0c0_VCU_INV_Direction_Command(&active_instance->kms_can, true);
+  encode_can_0x0c0_VCU_INV_Inverter_Discharge(&active_instance->kms_can, false);
 
   can_message out_msg;
   out_msg.id = CAN_ID_M192_COMMAND_MESSAGE;
@@ -269,15 +277,6 @@ void DataHandler::send_inverter_speed_command(int16_t speed_request) {
 
   active_instance->send_inv(out_msg);
   active_instance->send_daq(out_msg);
-}
-
-void DataHandler::send_inverter_set_command_mode(bool torque_mode) {
-  if (active_instance == nullptr) {
-    return;
-  }
-
-  encode_can_0x0c0_VCU_INV_Speed_Mode_Enable(&active_instance->kms_can,
-                                             torque_mode);
 }
 
 void DataHandler::send_inverter_current_limits(uint16_t charge_limit,
