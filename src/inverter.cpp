@@ -1,6 +1,6 @@
 #include "inverter.hpp"
 #include "data_handler.hpp"
-#include "parameters.hpp"
+#include "vehicle.hpp"
 
 Inverter::Inverter(bool spin_direction, std::array<Parameter, 25> *params,
                    VehicleData *vehicle_data)

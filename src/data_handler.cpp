@@ -1,6 +1,6 @@
 #include "data_handler.hpp"
 #include "car.h"
-#include "data.hpp"
+#include "vehicle.hpp"
 
 // wierd static member initialization so we can just call the static functions
 // from anywhere
@@ -390,18 +390,17 @@ void DataHandler::send_vcu_firmware_status_message(uint32_t on_time_seconds,
     return;
   }
 
-  encode_can_0x0c8_vcu_on_time_seconds(&active_instance->kms_can,
-                                       on_time_seconds);
-  encode_can_0x0c8_vcu_fw_version(&active_instance->kms_can, fw_version);
-  encode_can_0x0c8_vcu_project_is_dirty(&active_instance->kms_can,
-                                        project_is_dirty);
-  encode_can_0x0c8_vcu_project_on_main(&active_instance->kms_can,
-                                       project_on_main);
+  encode_can_0x0c8_board_on_time_seconds(&active_instance->kms_can,
+                                         on_time_seconds);
+  encode_can_0x0c8_firmware_version(&active_instance->kms_can, fw_version);
+  encode_can_0x0c8_firmware_is_dirty(&active_instance->kms_can,
+                                     project_is_dirty);
+  encode_can_0x0c8_firmware_on_main(&active_instance->kms_can, project_on_main);
 
   can_message out_msg;
-  out_msg.id = CAN_ID_VCU_FIRMWARE_VERSION;
+  out_msg.id = CAN_ID_VCU_BOARD_DATA;
   out_msg.length = pack_message(&active_instance->kms_can,
-                                CAN_ID_VCU_FIRMWARE_VERSION, &out_msg.buf.val);
+                                CAN_ID_VCU_BOARD_DATA, &out_msg.buf.val);
 
   active_instance->send_inv(out_msg);
   active_instance->send_daq(out_msg);

@@ -16,12 +16,11 @@ can_obj_car_h_t kms_can;
 
 // Local
 #include "accumulator.hpp"
-#include "data.hpp"
 #include "data_handler.hpp"
 #include "inverter.hpp"
-#include "parameters.hpp"
 #include "pedal_handeler.hpp"
 #include "state_machine.hpp"
+#include "vehicle.hpp"
 
 #ifdef ARDUINO
 #include <Arduino.h>
@@ -125,6 +124,7 @@ VehicleData vehicle_data;
 //// Comms
 // loggers
 Logger consol(serial);
+
 // FILE std_out_wrap;
 
 // Critical components

@@ -2,10 +2,9 @@
 #include <can_tools.hpp>
 #include <car.h>
 
-#include "data.hpp"
 #include "inverter.hpp"
-#include "parameters.hpp"
 #include "traction_control.hpp"
+#include "vehicle.hpp"
 #include <array>
 
 class StateMachine {

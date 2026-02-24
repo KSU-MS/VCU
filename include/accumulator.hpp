@@ -2,8 +2,7 @@
 
 #include <array>
 
-#include "data.hpp"
-#include "parameters.hpp"
+#include "vehicle.hpp"
 
 class Accumulator {
 private:

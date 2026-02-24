@@ -1,14 +1,12 @@
 #pragma once
 
-#include "parameters.hpp"
-
 #include <FlexCAN_T4.h>
 #include <car.h>
 
 #include "Metro.h"
 #include "QuickPID.h"
-#include "data.hpp"
 #include "data_handler.hpp"
+#include "vehicle.hpp"
 
 // Inverter gets special treatment in the state machine because its a black box
 // that requires specific configuration and communication.

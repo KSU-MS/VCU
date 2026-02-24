@@ -1,7 +1,6 @@
 #pragma once
 
-#include "data.hpp"
-#include "parameters.hpp"
+#include "vehicle.hpp"
 #include <adc.hpp>
 
 class Pedals {

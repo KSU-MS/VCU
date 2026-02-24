@@ -1,5 +1,5 @@
 #pragma once
-#include "parameters.hpp"
+#include "vehicle.hpp"
 #include <FlexCAN_T4.h>
 #include <can_tools.hpp>
 #include <car.h>
