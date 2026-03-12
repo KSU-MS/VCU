@@ -148,11 +148,12 @@ struct PedalData {
   uint16_t raw_apps2 = 0;
   uint16_t raw_brake = 0;
   uint16_t raw_bspd = 0;
-
+  uint16_t raw_steering = 0;
   double brake_travel = 0.0;
   double apps1_travel = 0.0;
   double apps2_travel = 0.0;
   double throttle_travel = 0.0;
+  double steering_angle = 0.0;
 
   bool bspd_ok_hs =
       false; // BSPD (Brake system pressure detector) high side fault

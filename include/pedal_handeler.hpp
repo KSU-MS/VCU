@@ -53,6 +53,8 @@ public:
   void update_travel(uint16_t raw_apps1, uint16_t raw_apps2,
                      uint16_t raw_brake);
 
+  void update_steering();
+
   void check_hard_faults();
 
   void pedal_main_loop();

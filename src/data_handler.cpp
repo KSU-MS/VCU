@@ -181,6 +181,15 @@ void DataHandler::process_daq_message(void) {
     inv_can.send_controller_message(msg_in);
     break;
 
+  case CAN_ID_CORNERNODE_STEERINGPOT:
+    if (vehicle_data != nullptr) {
+      unpack_message(&kms_can, CAN_ID_CORNERNODE_STEERINGPOT, msg_in.buf.val,
+                     msg_in.length, 0);
+
+      decode_can_0x383_uint16(&kms_can, &vehicle_data->pedals.raw_steering);
+    }
+    break;
+
   default:
     break;
   }
@@ -430,7 +439,8 @@ void DataHandler::send_vcu_power_tracking_message(uint32_t lifetime_distance,
 // Pedal encoding methods
 void DataHandler::send_pedal_travel_message(double apps1_travel,
                                             double apps2_travel,
-                                            double brake_travel) {
+                                            double brake_travel,
+                                            double steering_travel) {
   if (active_instance == nullptr) {
     return;
   }
@@ -438,6 +448,8 @@ void DataHandler::send_pedal_travel_message(double apps1_travel,
   encode_can_0x0cc_vcu_apps1_travel(&active_instance->kms_can, apps1_travel);
   encode_can_0x0cc_vcu_apps2_travel(&active_instance->kms_can, apps2_travel);
   encode_can_0x0cc_vcu_bse1_travel(&active_instance->kms_can, brake_travel);
+  encode_can_0x0cc_cornernode_steering_travel(&active_instance->kms_can,
+                                              steering_travel);
 
   can_message out_msg;
   out_msg.id = CAN_ID_VCU_PEDALS_TRAVEL;
@@ -449,13 +461,15 @@ void DataHandler::send_pedal_travel_message(double apps1_travel,
 }
 
 void DataHandler::send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
-                                         uint16_t raw_brake) {
+                                         uint16_t raw_brake,
+                                         uint16_t raw_steering) {
   if (active_instance == nullptr) {
     return;
   }
   encode_can_0x0c4_APPS1(&active_instance->kms_can, raw_apps1);
   encode_can_0x0c4_APPS2(&active_instance->kms_can, raw_apps2);
   encode_can_0x0c4_BSE1(&active_instance->kms_can, raw_brake);
+  encode_can_0x0c4_STEERING(&active_instance->kms_can, raw_steering);
 
   can_message out_msg;
   out_msg.id = CAN_ID_VCU_PEDAL_READINGS;

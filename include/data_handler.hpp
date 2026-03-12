@@ -57,9 +57,10 @@ public:
   // Pedal encoding methods
   static void send_pedal_travel_message(double apps1_travel,
                                         double apps2_travel,
-                                        double brake_travel);
+                                        double brake_travel,
+                                        double steering_travel);
   static void send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
-                                     uint16_t raw_brake);
+                                     uint16_t raw_brake, uint16_t raw_steering);
 
   static void data_handler_main_loop();
   static void data_handler_200hz_loop();

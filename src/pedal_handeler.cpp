@@ -62,6 +62,13 @@ void Pedals::update_travel(uint16_t raw_apps1, uint16_t raw_apps2,
   }
 }
 
+void Pedals::update_steering() {
+  vehicle_data->pedals.steering_angle =
+      (vehicle_data->pedals.raw_steering - 1024) / 1024.0;
+  vehicle_data->pedals.steering_angle =
+      std::clamp(vehicle_data->pedals.steering_angle, -1.0, 1.0);
+}
+
 void Pedals::check_hard_faults() {
 
   // Check BSPD high side fault, do not reset fault if it is already set
@@ -79,16 +86,17 @@ void Pedals::pedal_200hz_loop() {
   vsense_bspd.update();
 
   check_hard_faults();
+  update_steering();
 
   update_travel(apps1.value.in, apps2.value.in, bse.value.in);
 }
 
 void Pedals::pedal_10hz_loop() {
 
-  DataHandler::send_pedal_travel_message(vehicle_data->pedals.apps1_travel,
-                                         vehicle_data->pedals.apps2_travel,
-                                         vehicle_data->pedals.brake_travel);
-  DataHandler::send_pedal_raw_message(vehicle_data->pedals.raw_apps1,
-                                      vehicle_data->pedals.raw_apps2,
-                                      vehicle_data->pedals.raw_brake);
+  DataHandler::send_pedal_travel_message(
+      vehicle_data->pedals.apps1_travel, vehicle_data->pedals.apps2_travel,
+      vehicle_data->pedals.brake_travel, vehicle_data->pedals.steering_angle);
+  DataHandler::send_pedal_raw_message(
+      vehicle_data->pedals.raw_apps1, vehicle_data->pedals.raw_apps2,
+      vehicle_data->pedals.raw_brake, vehicle_data->pedals.raw_steering);
 }
