@@ -198,7 +198,7 @@ void VCU::update_dash_buttons(uint64_t msg, uint8_t length) {
   unpack_message(dbc, CAN_ID_DASH_BUTTONS, msg, length, 0);
 
   uint8_t button_val;
-  decode_can_0x0eb_dash_button3status(dbc, &button_val);
+  decode_can_0x0eb_dash_button5status(dbc, &button_val);
 
   RTD_button_pressed = button_val;
 }
