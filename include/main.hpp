@@ -124,6 +124,8 @@ VCU vcu(&pedals, &inverter, &accumulator, &kms_can, &acc_can, &inv_can,
 
 // Voltage / Current sense lines
 adc vsense_bspd(avr, BSPD_SENSE);
+adc vsense_bspd_bse(avr, BSPD_BSE_SENSE);
+adc vsense_bspd_hall(avr, BSPD_HALL_SENSE);
 adc vsense_sdc(avr, VSENSE_SDC);
 adc isense_sdc(avr, ISENSE_SDC);
 adc vsense_12v(avr, VSENSE_GLV);

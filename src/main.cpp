@@ -30,7 +30,10 @@ void loop() {
   vcu.pedals->update_travel(apps1.value.in, apps2.value.in, bse.value.in);
 
   vsense_bspd.update();
-  vcu.update_bspd(vsense_bspd.value.in, 0, 0);
+  vsense_bspd_bse.update();
+  vsense_bspd_hall.update();
+  vcu.update_bspd(vsense_bspd.value.in, vsense_bspd_bse.value.in,
+                  vsense_bspd_hall.value.in);
 
   //
   //// CAN Stage

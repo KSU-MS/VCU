@@ -182,16 +182,22 @@ bool VCU::set_state(state target_state) {
   }
 }
 
-void VCU::update_bspd(uint16_t raw_relay, uint16_t raw_current,
-                      uint16_t raw_brake) {
-  if (raw_relay > 500)
-    bspd_ok_hs = true;
-  else
+void VCU::update_bspd(uint16_t raw_relay, uint16_t raw_brake,
+                      uint16_t raw_current) {
+  if (raw_relay > 800)
     bspd_ok_hs = false;
+  else
+    bspd_ok_hs = true;
 
-  // TODO: Make the bspd_brake_high and bspd_current_high real
-  bspd_brake_high = true;
-  bspd_current_high = true;
+  if (raw_brake > 800)
+    bspd_brake_high = false;
+  else
+    bspd_brake_high = true;
+
+  if (raw_current > 800)
+    bspd_current_high = false;
+  else
+    bspd_current_high = true;
 }
 
 void VCU::update_dash_buttons(uint64_t msg, uint8_t length) {

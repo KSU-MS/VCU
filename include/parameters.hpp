@@ -43,14 +43,16 @@
 #define WSFL 28 // Digital input pullup
 #define WSFR 29 // Digital input pullup
 
-#define BSPD_SENSE 16 // Analog signal
-#define ISENSE_SDC 20 // Analog signal
-#define ISENSE_GLV 38 // Analog signal
-#define VSENSE_SDC 39 // Analog signal
-#define VSENSE_5V 40  // Analog signal
-#define VSENSE_GLV 41 // Analog signal
-#define A9 27         // Analog signal
-#define A10 26        // Analog signal
+#define BSPD_SENSE A2      // Analog signal
+#define BSPD_BSE_SENSE A7  // Analog signal
+#define BSPD_HALL_SENSE A6 // Analog signal
+#define ISENSE_SDC 20      // Analog signal
+#define ISENSE_GLV 38      // Analog signal
+#define VSENSE_SDC 39      // Analog signal
+#define VSENSE_5V 40       // Analog signal
+#define VSENSE_GLV 41      // Analog signal
+#define A9 27              // Analog signal
+#define A10 26             // Analog signal
 
 #define BUZZER 9   // Output
 #define LOWSIDE1 5 // Output
