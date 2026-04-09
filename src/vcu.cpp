@@ -372,6 +372,7 @@ void VCU::send_status_message() {
   out_msg.length = pack_message(dbc, CAN_ID_VCU_STATUS, &out_msg.buf.val);
 
   inv_can->send_controller_message(out_msg);
+  acc_can->send_controller_message(out_msg);
   daq_can->send_controller_message(out_msg);
 }
 

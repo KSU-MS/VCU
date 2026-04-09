@@ -52,7 +52,7 @@
 #define A9 27         // Analog signal
 #define A10 26        // Analog signal
 
-#define BUZZER 4   // Output
+#define BUZZER 9   // Output
 #define LOWSIDE1 5 // Output
 #define LOWSIDE2 6 // Output
 
