@@ -97,9 +97,9 @@ canMan inv_can(TEENSY_CAN2, INVERTER_CAN_BAUD_RATE);
 canMan daq_can(TEENSY_CAN3, DAQ_CAN_BAUD_RATE);
 
 // Pots
-adc apps1(ads, ADC_CS, ADC_ACCEL_1_CHANNEL, 0.980483996877);
-adc apps2(ads_tech, ADC_CS, ADC_ACCEL_2_CHANNEL, 0.980483996877);
-adc bse(ads_tech, ADC_CS, ADC_BSE_CHANNEL, 0.980483996877);
+adc apps1(ads, ADC_CS, (uint8_t)ADC_ACCEL_1_CHANNEL);
+adc apps2(ads_tech, ADC_CS, (uint8_t)ADC_ACCEL_2_CHANNEL);
+adc bse(ads_tech, ADC_CS, (uint8_t)ADC_BSE_CHANNEL);
 
 //
 //// Critical components
