@@ -15,15 +15,15 @@ uint8_t CS_PIN = 10; // Typical default SPI CS pin
 // Breakdown of bits:
 // 15    : OS = 1 (Start Single-Shot Conversion)
 // 14-12 : MUX = 100/101/110/111 (Single-Ended AIN0 to AIN3)
-// 11-9  : PGA = 000 (+/- 6.144V, No amplification)
+// 11-9  : PGA = 000 (+/- 6.144V, No amplification) PGA = 010 (+/- 2.048V)
 // 8     : MODE = 1 (Single-Shot Mode)
 // 7-5   : DR = 111 (3300 Samples Per Second)
 // 4     : TS_MODE = 0 (ADC Mode)
 // 3     : PULL_UP_EN = 0 (Internal Pull-Up Disabled)
 // 2-1   : NOP = 01 (Valid Configuration Write)
 // 0     : RESERVED = 0
-const uint16_t CONFIG_AIN0 = 0xC1E2; // 1100 0001 1110 0010
-const uint16_t CONFIG_AIN1 = 0xD1E2; // 1101 0001 1110 0010
+const uint16_t CONFIG_AIN0 = 0xC5E2; // 1100 0101 1110 0010
+const uint16_t CONFIG_AIN1 = 0xD5E2; // 1101 0101 1110 0010
 const uint16_t CONFIG_AIN2 = 0xE1E2; // 1110 0001 1110 0010
 const uint16_t CONFIG_AIN3 = 0xF1E2; // 1111 0001 1110 0010
 

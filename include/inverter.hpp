@@ -7,7 +7,7 @@ class Inverter {
 private:
   uint32_t time_last_msec = 0;
 
-  bool spin_forward = true;
+  bool spin_forward = false;
   bool inverter_enable = false;
   bool inverter_discharge = false;
 

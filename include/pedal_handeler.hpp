@@ -108,7 +108,7 @@ public:
 
       // Check that the pedals are reading within 10%
       if ((fabs(apps1_travel - apps2_travel) < 0.3)) {
-        travel = (apps1_travel + apps2_travel) / 2;
+        travel = apps1_travel;
 
         // Check that the driver isn't using both pedals at once
         if ((travel > 0.3) && (brake_travel > 0.3)) {
