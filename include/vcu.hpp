@@ -60,10 +60,9 @@ public:
   can_obj_car_h_t *dbc;
   canMan *acc_can;
   canMan *inv_can;
-  canMan *daq_can;
 
   VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator,
-      can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can, canMan *daq_can,
+      can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can,
       bool (*timer_status_message)(), bool (*timer_pedal_message)());
 
   inline void init_state_machine() { this->current_state = STARTUP; }
