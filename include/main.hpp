@@ -29,60 +29,6 @@ Metro timer_20hz = Metro(50, true);    // Used for inverter timeout
 Metro timer_100hz = Metro(10, true);   // Used for inverter current limit
 Metro timer_200hz = Metro(5, true);    // Used for inverter command message
 Metro buzzer_timer = Metro(2215, false);
-
-bool wrapped_1s() {
-  if (timer_1s.check()) {
-    return true;
-    timer_1s.reset();
-  } else {
-    return false;
-  }
-}
-
-bool wrapped_2hz() {
-  if (timer_2hz.check()) {
-    return true;
-    timer_2hz.reset();
-  } else {
-    return false;
-  }
-}
-
-bool wrapped_10hz() {
-  if (timer_10hz.check()) {
-    return true;
-    timer_10hz.reset();
-  } else {
-    return false;
-  }
-}
-
-bool wrapped_20hz() {
-  if (timer_20hz.check()) {
-    return true;
-    timer_20hz.reset();
-  } else {
-    return false;
-  }
-}
-
-bool wrapped_100hz() {
-  if (timer_100hz.check()) {
-    return true;
-    timer_100hz.reset();
-  } else {
-    return false;
-  }
-}
-
-bool wrapped_200hz() {
-  if (timer_200hz.check()) {
-    return true;
-    timer_200hz.reset();
-  } else {
-    return false;
-  }
-}
 #endif
 
 //
@@ -107,13 +53,11 @@ Pedals pedals(MIN_BRAKE_PEDAL, START_BRAKE_PEDAL, END_BRAKE_PEDAL,
               END_ACCELERATOR_PEDAL_1, START_ACCELERATOR_PEDAL_2,
               END_ACCELERATOR_PEDAL_2);
 
-Inverter inverter(&wrapped_20hz, &wrapped_100hz, &wrapped_200hz, true, &inv_can,
-                  &kms_can, -0.69314718056);
+Inverter inverter(true, &inv_can, &kms_can, -0.69314718056);
 
-Accumulator accumulator(&kms_can, &acc_can, &wrapped_2hz);
+Accumulator accumulator(&kms_can, &acc_can);
 
-VCU vcu(&pedals, &inverter, &accumulator, &kms_can, &acc_can, &inv_can,
-        &wrapped_1s, &wrapped_10hz);
+VCU vcu(&pedals, &inverter, &accumulator, &kms_can, &acc_can, &inv_can);
 
 //
 //// Gizmos

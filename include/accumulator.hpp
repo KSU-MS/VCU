@@ -23,8 +23,7 @@ private:
   double consumed_power_wh = 0;
 
 public:
-  Accumulator(can_obj_car_h_t *dbc, canMan *acc_can,
-              bool (*can_message_check)());
+  Accumulator(can_obj_car_h_t *dbc, canMan *acc_can);
 
   inline uint8_t get_precharge_state() { return this->precharge_state; }
   inline bool get_imd_ok_hs() { return imd_ok_hs; }

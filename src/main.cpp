@@ -123,6 +123,8 @@ void loop() {
     vcu.inverter->set_current_limits(INVERTER_CHARGE_LIMIT,
                                      INVERTER_DISCHARGE_LIMIT);
 
+    vcu.inverter->send_clear_faults();
+
     digitalWrite(BUZZER, vcu.get_buzzer_state());
     delay(2151);
 
@@ -144,11 +146,6 @@ void loop() {
         vcu.inverter->command_torque(vcu.pedals->get_torque_request(
             vcu.pedals->get_travel(), vcu.inverter->get_torque_limit()));
       }
-
-      // NOTE: I don't think this works right now...
-      // if (timer_10hz.check()) {
-      //   vcu.inverter->send_clear_faults();
-      // }
 
       if (timer_10hz_2.check()) {
         vcu.inverter->set_current_limits(

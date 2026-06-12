@@ -2,14 +2,8 @@
 #include "car.h"
 #include "parameters.hpp"
 
-Inverter::Inverter(bool (*timer_mc_kick)(), bool (*timer_current_limit)(),
-                   bool (*timer_motor_controller_send)(), bool spin_direction,
-                   canMan *can, can_obj_car_h_t *dbc,
+Inverter::Inverter(bool spin_direction, canMan *can, can_obj_car_h_t *dbc,
                    float over_power_decay_factor) {
-  this->timer_mc_kick = timer_mc_kick;
-  this->timer_current_limit = timer_current_limit;
-  this->timer_motor_controller_send = timer_motor_controller_send;
-
   this->spin_forward = spin_direction;
 
   this->over_power_decay_factor = over_power_decay_factor;
