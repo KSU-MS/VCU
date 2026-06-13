@@ -331,8 +331,29 @@ void VCU::send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
 
   can_message out_msg;
   out_msg.id = CAN_ID_VCU_PEDAL_READINGS;
-  out_msg.length =
-      pack_message(dbc, CAN_ID_VCU_PEDAL_READINGS, &out_msg.buf.val);
+  out_msg.length = pack_message(dbc, out_msg.id, &out_msg.buf.val);
+
+  inv_can->send_controller_message(out_msg);
+}
+
+void VCU::send_brake_pressure_message(uint16_t raw_brake) {
+  uint16_t kpa = 0;
+  if (raw_brake < 102) {
+    kpa = 0;
+  } else if (raw_brake > 922) {
+    kpa = 10342;
+  } else {
+    kpa =
+        uint16_t(double(raw_brake - 102) * double((double)1500 / (double)820));
+  }
+
+  encode_can_0x384_pressure_delta(dbc, 0.0);
+  encode_can_0x384_pressure_kPa(dbc, kpa);
+  encode_can_0x384_an1_uint12(dbc, raw_brake);
+
+  can_message out_msg;
+  out_msg.id = CAN_ID_AN1_FRONT_BRAKEPRESSURE;
+  out_msg.length = pack_message(dbc, out_msg.id, &out_msg.buf.val);
 
   inv_can->send_controller_message(out_msg);
 }

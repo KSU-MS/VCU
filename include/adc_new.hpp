@@ -28,7 +28,6 @@ const uint16_t CONFIG_AIN2 = 0xE1E2; // 1110 0001 1110 0010
 const uint16_t CONFIG_AIN3 = 0xF1E2; // 1111 0001 1110 0010
 
 #ifdef ARDUINO
-#include "ads1018.h"
 #include <Arduino.h>
 #include <SPI.h>
 

@@ -59,6 +59,8 @@ void loop() {
     consol.log(vcu.pedals->get_apps2_raw());
     consol.log("\n\rraw_brake: ");
     consol.log(vcu.pedals->get_brake_raw());
+
+    vcu.send_brake_pressure_message(vcu.pedals->get_brake_raw());
   }
 
   //

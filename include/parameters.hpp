@@ -18,16 +18,16 @@
 //
 //// Hardcoded pedal values
 #define MIN_BRAKE_PEDAL 25
-#define START_BRAKE_PEDAL 180
-#define END_BRAKE_PEDAL 1030
-#define MAX_BRAKE_PEDAL 1500
+#define START_BRAKE_PEDAL 130
+#define END_BRAKE_PEDAL 922
+#define MAX_BRAKE_PEDAL 1025
 
 #define MIN_APPS_PEDAL 100
 
 #define START_ACCELERATOR_PEDAL_1 700
 #define END_ACCELERATOR_PEDAL_1 1060
 
-#define START_ACCELERATOR_PEDAL_2 450
+#define START_ACCELERATOR_PEDAL_2 455
 #define END_ACCELERATOR_PEDAL_2 685
 
 //
@@ -46,13 +46,14 @@
 #define BSPD_SENSE A2      // Analog signal
 #define BSPD_BSE_SENSE A7  // Analog signal
 #define BSPD_HALL_SENSE A6 // Analog signal
-#define ISENSE_SDC 20      // Analog signal
-#define ISENSE_GLV 38      // Analog signal
-#define VSENSE_SDC 39      // Analog signal
-#define VSENSE_5V 40       // Analog signal
-#define VSENSE_GLV 41      // Analog signal
-#define A9 27              // Analog signal
-#define A10 26             // Analog signal
+
+#ifdef VCU_REV4
+#define ISENSE_SDC 20 // Analog signal
+#define ISENSE_GLV 38 // Analog signal
+#define VSENSE_SDC 39 // Analog signal
+#define VSENSE_5V 40  // Analog signal
+#define VSENSE_GLV 41 // Analog signal
+#endif
 
 #define BUZZER 9   // Output
 #define LOWSIDE1 5 // Output

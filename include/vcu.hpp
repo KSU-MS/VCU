@@ -44,10 +44,6 @@ private:
   bool bspd_brake_high = false;
   bool bspd_current_high = false;
 
-  bool (*timer_status_message)();
-  bool (*timer_pedal_message)();
-  bool (*timer_RTD_buzzer)();
-
   bool launch_state;
   uint8_t launch_mode = 0;
 
@@ -91,6 +87,7 @@ public:
   void send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
                               uint16_t raw_brake);
   void send_pedal_travel_message();
+  void send_brake_pressure_message(uint16_t raw_brake);
   void send_firmware_status_message();
   void send_launch_control_status_message();
 

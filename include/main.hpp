@@ -44,7 +44,9 @@ canMan inv_can(TEENSY_CAN2, INVERTER_CAN_BAUD_RATE);
 // Pots
 adc apps1(ads, ADC_CS, (uint8_t)ADC_ACCEL_1_CHANNEL);
 adc apps2(ads_tech, ADC_CS, (uint8_t)ADC_ACCEL_2_CHANNEL);
-adc bse(ads_tech, ADC_CS, (uint8_t)ADC_BSE_CHANNEL);
+
+// Front brake pressure
+adc bse(avr, A10);
 
 //
 //// Critical components
@@ -69,11 +71,11 @@ VCU vcu(&pedals, &inverter, &accumulator, &kms_can, &acc_can, &inv_can);
 adc vsense_bspd(avr, BSPD_SENSE);
 adc vsense_bspd_bse(avr, BSPD_BSE_SENSE);
 adc vsense_bspd_hall(avr, BSPD_HALL_SENSE);
+
+#ifdef VCU_REV4
 adc vsense_sdc(avr, VSENSE_SDC);
 adc isense_sdc(avr, ISENSE_SDC);
 adc vsense_12v(avr, VSENSE_GLV);
 adc isense_12v(avr, ISENSE_GLV);
 adc vsense_5v(avr, VSENSE_5V);
-
-adc sense_lines[] = {vsense_bspd, vsense_sdc, isense_sdc,
-                     vsense_12v,  isense_12v, vsense_5v};
+#endif
