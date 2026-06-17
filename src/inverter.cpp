@@ -74,13 +74,13 @@ void Inverter::ping() {
 }
 
 void Inverter::send_clear_faults() {
-  encode_can_0x0c1_VCU_INV_Parameter_Address(dbc, 20);
+  encode_can_0x0c1_VCU_INV_Parameter_Address(dbc, 0x0014);
   encode_can_0x0c1_VCU_INV_Parameter_RW_Command(dbc, 1);
   encode_can_0x0c1_VCU_INV_Parameter_Data(dbc, 0);
 
   can_message out_msg;
-  out_msg.length =
-      pack_message(dbc, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
+  out_msg.id = CAN_ID_M193_READ_WRITE_PARAM_COMMAND;
+  out_msg.length = pack_message(dbc, out_msg.id, &out_msg.buf.val);
 
   can->send_controller_message(out_msg);
 }
