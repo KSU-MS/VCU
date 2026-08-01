@@ -4,7 +4,8 @@
 #include "parameters.hpp"
 
 VCU::VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator,
-         can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can) {
+         can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can,
+         canMan *daq_can) {
   this->pedals = pedals;
   this->inverter = inverter;
   this->accumulator = accumulator;
@@ -12,6 +13,7 @@ VCU::VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator,
   this->dbc = dbc;
   this->acc_can = acc_can;
   this->inv_can = inv_can;
+  this->daq_can = daq_can;
 }
 
 bool VCU::try_ts_enabled() {
@@ -251,7 +253,7 @@ void VCU::set_parameter(uint64_t msg, uint8_t length) {
 void VCU::update_acc_can() {
   if (acc_can->check_controller_message()) {
     can_message msg_in = acc_can->get_controller_message();
-    inv_can->send_controller_message(msg_in);
+    daq_can->send_controller_message(msg_in);
 
     switch (msg_in.id) {
     case CAN_ID_ACU_SHUTDOWN_STATUS:
@@ -280,6 +282,7 @@ void VCU::update_acc_can() {
 void VCU::update_inv_can() {
   if (inv_can->check_controller_message()) {
     can_message msg_in = inv_can->get_controller_message();
+    daq_can->send_controller_message(msg_in);
 
     switch (msg_in.id) {
     case CAN_ID_DASH_BUTTONS:
@@ -320,7 +323,7 @@ void VCU::send_pedal_travel_message() {
   out_msg.length =
       pack_message(dbc, CAN_ID_VCU_PEDALS_TRAVEL, &out_msg.buf.val);
 
-  inv_can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
 
 void VCU::send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
@@ -333,7 +336,7 @@ void VCU::send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
   out_msg.id = CAN_ID_VCU_PEDAL_READINGS;
   out_msg.length = pack_message(dbc, out_msg.id, &out_msg.buf.val);
 
-  inv_can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
 
 void VCU::send_brake_pressure_message(uint16_t raw_brake) {
@@ -355,7 +358,7 @@ void VCU::send_brake_pressure_message(uint16_t raw_brake) {
   out_msg.id = CAN_ID_AN1_FRONT_BRAKEPRESSURE;
   out_msg.length = pack_message(dbc, out_msg.id, &out_msg.buf.val);
 
-  inv_can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
 
 void VCU::send_status_message() {
@@ -380,6 +383,7 @@ void VCU::send_status_message() {
 
   inv_can->send_controller_message(out_msg);
   acc_can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
 
 void VCU::send_firmware_status_message() {
@@ -393,7 +397,7 @@ void VCU::send_firmware_status_message() {
   out_msg.id = CAN_ID_VCU_BOARD_DATA;
   out_msg.length = pack_message(dbc, out_msg.id, &out_msg.buf.val);
 
-  inv_can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
 
 void VCU::send_power_tracking_message() {
@@ -404,7 +408,7 @@ void VCU::send_power_tracking_message() {
   out_msg.id = CAN_ID_VCU_LIFETIME_DISTANCE_AND_ONTIME;
   out_msg.length = pack_message(dbc, out_msg.id, &out_msg.buf.val);
 
-  inv_can->send_controller_message(out_msg);
+  daq_can->send_controller_message(out_msg);
 }
 
 // void VCU::send_launch_control_status_message() {

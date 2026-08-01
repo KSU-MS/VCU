@@ -40,6 +40,7 @@ Logger consol(serial);
 // CAN controllers
 canMan acc_can(TEENSY_CAN1, ACCUMULATOR_CAN_BAUD_RATE);
 canMan inv_can(TEENSY_CAN2, INVERTER_CAN_BAUD_RATE);
+canMan daq_can(TEENSY_CAN3, DAQ_CAN_BAUD_RATE);
 
 // Pots
 adc apps1(ads, ADC_CS, (uint8_t)ADC_ACCEL_1_CHANNEL);
@@ -55,11 +56,12 @@ Pedals pedals(MIN_BRAKE_PEDAL, START_BRAKE_PEDAL, END_BRAKE_PEDAL,
               END_ACCELERATOR_PEDAL_1, START_ACCELERATOR_PEDAL_2,
               END_ACCELERATOR_PEDAL_2);
 
-Inverter inverter(true, &inv_can, &kms_can, -0.69314718056);
+Inverter inverter(true, &inv_can, &daq_can, &kms_can, -0.69314718056);
 
 Accumulator accumulator(&kms_can, &acc_can);
 
-VCU vcu(&pedals, &inverter, &accumulator, &kms_can, &acc_can, &inv_can);
+VCU vcu(&pedals, &inverter, &accumulator, &kms_can, &acc_can, &inv_can,
+        &daq_can);
 
 //
 //// Gizmos

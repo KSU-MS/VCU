@@ -33,10 +33,11 @@ private:
   bool (*timer_motor_controller_send)();
 
   canMan *can;
+  canMan *daq;
   can_obj_car_h_t *dbc;
 
 public:
-  Inverter(bool spin_direction, canMan *can, can_obj_car_h_t *dbc,
+  Inverter(bool spin_direction, canMan *can, canMan *daq, can_obj_car_h_t *dbc,
            float over_power_decay_factor);
 
   inline uint8_t get_torque_limit() { return uint8_t(torque_limit_nm); }
