@@ -2,7 +2,7 @@
 
 #include <can_tools.hpp>
 #include <car.h>
-
+#include <cmath>
 class Inverter {
 private:
   uint32_t time_last_msec = 0;

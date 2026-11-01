@@ -1,6 +1,10 @@
 #include "inverter.hpp"
 #include "car.h"
+#include "core_pins.h"
 #include "parameters.hpp"
+#include <Arduino.h>
+#include <cmath>
+#include <cstdint>
 
 Inverter::Inverter(bool spin_direction, canMan *can, canMan *daq,
                    can_obj_car_h_t *dbc, float over_power_decay_factor) {
@@ -90,7 +94,6 @@ void Inverter::send_clear_faults() {
 }
 
 void Inverter::command_torque(double torque_request) {
-  double torque_target = torque_request;
 
   // TODO: Get rid of these arduino calls
   // We apply an exponential decay function to the torque_request if we go over
@@ -114,6 +117,42 @@ void Inverter::command_torque(double torque_request) {
   // Clamp to make sure this can only de-rate torque, just in case
   // if (torque_target > torque_request)
   //  torque_target = torque_request;
+
+  // open loop power limit algo with a efficency factor
+  // torque  = power * efficency / angular velcity
+
+  constexpr double pi = 3.141592653589793;
+  constexpr double efficiency = 0.90; // this the drivetrain efficiency value
+
+  const double angular_velocity =
+      std::abs(static_cast<double>(motor_rpm)) * 2.0 * pi / 60;
+
+  const double power_limit_w = static_cast<double>(power_limit_kw) * 1000.0;
+
+  double allowed_torque = torque_limit_nm;
+
+  // avoiding div by zero
+  if (angular_velocity > 0.0) {
+    const double power_limited_torque =
+        (power_limit_w * efficiency) / angular_velocity;
+
+    if (power_limited_torque < allowed_torque) {
+      allowed_torque = power_limited_torque;
+    }
+  }
+
+  double torque_target = 0.0;
+
+  if (inverter_enable && power_limit_kw > 0 && std::isfinite(torque_request) &&
+      std::isfinite(allowed_torque) && allowed_torque > 0.0 &&
+      torque_request > 0.0) {
+
+    torque_target = torque_request;
+
+    if (torque_target > allowed_torque) {
+      torque_target = allowed_torque;
+    }
+  }
 
   encode_can_0x0c0_VCU_INV_Torque_Command(dbc, torque_target);
   encode_can_0x0c0_VCU_INV_Torque_Limit_Command(dbc, torque_limit_nm);
