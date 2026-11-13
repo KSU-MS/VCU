@@ -1,6 +1,7 @@
 #pragma once
 #include <can_tools.hpp>
 #include <car.h>
+#include <cstdint>
 
 #include "accumulator.hpp"
 #include "inverter.hpp"
@@ -87,6 +88,7 @@ public:
   void send_status_message();
   void send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
                               uint16_t raw_brake);
+  void send_steering_raw_message(uint16_t raw_steering);
   void send_pedal_travel_message();
   void send_brake_pressure_message(uint16_t raw_brake);
   void send_firmware_status_message();

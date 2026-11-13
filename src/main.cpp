@@ -27,7 +27,9 @@ void loop() {
   apps1.update();
   apps2.update();
   bse.update();
+  steering_angle.update();
   vcu.pedals->update_travel(apps1.value.in, apps2.value.in, bse.value.in);
+  vcu.pedals->update_steering(steering_angle.value.in);
 
   vsense_bspd.update();
   vsense_bspd_bse.update();
@@ -50,6 +52,7 @@ void loop() {
     vcu.send_pedal_raw_message(vcu.pedals->get_apps1_raw(),
                                vcu.pedals->get_apps2_raw(),
                                vcu.pedals->get_brake_raw());
+    vcu.send_steering_raw_message(vcu.pedals->get_steering_raw());
 
     vcu.send_power_tracking_message();
 
@@ -59,6 +62,8 @@ void loop() {
     consol.log(vcu.pedals->get_apps2_raw());
     consol.log("\n\rraw_brake: ");
     consol.log(vcu.pedals->get_brake_raw());
+    consol.log("\n\rraw_steering angle: ");
+    consol.log(vcu.pedals->get_steering_raw());
 
     vcu.send_brake_pressure_message(vcu.pedals->get_brake_raw());
   }

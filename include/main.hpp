@@ -56,7 +56,7 @@ Pedals pedals(MIN_BRAKE_PEDAL, START_BRAKE_PEDAL, END_BRAKE_PEDAL,
               END_ACCELERATOR_PEDAL_1, START_ACCELERATOR_PEDAL_2,
               END_ACCELERATOR_PEDAL_2);
 
-Inverter inverter(true, &inv_can, &daq_can, &kms_can, -0.69314718056);
+Inverter inverter(SPIN_DIR, &inv_can, &daq_can, &kms_can, -0.69314718056);
 
 Accumulator accumulator(&kms_can, &acc_can);
 
@@ -66,8 +66,8 @@ VCU vcu(&pedals, &inverter, &accumulator, &kms_can, &acc_can, &inv_can,
 //
 //// Gizmos
 // Aditional ADC chanels
-// adc steering_angle(mcp, static_cast<uint8_t>(ADC_CS),
-//                    static_cast<uint8_t>(ADC_STEERING_CHANNEL));
+adc steering_angle(ads, static_cast<uint8_t>(ADC_CS),
+                   static_cast<uint8_t>(ADC_STEERING_CHANNEL));
 
 // Voltage / Current sense lines
 adc vsense_bspd(avr, BSPD_SENSE);

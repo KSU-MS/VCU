@@ -1,7 +1,9 @@
 #include "vcu.hpp"
+#include "can_tools.hpp"
 #include "car.h"
 #include "core_pins.h"
 #include "parameters.hpp"
+#include <cstdint>
 
 VCU::VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator,
          can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can,
@@ -334,6 +336,15 @@ void VCU::send_pedal_raw_message(uint16_t raw_apps1, uint16_t raw_apps2,
 
   can_message out_msg;
   out_msg.id = CAN_ID_VCU_PEDAL_READINGS;
+  out_msg.length = pack_message(dbc, out_msg.id, &out_msg.buf.val);
+
+  daq_can->send_controller_message(out_msg);
+}
+void VCU::send_steering_raw_message(uint16_t raw_steering) {
+  encode_can_0x383_an1_uint12(dbc, raw_steering);
+
+  can_message out_msg;
+  out_msg.id = CAN_ID_AN1_STEERINGPOT;
   out_msg.length = pack_message(dbc, out_msg.id, &out_msg.buf.val);
 
   daq_can->send_controller_message(out_msg);

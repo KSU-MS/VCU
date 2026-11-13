@@ -7,6 +7,7 @@ private:
   uint16_t raw_apps1;
   uint16_t raw_apps2;
   uint16_t raw_brake;
+  uint16_t raw_steering;
 
   float brake_ratio;
   uint16_t brake_start;
@@ -123,6 +124,9 @@ public:
       travel = 0;
     }
   }
+  void update_steering(uint16_t raw_steering) {
+    this->raw_steering = raw_steering;
+  }
 
   inline bool get_bse_fault_ok_low() { return bse_fault; }
   inline bool get_apps_fault_ok_low() { return apps_fault; }
@@ -135,4 +139,5 @@ public:
   inline double get_apps2_travel() { return apps2_travel; }
   inline double get_brake_travel() { return brake_travel; }
   inline double get_travel() { return travel; }
+  inline double get_steering_raw() { return raw_steering; }
 };
