@@ -23,8 +23,15 @@ jobs:
       - name: Software-in-the-loop tests
         run: nix develop -c pio test -e native
 
+      - name: Host tool tests
+        run: nix develop -c python3 -m pytest -q tools
+
       - name: Build firmware
         run: nix develop -c pio run -e teensy41
+
+      # Ready to flash over CAN with tools/ota/flash.py
+      - name: Package OTA image
+        run: nix develop -c python3 tools/ota/image.py build .pio/build/teensy41/firmware.hex -o vcu.ota
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4
@@ -33,3 +40,4 @@ jobs:
           path: |
             .pio/build/teensy41/firmware.hex
             .pio/build/teensy41/firmware.elf
+            vcu.ota

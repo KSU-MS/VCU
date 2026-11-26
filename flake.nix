@@ -13,6 +13,8 @@
 
         python = pkgs.python3.withPackages (ps: with ps; [
           python-can # host-side CAN tooling (OTA flasher, SIL harness)
+          can-isotp # ISO-TP over any python-can interface
+          udsoncan # UDS client for tools/ota/flash.py
           cantools # DBC encode/decode
           pytest
         ]);
