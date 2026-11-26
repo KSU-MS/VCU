@@ -31,15 +31,6 @@ jobs:
       - name: Host tool tests
         run: nix develop -c python3 -m pytest -q tools/ota
 
-      # The VCU as a Linux process on virtual CAN, flashed by tools/ota/flash.py
-      - name: Set up virtual CAN
-        run: |
-          sudo apt-get install -y linux-modules-extra-$(uname -r)
-          sudo tools/sil/setup_vcan.sh
-
-      - name: End-to-end OTA over vcan
-        run: nix develop -c tools/sil/run_e2e.sh
-
       - name: Build firmware
         run: nix develop -c pio run -e teensy41
 
@@ -55,3 +46,16 @@ jobs:
             .pio/build/teensy41/firmware.hex
             .pio/build/teensy41/firmware.elf
             vcu.ota
+
+      # The VCU as a Linux process on virtual CAN, flashed by tools/ota/flash.py.
+      # vcan lives in linux-modules-extra on the runner's Azure kernel.
+      - name: Set up virtual CAN
+        run: |
+          if ! sudo modprobe vcan 2>/dev/null; then
+            sudo apt-get update -q
+            sudo apt-get install -y -q linux-modules-extra-$(uname -r)
+          fi
+          sudo tools/sil/setup_vcan.sh
+
+      - name: End-to-end OTA over vcan
+        run: nix develop -c tools/sil/run_e2e.sh
