@@ -1,8 +1,6 @@
 #include "inverter.hpp"
 #include "car.h"
-#include "core_pins.h"
 #include "parameters.hpp"
-#include <Arduino.h>
 #include <cmath>
 #include <cstdint>
 

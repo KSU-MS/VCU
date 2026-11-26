@@ -16,20 +16,9 @@ can_obj_car_h_t kms_can;
 #include "pedal_handeler.hpp"
 #include "vcu.hpp"
 
-#ifdef ARDUINO
 #include <Arduino.h>
 
-// TODO: Make the timer stuff into its own utility, maybe a part of the logger?
-#include <Metro.h>
-Metro timer_1s = Metro(1000, true);    // Used for VCU status message
-Metro timer_2hz = Metro(500, true);    // Used for ACU and Precharge messages
-Metro timer_10hz = Metro(100, true);   // Used for VCU pedals message
-Metro timer_10hz_2 = Metro(100, true); // A naming convention so good I made 2
-Metro timer_20hz = Metro(50, true);    // Used for inverter timeout
-Metro timer_100hz = Metro(10, true);   // Used for inverter current limit
-Metro timer_200hz = Metro(5, true);    // Used for inverter command message
-Metro buzzer_timer = Metro(2215, false);
-#endif
+// The loop timers now live in VCU (see Periodic in periodic.hpp)
 
 //
 //// Comms

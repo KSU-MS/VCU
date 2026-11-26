@@ -6,6 +6,7 @@
 #include "accumulator.hpp"
 #include "inverter.hpp"
 #include "pedal_handeler.hpp"
+#include "periodic.hpp"
 #include "traction_control.hpp"
 
 enum state {
@@ -48,6 +49,12 @@ private:
   bool launch_state;
   uint8_t launch_mode = 0;
 
+  Periodic timer_1s = Periodic(1000);    // Used for VCU status message
+  Periodic timer_10hz = Periodic(100);   // Used for inverter ping
+  Periodic timer_10hz_2 = Periodic(100); // Used for inverter current limit
+  Periodic timer_20hz = Periodic(50);    // Used for pedal/DAQ messages
+  Periodic timer_200hz = Periodic(5);    // Used for inverter command message
+
 public:
   Pedals *pedals;
   Inverter *inverter;
@@ -63,6 +70,12 @@ public:
       can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can, canMan *daq_can);
 
   inline void init_state_machine() { this->current_state = STARTUP; }
+
+  // Pin setup + defaults, called once from setup()
+  void begin();
+  // One pass of the main loop (CAN, periodic messages, state machine), with
+  // the sensor readings already pushed into pedals/update_bspd
+  void tick(uint32_t now);
 
   inline state get_current_state() { return this->current_state; }
   inline uint16_t get_bool_code() { return this->bool_code; }

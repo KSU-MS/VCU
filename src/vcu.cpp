@@ -1,7 +1,7 @@
 #include "vcu.hpp"
 #include "can_tools.hpp"
 #include "car.h"
-#include "core_pins.h"
+#include "hal.hpp"
 #include "parameters.hpp"
 #include <cstdint>
 
@@ -46,8 +46,8 @@ bool VCU::set_state(state target_state) {
     if (target_state == TRACTIVE_SYSTEM_DISABLED) {
       current_state = TRACTIVE_SYSTEM_DISABLED;
 
-      digitalWrite(LOWSIDE1, LOW);
-      digitalWrite(LOWSIDE2, LOW);
+      hal::digital_write(LOWSIDE1, false);
+      hal::digital_write(LOWSIDE2, false);
 
       return true;
     } else {
@@ -61,16 +61,16 @@ bool VCU::set_state(state target_state) {
     if (target_state == TRACTIVE_SYSTEM_ENERGIZED && ts_safe()) {
       current_state = TRACTIVE_SYSTEM_ENERGIZED;
 
-      digitalWrite(LOWSIDE1, HIGH);
-      digitalWrite(LOWSIDE2, HIGH);
+      hal::digital_write(LOWSIDE1, true);
+      hal::digital_write(LOWSIDE2, true);
 
       return true;
     } else {
       error_code = bool_code;
       current_state = TRACTIVE_SYSTEM_DISABLED;
 
-      digitalWrite(LOWSIDE1, LOW);
-      digitalWrite(LOWSIDE2, LOW);
+      hal::digital_write(LOWSIDE1, false);
+      hal::digital_write(LOWSIDE2, false);
 
       return false;
     }
@@ -82,8 +82,8 @@ bool VCU::set_state(state target_state) {
 
       buzzer_active = true;
 
-      digitalWrite(LOWSIDE1, HIGH);
-      digitalWrite(LOWSIDE2, HIGH);
+      hal::digital_write(LOWSIDE1, true);
+      hal::digital_write(LOWSIDE2, true);
 
       // Get the inverter prepped
       inverter->set_inverter_enable(true);
@@ -94,8 +94,8 @@ bool VCU::set_state(state target_state) {
       error_code = bool_code;
       current_state = TRACTIVE_SYSTEM_DISABLED;
 
-      digitalWrite(LOWSIDE1, LOW);
-      digitalWrite(LOWSIDE2, LOW);
+      hal::digital_write(LOWSIDE1, false);
+      hal::digital_write(LOWSIDE2, false);
 
       return false;
     }
@@ -107,8 +107,8 @@ bool VCU::set_state(state target_state) {
 
       buzzer_active = false;
 
-      digitalWrite(LOWSIDE1, HIGH);
-      digitalWrite(LOWSIDE2, HIGH);
+      hal::digital_write(LOWSIDE1, true);
+      hal::digital_write(LOWSIDE2, true);
 
       // TODO: Make this torque limit easier to configure
       inverter->set_inverter_enable(true);
@@ -121,8 +121,8 @@ bool VCU::set_state(state target_state) {
       error_code = bool_code;
       current_state = TRACTIVE_SYSTEM_DISABLED;
 
-      digitalWrite(LOWSIDE1, LOW);
-      digitalWrite(LOWSIDE2, LOW);
+      hal::digital_write(LOWSIDE1, false);
+      hal::digital_write(LOWSIDE2, false);
 
       return false;
     }
@@ -134,8 +134,8 @@ bool VCU::set_state(state target_state) {
 
     buzzer_active = false;
 
-    digitalWrite(LOWSIDE1, LOW);
-    digitalWrite(LOWSIDE2, LOW);
+    hal::digital_write(LOWSIDE1, false);
+    hal::digital_write(LOWSIDE2, false);
 
     this->current_state = TRACTIVE_SYSTEM_DISABLED;
     return true;
@@ -399,7 +399,7 @@ void VCU::send_status_message() {
 
 void VCU::send_firmware_status_message() {
   // TODO: Abstract this arduino call
-  encode_can_0x3bc_board_on_time_seconds(dbc, millis() / 1000);
+  encode_can_0x3bc_board_on_time_seconds(dbc, hal::millis() / 1000);
   encode_can_0x3bc_firmware_version(dbc, AUTO_VERSION);
   encode_can_0x3bc_firmware_is_dirty(dbc, FW_PROJECT_IS_DIRTY);
   encode_can_0x3bc_firmware_on_main(dbc, FW_PROJECT_IS_MAIN_OR_MASTER);
