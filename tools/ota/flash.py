@@ -77,8 +77,10 @@ def connect(bus: can.BusABC) -> Client:
 
 
 def read_version(client: Client) -> int:
-    return client.read_data_by_identifier(DID_SOFTWARE_VERSION).service_data.values[
+    # udsoncan decodes a struct format DID as a tuple
+    (version,) = client.read_data_by_identifier(DID_SOFTWARE_VERSION).service_data.values[
         DID_SOFTWARE_VERSION]
+    return version
 
 
 def progress(done: int, total: int, started: float) -> None:
