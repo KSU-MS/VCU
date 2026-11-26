@@ -57,6 +57,13 @@ void VCU::tick(uint32_t now) {
 
   //
   //// State machine Stage
+  // Track when we got into the current state, for states that wait on time
+  bool entered_state = current_state != state_last_tick;
+  if (entered_state) {
+    state_entered_ms = now;
+    state_last_tick = current_state;
+  }
+
   switch (get_current_state()) {
   case STARTUP:
     if (set_state(TRACTIVE_SYSTEM_DISABLED)) {
@@ -113,22 +120,36 @@ void VCU::tick(uint32_t now) {
     if (timer_10hz.check(now))
       inverter->ping();
 
-    inverter->set_current_limits(INVERTER_CHARGE_LIMIT,
-                                 INVERTER_DISCHARGE_LIMIT);
+    // Prep the inverter and start the buzzer once, on the way in
+    if (entered_state) {
+      inverter->set_current_limits(INVERTER_CHARGE_LIMIT,
+                                   INVERTER_DISCHARGE_LIMIT);
 
-    inverter->send_clear_faults();
-
-    hal::digital_write(BUZZER, get_buzzer_state());
-    hal::delay_ms(2151);
-
-    if (set_state(READY_TO_DRIVE)) {
-      hal::logln("Ready to Rip");
+      inverter->send_clear_faults();
 
       hal::digital_write(BUZZER, get_buzzer_state());
-    } else {
-      hal::log("Failed to enter READY_TO_DRIVE, ERROR: ");
+    }
+
+    // The buzzer used to be a blocking delay(), which stopped CAN being read
+    // and the inverter being pinged, so a fault during it went unnoticed
+    // until after we'd already gone RTD. Keep checking while it plays.
+    if (!ts_safe()) {
+      hal::log("Something isn't safe, leaving ENABLED, ERROR: ");
       hal::log(long(get_error_code()));
       hal::logln("");
+
+      hal::digital_write(BUZZER, get_buzzer_state());
+      break;
+    }
+
+    if (now - state_entered_ms >= RTD_BUZZER_DURATION_MS) {
+      if (set_state(READY_TO_DRIVE)) {
+        hal::logln("Ready to Rip");
+      } else {
+        hal::log("Failed to enter READY_TO_DRIVE, ERROR: ");
+        hal::log(long(get_error_code()));
+        hal::logln("");
+      }
 
       hal::digital_write(BUZZER, get_buzzer_state());
     }

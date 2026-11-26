@@ -55,6 +55,9 @@ private:
   Periodic timer_20hz = Periodic(50);    // Used for pedal/DAQ messages
   Periodic timer_200hz = Periodic(5);    // Used for inverter command message
 
+  state state_last_tick = STARTUP; // To spot transitions in tick()
+  uint32_t state_entered_ms = 0;
+
 public:
   Pedals *pedals;
   Inverter *inverter;

@@ -5,7 +5,6 @@
 namespace hal {
 
 uint32_t millis() { return ::millis(); }
-void delay_ms(uint32_t ms) { ::delay(ms); }
 
 void pin_mode(uint8_t pin, pin_dir dir) {
   ::pinMode(pin, dir == PIN_OUTPUT ? OUTPUT : INPUT);

@@ -12,7 +12,6 @@ namespace hal {
 enum pin_dir : uint8_t { PIN_INPUT = 0, PIN_OUTPUT = 1 };
 
 uint32_t millis();
-void delay_ms(uint32_t ms);
 
 void pin_mode(uint8_t pin, pin_dir dir);
 void digital_write(uint8_t pin, bool level);

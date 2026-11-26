@@ -69,7 +69,6 @@ void reset() {
 namespace hal {
 
 uint32_t millis() { return clock_ms; }
-void delay_ms(uint32_t ms) { clock_ms += ms; }
 
 void pin_mode(uint8_t pin, pin_dir dir) { pin_outputs[pin] = dir == PIN_OUTPUT; }
 void digital_write(uint8_t pin, bool level) { pin_levels[pin] = level; }
