@@ -46,7 +46,16 @@ public:
   inline double get_bus_current() { return bus_current; }
   inline uint32_t get_motor_distance_M() { return distance_M; }
   uint16_t get_instant_current_limit(float voltage) {
-    return ((power_limit_kw * 1000) / voltage);
+    // No pack voltage yet (or garbage): allow no discharge current rather than
+    // dividing by zero. Float->int of inf/NaN is UB, and on the Teensy it
+    // saturates, which would mean no limit at all
+    if (!(voltage > 0))
+      return 0;
+
+    float limit = (power_limit_kw * 1000) / voltage;
+    if (limit >= UINT16_MAX)
+      return UINT16_MAX;
+    return uint16_t(limit);
   }
 
   inline void set_torque_limit(double limit) { torque_limit_nm = limit; }
