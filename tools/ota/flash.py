@@ -177,7 +177,8 @@ def main(argv: list[str] | None = None) -> int:
     with can.Bus(interface=args.interface, channel=args.channel,
                  bitrate=args.bitrate) as bus, connect(bus, args.timeout_scale) as client:
         try:
-            flash(client, image, reset=not args.no_reset)
+            flash(client, image, reset=not args.no_reset,
+                  reboot_timeout=10.0 * args.timeout_scale)
         except (FlashError, NegativeResponseException, TimeoutException) as e:
             print(f"\nflash failed: {e}", file=sys.stderr)
             return 1

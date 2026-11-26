@@ -49,6 +49,9 @@ sysbus LoadELF $elf
 # anyway, so return straight away.
 cpu AddHook `sysbus GetSymbolAddress "configure_cache"` "cpu.PC = cpu.LR"
 
-# There's no boot ROM: it would read the IVT at 0x60001000 and jump to
-# ResetHandler, so do that ourselves
-cpu PC `sysbus GetSymbolAddress "ResetHandler"`
+# There's no boot ROM: it reads the IVT at 0x60001000 and jumps to its entry
+# point (ResetHandler), so do that ourselves, on every reset. Reading it from
+# flash rather than the ELF means a reset after an OTA update (FlasherX's
+# REBOOT is a SYSRESETREQ) boots whatever image is in flash now.
+macro reset "cpu PC `sysbus ReadDoubleWord 0x60001004`"
+runMacro $reset
