@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+
+      # Toolchains and libdeps PlatformIO downloads on first run
+      - uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.ini', 'flake.lock') }}
+          restore-keys: ${{ runner.os }}-pio-
+
+      - name: Software-in-the-loop tests
+        run: nix develop -c pio test -e native
+
+      - name: Build firmware
+        run: nix develop -c pio run -e teensy41
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: vcu-firmware-${{ github.sha }}
+          path: |
+            .pio/build/teensy41/firmware.hex
+            .pio/build/teensy41/firmware.elf
