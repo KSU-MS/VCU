@@ -3,6 +3,7 @@
 void setup() {
   consol.logln("Booting...");
 
+  vcu.attach_updater(&updater);
   vcu.begin();
 
   consol.logln("Booted");

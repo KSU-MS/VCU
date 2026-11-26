@@ -52,6 +52,13 @@ Accumulator accumulator(&kms_can, &acc_can);
 VCU vcu(&pedals, &inverter, &accumulator, &kms_can, &acc_can, &inv_can,
         &daq_can);
 
+// Firmware update over the DAQ bus, see docs/ota.md
+#include "ota_teensy.hpp"
+#include <ota.hpp>
+TeensyStagingFlash ota_staging;
+TeensyBoard ota_board(vcu);
+ota::Service updater(ota_board, ota_staging, &daq_can);
+
 //
 //// Gizmos
 // Aditional ADC chanels
