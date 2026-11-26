@@ -5,8 +5,22 @@
 # where it's allowed to create vcan interfaces (the vcan kernel module has
 # to be loaded already: `sudo modprobe vcan`, or boot.kernelModules on
 # NixOS). Nothing touches the host's real network config.
+#
+# If the buses already exist (tools/sil/setup_vcan.sh, or CI) it just uses
+# them instead.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
+
+have_buses() {
+  for bus in vcan_acc vcan_inv vcan_daq; do
+    ip link show "$bus" &>/dev/null || return 1
+  done
+}
+
+if [[ -z "${VCU_E2E_IN_NS:-}" ]] && have_buses; then
+  pio run -e sil
+  exec python3 -m pytest tools/sil -v -s "$@"
+fi
 
 if [[ $EUID -ne 0 && -z "${VCU_E2E_IN_NS:-}" ]]; then
   pio run -e sil

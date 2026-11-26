@@ -24,7 +24,16 @@ jobs:
         run: nix develop -c pio test -e native
 
       - name: Host tool tests
-        run: nix develop -c python3 -m pytest -q tools
+        run: nix develop -c python3 -m pytest -q tools/ota
+
+      # The VCU as a Linux process on virtual CAN, flashed by tools/ota/flash.py
+      - name: Set up virtual CAN
+        run: |
+          sudo apt-get install -y linux-modules-extra-$(uname -r)
+          sudo tools/sil/setup_vcan.sh
+
+      - name: End-to-end OTA over vcan
+        run: nix develop -c tools/sil/run_e2e.sh
 
       - name: Build firmware
         run: nix develop -c pio run -e teensy41
