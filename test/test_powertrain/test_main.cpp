@@ -3,8 +3,11 @@
 #include <sim_test_main.hpp>
 
 #include <cmath>
+#include <cstring>
 #include <limits>
+#include <new>
 #include <sim_car.hpp>
+#include <utility>
 
 using sim::Car;
 
@@ -123,6 +126,62 @@ TEST_CASE("ready to drive without BMS voltage sends a zero discharge limit") {
 }
 
 //
+//// Initial state
+//
+// On the Teensy these objects are globals, so they start zeroed whatever
+// their constructors do. Anywhere else (heap, stack) they don't, and the
+// SIL process caught Inverter starting with a garbage distance. Build them
+// on top of junk memory to make sure nothing depends on that.
+
+template <typename T, typename... Args> T *on_junk(void *buf, Args &&...args) {
+  // Volatile, or GCC's lifetime DSE drops the fill since the object's
+  // lifetime only starts at the placement new
+  volatile unsigned char *junk = static_cast<unsigned char *>(buf);
+  for (size_t i = 0; i < sizeof(T); i++)
+    junk[i] = 0xAB;
+  return new (buf) T(std::forward<Args>(args)...);
+}
+
+TEST_CASE("a fresh Inverter doesn't depend on zeroed memory") {
+  Car car; // for the buses and dbc
+  alignas(Inverter) unsigned char buf[sizeof(Inverter)];
+  Inverter *inv =
+      on_junk<Inverter>(buf, false, &car.inv_can, &car.daq_can, &car.dbc, -0.69f);
+
+  CHECK(inv->get_bus_voltage() == 0);
+  CHECK(inv->get_bus_current() == 0);
+  CHECK(inv->get_motor_distance_M() == 0);
+  CHECK(inv->get_torque_limit() == 0);
+  CHECK_FALSE(inv->get_inverter_enable());
+
+  // No feedback yet, so no distance should accumulate either
+  inv->calculate_motor_distance_M(0);
+  inv->calculate_motor_distance_M(10000);
+  CHECK(inv->get_motor_distance_M() == 0);
+  inv->~Inverter();
+}
+
+TEST_CASE("a fresh Pedals doesn't depend on zeroed memory") {
+  alignas(Pedals) unsigned char buf[sizeof(Pedals)];
+  Pedals *p = on_junk<Pedals>(buf, MIN_BRAKE_PEDAL, START_BRAKE_PEDAL,
+                              END_BRAKE_PEDAL, MAX_BRAKE_PEDAL, MIN_APPS_PEDAL,
+                              START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1,
+                              START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2);
+
+  // Before any reading: no throttle, no faults
+  CHECK(p->get_travel() == 0);
+  CHECK(p->get_brake_travel() == 0);
+  CHECK_FALSE(p->get_apps_fault_ok_low());
+  CHECK_FALSE(p->get_apps_bse_fault_ok_low());
+
+  // An open APPS1 on the very first reading mustn't use a junk APPS1 travel
+  p->update_travel(MIN_APPS_PEDAL - 1, START_ACCELERATOR_PEDAL_2, START_BRAKE_PEDAL);
+  CHECK(p->get_travel() == 0);
+  CHECK(p->get_apps1_travel() == 0);
+  p->~Pedals();
+}
+
+//
 //// Integrators
 
 TEST_CASE("energy consumed integrates pack power over time") {
@@ -151,4 +210,17 @@ TEST_CASE("distance integrates wheel speed from motor rpm") {
   car.inverter.calculate_motor_distance_M(t0 + 100000); // 100 s
   CHECK(car.inverter.get_motor_distance_M() - before ==
         doctest::Approx(1000).epsilon(0.01));
+}
+
+TEST_CASE("lifetime distance counts reversing too, and never goes negative") {
+  // It's an odometer; a negative double -> uint32_t is UB on the Teensy too
+  Car car;
+  const double rpm = 10.0 / WHEEL_CIRCUMFRANCE_M * GEAR_RATIO * 60;
+  car.inverter_motor_rpm(-int16_t(std::round(rpm)));
+  car.run_for(5);
+
+  uint32_t t0 = sim::now();
+  car.inverter.calculate_motor_distance_M(t0);
+  car.inverter.calculate_motor_distance_M(t0 + 10000); // 10 s backwards
+  CHECK(car.inverter.get_motor_distance_M() == doctest::Approx(100).epsilon(0.02));
 }

@@ -15,7 +15,7 @@ private:
   bool imd_ok_hs = false;
   bool bms_ok_hs = false;
 
-  bool (*can_message_check)();
+  bool (*can_message_check)() = nullptr;
 
   double pack_voltage = 0;
   double pack_current = 0;

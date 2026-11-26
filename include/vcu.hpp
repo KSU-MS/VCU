@@ -50,7 +50,7 @@ private:
   bool bspd_brake_high = false;
   bool bspd_current_high = false;
 
-  bool launch_state;
+  bool launch_state = false;
   uint8_t launch_mode = 0;
 
   Periodic timer_1s = Periodic(1000);    // Used for VCU status message
@@ -68,7 +68,7 @@ public:
   Pedals *pedals;
   Inverter *inverter;
   Accumulator *accumulator;
-  TractionController *tc;
+  TractionController *tc = nullptr;
 
   can_obj_car_h_t *dbc;
   canMan *acc_can;

@@ -17,20 +17,20 @@ private:
   double torque_request = 0;
   double torque_limit_nm = 0;
 
-  int16_t motor_rpm;
-  uint16_t motor_temp;
-  double distance_M;
+  int16_t motor_rpm = 0;
+  uint16_t motor_temp = 0;
+  double distance_M = 0;
 
-  bool over_power;
-  uint32_t over_power_event_epoch;
+  bool over_power = false;
+  uint32_t over_power_event_epoch = 0;
   float over_power_decay_factor;
-  double bus_voltage;
-  double bus_current;
-  uint16_t power_limit_kw;
+  double bus_voltage = 0;
+  double bus_current = 0;
+  uint16_t power_limit_kw = 0;
 
-  bool (*timer_mc_kick)();
-  bool (*timer_current_limit)();
-  bool (*timer_motor_controller_send)();
+  bool (*timer_mc_kick)() = nullptr;
+  bool (*timer_current_limit)() = nullptr;
+  bool (*timer_motor_controller_send)() = nullptr;
 
   canMan *can;
   canMan *daq;

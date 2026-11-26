@@ -52,8 +52,10 @@ void Inverter::update_motor_feedback(uint64_t msg_in, uint8_t length) {
 void Inverter::calculate_motor_distance_M(uint32_t time_msec) {
   uint32_t time_elaped_msec = time_msec - time_last_msec;
 
+  // Lifetime distance is an odometer, so reversing counts too. A negative
+  // total would also be UB when get_motor_distance_M casts it to uint32_t
   double velocity_Msec =
-      (double(motor_rpm) / 60 / GEAR_RATIO) * WHEEL_CIRCUMFRANCE_M;
+      (std::abs(double(motor_rpm)) / 60 / GEAR_RATIO) * WHEEL_CIRCUMFRANCE_M;
 
   distance_M += (double(time_elaped_msec) / 1000) * velocity_Msec;
 

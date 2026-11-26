@@ -4,10 +4,10 @@
 
 class Pedals {
 private:
-  uint16_t raw_apps1;
-  uint16_t raw_apps2;
-  uint16_t raw_brake;
-  uint16_t raw_steering;
+  uint16_t raw_apps1 = 0;
+  uint16_t raw_apps2 = 0;
+  uint16_t raw_brake = 0;
+  uint16_t raw_steering = 0;
 
   float brake_ratio;
   uint16_t brake_start;
@@ -22,15 +22,15 @@ private:
   float apps2_ratio;
   uint16_t apps2_start;
 
-  double brake_travel;
-  double apps1_travel;
-  double apps2_travel;
-  double travel;
+  double brake_travel = 0;
+  double apps1_travel = 0;
+  double apps2_travel = 0;
+  double travel = 0;
 
   // EV.4.7
-  bool bse_fault;      // BSE is reading too high or too low
-  bool apps_fault;     // Not reading within 10% of each other
-  bool apps_bse_fault; // Screenshot (too much brake and gas (before BSPD))
+  bool bse_fault = false;      // BSE is reading too high or too low
+  bool apps_fault = false;     // Not reading within 10% of each other
+  bool apps_bse_fault = false; // Screenshot (too much brake and gas (before BSPD))
 
 public:
   Pedals(uint16_t bse_low_fault, uint16_t brake_start, uint16_t brake_end,
