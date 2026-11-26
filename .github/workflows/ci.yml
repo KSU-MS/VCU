@@ -3,6 +3,7 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   test-and-build:
@@ -59,3 +60,31 @@ jobs:
 
       - name: End-to-end OTA over vcan
         run: nix develop -c tools/sil/run_e2e.sh
+
+  # Publish the dev container (flake.nix packages.devcontainer) for people
+  # without Nix. Only from main, so branches don't overwrite :latest.
+  devcontainer:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+
+      - name: Build image
+        run: nix build .#devcontainer
+
+      - name: Push to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker load < result
+          image=ghcr.io/$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')/vcu-dev
+          docker tag kms-vcu-dev:latest "$image:latest"
+          docker tag kms-vcu-dev:latest "$image:${GITHUB_SHA::7}"
+          docker push "$image:latest"
+          docker push "$image:${GITHUB_SHA::7}"
