@@ -1,0 +1,6 @@
+{
+  "name": "ota",
+  "version": "0.1.0",
+  "description": "Firmware update over CAN: ISO-TP transport, a UDS (ISO 14229) download server and the image format. Hardware-free, the flash and reboot are behind ota_platform.hpp",
+  "platforms": "*"
+}

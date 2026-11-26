@@ -4,6 +4,7 @@
 #include "hal.hpp"
 #include "parameters.hpp"
 #include <cstdint>
+#include <ota.hpp>
 
 VCU::VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator,
          can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can,
@@ -325,6 +326,25 @@ void VCU::update_inv_can() {
       break;
     }
   }
+}
+
+// The DAQ bus is mostly outbound, the only thing we listen for on it is a
+// tester doing a firmware update. Unlike the other two buses this drains
+// everything waiting (up to a cap), since an update arrives as bursts of
+// ISO-TP frames.
+void VCU::update_daq_can(uint32_t now) {
+  for (int i = 0; i < 64 && daq_can->check_controller_message(); i++) {
+    can_message msg_in = daq_can->get_controller_message();
+
+    if (updater && ota::Service::wants(msg_in))
+      updater->on_frame(msg_in, now);
+  }
+}
+
+bool VCU::safe_to_program() {
+  return (current_state == STARTUP ||
+          current_state == TRACTIVE_SYSTEM_DISABLED) &&
+         !inverter->get_inverter_enable();
 }
 
 void VCU::send_pedal_travel_message() {

@@ -4,6 +4,7 @@
 #include "hal.hpp"
 #include "parameters.hpp"
 #include "vcu.hpp"
+#include <ota.hpp>
 
 void VCU::begin() {
   init_state_machine();
@@ -24,6 +25,9 @@ void VCU::tick(uint32_t now) {
   //// CAN Stage
   update_acc_can();
   update_inv_can();
+  update_daq_can(now);
+  if (updater)
+    updater->poll(now);
 
   if (timer_1s.check(now)) {
     send_firmware_status_message();
@@ -78,6 +82,10 @@ void VCU::tick(uint32_t now) {
   case TRACTIVE_SYSTEM_DISABLED:
     if (timer_10hz.check(now))
       inverter->ping();
+
+    // Don't let the car go live while someone is reflashing it
+    if (updater && updater->programming())
+      break;
 
     if (ts_safe()) {
       if (set_state(TRACTIVE_SYSTEM_ENERGIZED)) {

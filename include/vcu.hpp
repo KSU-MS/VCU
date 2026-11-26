@@ -9,6 +9,10 @@
 #include "periodic.hpp"
 #include "traction_control.hpp"
 
+namespace ota {
+class Service;
+}
+
 enum state {
   STARTUP = 0,                   // VCU is powering on
   TRACTIVE_SYSTEM_DISABLED = 1,  // GLV is on, but not TSV
@@ -58,6 +62,8 @@ private:
   state state_last_tick = STARTUP; // To spot transitions in tick()
   uint32_t state_entered_ms = 0;
 
+  ota::Service *updater = nullptr; // Firmware update over the DAQ bus
+
 public:
   Pedals *pedals;
   Inverter *inverter;
@@ -95,6 +101,12 @@ public:
 
   void update_acc_can();
   void update_inv_can();
+  void update_daq_can(uint32_t now);
+
+  // OTA is optional, the VCU runs the same without it
+  inline void attach_updater(ota::Service *service) { updater = service; }
+  // Parked: no tractive system and the inverter can't make torque
+  bool safe_to_program();
 
   void set_parameter(uint64_t msg, uint8_t length);
   void update_dash_buttons(uint64_t msg, uint8_t length);

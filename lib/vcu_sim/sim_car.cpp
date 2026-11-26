@@ -1,6 +1,165 @@
 #include "sim_car.hpp"
+#include <algorithm>
+#include <string.h>
 
 namespace sim {
+
+//
+//// Tester
+
+void Car::tester_inject(const uint8_t *bytes, size_t len) {
+  can_message m;
+  m.id = ota::REQUEST_ID;
+  m.length = 8;
+  memset(m.buf.byte, 0xAA, 8);
+  memcpy(m.buf.byte, bytes, len);
+  daq().inject(m);
+}
+
+// Next frame from the VCU on the response ID after `cursor`, running the
+// car until one shows up
+bool Car::tester_wait_frame(size_t *cursor, can_message *out,
+                            uint32_t timeout_ms) {
+  uint32_t deadline = sim::now() + timeout_ms;
+  for (;;) {
+    auto &tx = daq().tx;
+    for (; *cursor < tx.size(); (*cursor)++) {
+      if (tx[*cursor].id == ota::RESPONSE_ID) {
+        *out = tx[(*cursor)++];
+        return true;
+      }
+    }
+    if (sim::now() >= deadline)
+      return false;
+    tick();
+    sim::advance(1);
+  }
+}
+
+void Car::tester_send(const std::vector<uint8_t> &req, size_t *cursor,
+                      uint32_t timeout_ms) {
+  if (req.size() <= 7) {
+    uint8_t sf[8] = {uint8_t(req.size())};
+    memcpy(sf + 1, req.data(), req.size());
+    tester_inject(sf, req.size() + 1);
+    return;
+  }
+
+  uint8_t ff[8] = {uint8_t(0x10 | (req.size() >> 8)), uint8_t(req.size())};
+  memcpy(ff + 2, req.data(), 6);
+  tester_inject(ff, 8);
+
+  size_t pos = 6;
+  uint8_t sn = 1;
+  while (pos < req.size()) {
+    // Wait for flow control, then send as many CFs as it allows
+    can_message fc;
+    if (!tester_wait_frame(cursor, &fc, timeout_ms))
+      return;
+    if ((fc.buf.byte[0] >> 4) != 0x3 || (fc.buf.byte[0] & 0xF) != 0)
+      return;
+    uint8_t block_size = fc.buf.byte[1];
+
+    for (int n = 0; pos < req.size() && (block_size == 0 || n < block_size);
+         n++) {
+      uint8_t cf[8] = {uint8_t(0x20 | sn)};
+      size_t chunk = req.size() - pos < 7 ? req.size() - pos : 7;
+      memcpy(cf + 1, req.data() + pos, chunk);
+      tester_inject(cf, chunk + 1);
+      pos += chunk;
+      sn = (sn + 1) & 0xF;
+    }
+  }
+}
+
+std::vector<uint8_t> Car::uds(const std::vector<uint8_t> &req,
+                              uint32_t timeout_ms) {
+  size_t cursor = daq().tx.size();
+  tester_send(req, &cursor, timeout_ms);
+
+  can_message m;
+  if (!tester_wait_frame(&cursor, &m, timeout_ms))
+    return {};
+
+  const uint8_t *b = m.buf.byte;
+  if ((b[0] >> 4) == 0x0) {
+    return std::vector<uint8_t>(b + 1, b + 1 + (b[0] & 0xF));
+  }
+  if ((b[0] >> 4) != 0x1)
+    return {};
+
+  // Multi-frame response: ask for the rest
+  size_t len = (size_t(b[0] & 0xF) << 8) | b[1];
+  std::vector<uint8_t> out(b + 2, b + 8);
+  uint8_t fc[3] = {0x30, 0, 0};
+  tester_inject(fc, 3);
+  while (out.size() < len) {
+    if (!tester_wait_frame(&cursor, &m, timeout_ms))
+      return {};
+    size_t chunk = len - out.size() < 7 ? len - out.size() : 7;
+    out.insert(out.end(), m.buf.byte + 1, m.buf.byte + 1 + chunk);
+  }
+  return out;
+}
+
+const char *Car::flash(const std::vector<uint8_t> &image) {
+  auto ok = [](const std::vector<uint8_t> &r, uint8_t sid) {
+    return !r.empty() && r[0] == sid + 0x40;
+  };
+
+  if (!ok(uds({0x10, 0x02}), 0x10))
+    return "programming session";
+
+  uint32_t n = image.size();
+  std::vector<uint8_t> req = {0x34, 0x00, 0x44, 0, 0, 0, 0,
+                              uint8_t(n >> 24), uint8_t(n >> 16),
+                              uint8_t(n >> 8), uint8_t(n)};
+  auto r = uds(req);
+  if (!ok(r, 0x34))
+    return "request download";
+  size_t block_data = ((size_t(r[2]) << 8) | r[3]) - 2;
+
+  uint8_t counter = 1;
+  for (size_t off = 0; off < image.size(); off += block_data) {
+    size_t chunk = std::min(block_data, image.size() - off);
+    std::vector<uint8_t> td = {0x36, counter};
+    td.insert(td.end(), image.begin() + off, image.begin() + off + chunk);
+    if (!ok(uds(td), 0x36))
+      return "transfer data";
+    counter++;
+  }
+
+  if (!ok(uds({0x37}), 0x37))
+    return "transfer exit";
+
+  r = uds({0x31, 0x01, 0xFF, 0x01});
+  if (!ok(r, 0x31) || r.size() < 5 || r[4] != 0)
+    return "check image";
+
+  if (!ok(uds({0x11, 0x01}), 0x11))
+    return "ecu reset";
+  run_for(10); // let the reset happen after the response goes out
+  return nullptr;
+}
+
+std::vector<uint8_t> make_image(const std::vector<uint8_t> &firmware,
+                                uint32_t version, const char *target) {
+  ota::ImageHeader h{};
+  memcpy(h.magic, ota::IMAGE_MAGIC, 4);
+  h.header_version = ota::IMAGE_HEADER_VERSION;
+  h.header_size = ota::IMAGE_HEADER_SIZE;
+  h.image_size = firmware.size();
+  h.image_crc32 = ota::crc32(firmware.data(), firmware.size());
+  h.fw_version = version;
+  strncpy(h.target, target, ota::IMAGE_TARGET_LEN);
+  h.header_crc32 = ota::crc32(reinterpret_cast<const uint8_t *>(&h),
+                              offsetof(ota::ImageHeader, header_crc32));
+
+  std::vector<uint8_t> out(reinterpret_cast<const uint8_t *>(&h),
+                           reinterpret_cast<const uint8_t *>(&h) + sizeof(h));
+  out.insert(out.end(), firmware.begin(), firmware.end());
+  return out;
+}
 
 void Car::send(Bus &b, uint32_t id) {
   can_message msg;

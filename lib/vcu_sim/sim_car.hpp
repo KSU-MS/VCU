@@ -6,11 +6,13 @@
 
 #include <accumulator.hpp>
 #include <inverter.hpp>
+#include <ota.hpp>
 #include <parameters.hpp>
 #include <pedal_handeler.hpp>
 #include <vcu.hpp>
 
 #include "sim.hpp"
+#include "sim_ota.hpp"
 
 namespace sim {
 
@@ -37,6 +39,11 @@ struct Car : ResetFirst {
   Accumulator accumulator{&dbc, &acc_can};
   VCU vcu{&pedals, &inverter, &accumulator, &dbc, &acc_can, &inv_can, &daq_can};
 
+  // Firmware update, on the DAQ bus like on the car
+  NorFlash staging{1024 * 1024};
+  Board board{staging};
+  ota::Service updater{board, staging, &daq_can};
+
   // Raw ADC counts fed to the pedals every tick, defaulting to released
   // pedals that are inside their valid ranges
   uint16_t apps1_raw = START_ACCELERATOR_PEDAL_1;
@@ -44,7 +51,11 @@ struct Car : ResetFirst {
   uint16_t brake_raw = START_BRAKE_PEDAL;
   uint16_t steering_raw = 2048;
 
-  Car() { vcu.begin(); }
+  Car() {
+    board.safe = [this] { return vcu.safe_to_program(); };
+    vcu.attach_updater(&updater);
+    vcu.begin();
+  }
 
   Bus &acc() { return bus(TEENSY_CAN1); }
   Bus &inv() { return bus(TEENSY_CAN2); }
@@ -147,9 +158,31 @@ struct Car : ResetFirst {
   // Discharge limit in the most recent 0x202 on the inverter bus, -1 if none
   int last_discharge_limit();
 
+  //
+  //// A laptop on the DAQ bus doing UDS over ISO-TP. Deliberately its own
+  //// ISO-TP implementation, not the firmware's, so the two check each other.
+
+  // Send one UDS request and wait for the response. Empty on timeout.
+  std::vector<uint8_t> uds(const std::vector<uint8_t> &request,
+                           uint32_t timeout_ms = 2000);
+
+  // The whole update sequence, like tools/ota/flash.py does it. Returns the
+  // first step that failed, or nullptr if the image was applied.
+  const char *flash(const std::vector<uint8_t> &image);
+
 private:
   can_obj_car_h_t other_boards{}; // separate DBC state, like a real node
   void send(Bus &b, uint32_t id);
+
+  void tester_send(const std::vector<uint8_t> &request, size_t *cursor,
+                   uint32_t timeout_ms);
+  bool tester_wait_frame(size_t *cursor, can_message *out, uint32_t timeout_ms);
+  void tester_inject(const uint8_t *bytes, size_t len);
 };
+
+// An OTA image in the same format tools/ota/image.py makes
+std::vector<uint8_t> make_image(const std::vector<uint8_t> &firmware,
+                                uint32_t version,
+                                const char *target = ota::IMAGE_TARGET);
 
 } // namespace sim
