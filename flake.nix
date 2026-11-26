@@ -37,7 +37,7 @@
         devShells.default = pkgs.mkShell {
           # nixpkgs' platformio is wrapped in an FHS env so the downloaded
           # toolchains run on NixOS
-          packages = [ pkgs.platformio ] ++ tools;
+          packages = [ pkgs.platformio pkgs.renode ] ++ tools;
 
           # ...but that FHS env doesn't include libzstd
           LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.zstd ];
