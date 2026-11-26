@@ -150,10 +150,12 @@ bool VCU::set_state(state target_state) {
 
       // TODO: Figure out what needs to get turned off
       this->current_state = READY_TO_DRIVE;
+      return true;
     } else if (target_state == LAUNCH && ts_safe()) {
 
       // TODO: Get some pre-lim logic goin
       this->current_state = LAUNCH;
+      return true;
     } else {
       inverter->set_inverter_enable(false);
       inverter->set_torque_limit(0);
@@ -167,9 +169,16 @@ bool VCU::set_state(state target_state) {
 
   case LAUNCH:
     if (target_state == READY_TO_DRIVE && ts_safe() && !launch_state) {
-
+      this->current_state = READY_TO_DRIVE;
+      return true;
     } else {
+      inverter->set_inverter_enable(false);
+      inverter->set_torque_limit(0);
+
+      buzzer_active = false;
+
       this->current_state = TRACTIVE_SYSTEM_DISABLED;
+      return false;
     }
     break;
 
