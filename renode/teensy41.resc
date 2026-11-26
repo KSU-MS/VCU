@@ -7,6 +7,9 @@
 
 $elf?=@.pio/build/teensy41/firmware.elf
 
+# FlexCAN with the receive-ID fix; compiled before the platform uses it
+include $ORIGIN/NXP_FlexCAN_RxIdFix.cs
+
 mach create "teensy41"
 machine LoadPlatformDescription $ORIGIN/teensy41.repl
 
@@ -21,7 +24,9 @@ sysbus Unregister sysbus.adc1
 machine PyDevFromFile $ORIGIN/imxrt_adc.py 0x400C4000 0x4000 True "adc1_vcu"
 
 # Cortex-M7 DWT cycle counter, which delayMicroseconds()/micros() spin on
-machine PyDevFromFile $ORIGIN/cortexm7_dwt.py 0xE0001000 0x1000 True "dwt"
+include $ORIGIN/CortexM7_DWT.cs
+# 600 MHz / Renode's default 100 MIPS = 6 cycles per instruction
+machine LoadPlatformDescriptionFromString "dwt: Miscellaneous.CortexM7_DWT @ sysbus 0xE0001000 { cpu: cpu; cyclesPerInstruction: 6 }"
 
 # The ADS1018 pedal/steering ADC on LPSPI4, compiled from source by Renode
 include $ORIGIN/ADS1018.cs

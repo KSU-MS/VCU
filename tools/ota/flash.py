@@ -51,7 +51,9 @@ class FlashError(Exception):
     pass
 
 
-def connect(bus: can.BusABC) -> Client:
+def connect(bus: can.BusABC, timeout_scale: float = 1.0) -> Client:
+    """timeout_scale stretches every timeout, for targets slower than real
+    time (the Renode-emulated VCU runs several times slower)."""
     stack = isotp.CanStack(
         bus,
         address=isotp.Address(isotp.AddressingMode.Normal_11bits,
@@ -60,6 +62,8 @@ def connect(bus: can.BusABC) -> Client:
             "tx_padding": 0xCC,
             "tx_data_min_length": 8,
             "blocking_send": True,
+            "rx_flowcontrol_timeout": int(1000 * timeout_scale),
+            "rx_consecutive_frame_timeout": int(1000 * timeout_scale),
         },
     )
     config = dict(udsoncan.configs.default_client_config)
@@ -68,8 +72,8 @@ def connect(bus: can.BusABC) -> Client:
         # Flash erases make some TransferData responses slow, don't trust the
         # 50 ms P2 the VCU advertises
         "use_server_timing": False,
-        "p2_timeout": 2.0,
-        "request_timeout": 5.0,
+        "p2_timeout": 2.0 * timeout_scale,
+        "request_timeout": 5.0 * timeout_scale,
         "server_address_format": 32,
         "server_memorysize_format": 32,
     })
@@ -159,6 +163,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--bitrate", type=int, default=1_000_000)
     p.add_argument("--no-reset", action="store_true",
                    help="stage and verify, but don't apply")
+    p.add_argument("--timeout-scale", type=float, default=1.0,
+                   help="stretch all timeouts, e.g. 10 for the Renode-emulated VCU")
     args = p.parse_args(argv)
 
     image = args.image.read_bytes()
@@ -169,7 +175,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     with can.Bus(interface=args.interface, channel=args.channel,
-                 bitrate=args.bitrate) as bus, connect(bus) as client:
+                 bitrate=args.bitrate) as bus, connect(bus, args.timeout_scale) as client:
         try:
             flash(client, image, reset=not args.no_reset)
         except (FlashError, NegativeResponseException, TimeoutException) as e:

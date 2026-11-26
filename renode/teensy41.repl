@@ -21,14 +21,15 @@ flex_spi: @ sysbus 0x402A8000
 flash: Memory.MappedMemory @ sysbus 0x60000000
     size: 0x800000
 
-// i.MX RT1062 FlexCAN1/2/3 (CAN3 is the CAN-FD capable one)
-can1: CAN.NXP_FlexCAN @ sysbus 0x401D0000
+// i.MX RT1062 FlexCAN1/2/3 (CAN3 is the CAN-FD capable one). Renode's FlexCAN
+// with a receive-ID fix, compiled by teensy41.resc, see NXP_FlexCAN_RxIdFix.cs
+can1: CAN.NXP_FlexCAN_RxIdFix @ sysbus 0x401D0000
     IRQ -> nvic@36
 
-can2: CAN.NXP_FlexCAN @ sysbus 0x401D4000
+can2: CAN.NXP_FlexCAN_RxIdFix @ sysbus 0x401D4000
     IRQ -> nvic@37
 
-can3: CAN.NXP_FlexCAN @ sysbus 0x401D8000
+can3: CAN.NXP_FlexCAN_RxIdFix @ sysbus 0x401D8000
     IRQ -> nvic@154
 
 // analog01 (CCM_ANALOG PLLs) gets swapped for imxrt_analog.py by
