@@ -118,6 +118,10 @@ bool VCU::set_state(state target_state) {
     } else {
       buzzer_active = false;
 
+      // Entering ENABLED turned the inverter on, undo that on the way out
+      inverter->set_inverter_enable(false);
+      inverter->set_torque_limit(0);
+
       error_code = bool_code;
       current_state = TRACTIVE_SYSTEM_DISABLED;
 
