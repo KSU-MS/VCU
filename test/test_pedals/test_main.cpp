@@ -189,6 +189,17 @@ TEST_CASE("KNOWN ISSUE: brake + >25% throttle should fault "
   WARN(p.get_apps_bse_fault_ok_low());
 }
 
+TEST_CASE("KNOWN ISSUE: a brake sensor shorted to 5 V should fault "
+          "(T.4.3.4, MAX_BRAKE_PEDAL is 1025 but a 10-bit ADC tops out at 1023)") {
+  // VCU rev5 A10 front end (docs/hardware.md): 4K7 + 2K0 series, 12K0 to
+  // ground, so 5 V at J1.10 reads 5 * 12/18.7 / 3.3 * 1023 ~= 995 counts.
+  // Even a short to GLV is clamped to ~1023 by the BAV199. Neither faults.
+  const uint16_t shorted_to_5v = uint16_t(5.0 * 12.0 / 18.7 / 3.3 * 1023);
+  Pedals p = make_pedals();
+  p.update_travel(apps1_at(0), apps2_at(0), shorted_to_5v);
+  WARN(p.get_bse_fault_ok_low());
+}
+
 TEST_CASE("KNOWN ISSUE: brake/throttle fault should hold until APPS < 5% "
           "(EV.4.7.2, code clears below 10%)") {
   Pedals p = make_pedals();

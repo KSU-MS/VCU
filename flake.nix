@@ -17,6 +17,7 @@
           can-isotp # ISO-TP over any python-can interface
           udsoncan # UDS client for tools/ota/flash.py
           cantools # DBC encode/decode
+          olefile # tools/schematic reads Altium files
           pytest
         ]);
 
