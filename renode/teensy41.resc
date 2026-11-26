@@ -32,6 +32,15 @@ machine LoadPlatformDescriptionFromString "dwt: Miscellaneous.CortexM7_DWT @ sys
 include $ORIGIN/ADS1018.cs
 machine LoadPlatformDescriptionFromString "ads1018: SPI.ADS1018 @ lpspi4 0"
 
+# FlexSPI controllers that run the Teensy core's flash erase/program
+# commands against the flash memory (so OTA staging and flash_move work),
+# and an empty FlexSPI2 so the PSRAM probe finds none
+include $ORIGIN/TeensyFlexSPI.cs
+sysbus Unregister sysbus.flex_spi
+sysbus Unregister sysbus.flex_spi2
+machine LoadPlatformDescriptionFromString "flexspi1: SPI.TeensyFlexSPI @ sysbus 0x402A8000 { ahbBase: 0x60000000 }"
+machine LoadPlatformDescriptionFromString "flexspi2: SPI.TeensyFlexSPI @ sysbus 0x402A4000 { ahbBase: 0x70000000; hasDevice: false }"
+
 sysbus LoadELF $elf
 
 # configure_cache programs the MPU with a 4 GB no-access background region
@@ -39,12 +48,6 @@ sysbus LoadELF $elf
 # the silicon and everything faults. Renode has no caches to configure
 # anyway, so return straight away.
 cpu AddHook `sysbus GetSymbolAddress "configure_cache"` "cpu.PC = cpu.LR"
-
-# configure_external_ram probes for PSRAM chips on FlexSPI2 and waits for
-# IP commands that never complete with nothing attached. The VCU has no
-# PSRAM, and on the real board the probe just finds none, so skip it
-# (external_psram_size stays 0)
-cpu AddHook `sysbus GetSymbolAddress "configure_external_ram"` "cpu.PC = cpu.LR"
 
 # There's no boot ROM: it would read the IVT at 0x60001000 and jump to
 # ResetHandler, so do that ourselves

@@ -2,14 +2,16 @@
 // 1.17.0 was built from), MIT licensed, Copyright (c) 2010-2026 Antmicro.
 // NXP_FlexCAN_RxIdFix.cs and NXP_FlexCAN_Structures.cs merged into one file (Renode
 // compiles each included file separately, so a partial class can't span
-// two) and renamed, with one fix:
+// two) and renamed, with two fixes (search for "FIX"):
 //
-//   MessageBufferStructure.FillReceivedFrame never copied the received
-//   frame's ID/IDE/RTR into the mailbox, so firmware polling mailboxes
-//   (FlexCAN_T4 does) sees every frame with the filter's ID, 0 for
-//   "accept all". The legacy RX FIFO path did it right.
+//   1. MessageBufferStructure.FillReceivedFrame never copied the received
+//      frame's ID/IDE/RTR into the mailbox, so firmware polling mailboxes
+//      (FlexCAN_T4 does) sees every frame with the filter's ID, 0 for
+//      "accept all". The legacy RX FIFO path did it right.
+//   2. Receive mailbox selection preferred a Full mailbox over an Empty
+//      one, so back-to-back frames overwrote each other.
 //
-// Drop this file once that's fixed upstream.
+// Drop this file once those are fixed upstream.
 using Antmicro.Renode.Core;
 using Antmicro.Renode.Core.CAN;
 using Antmicro.Renode.Core.Extensions;
@@ -297,11 +299,17 @@ namespace Antmicro.Renode.Peripherals.CAN
 
         private bool OnFrameReceivedToMessageBufferInner(CANMessageFrame frame)
         {
-            var matchedItem = MessageBuffersIterator
+            // FIX (see top of file): upstream ordered candidates by code, and
+            // Full (0b0010) sorts before Empty (0b0100), so a second frame
+            // overwrote an unread mailbox while empty ones sat free. The
+            // silicon takes the first empty match and only overruns the last
+            // match when none are empty.
+            var candidates = MessageBuffersIterator
                 .Select((entry, index) => new { Entry = entry, Index = index })
                 .Where(item => item.Entry.MessageBuffer.ReadyForReception && GetMessageBufferMatcher(item.Index).IsMatching(frame, item.Entry.MessageBuffer))
-                .OrderBy(item => Tuple.Create(item.Entry.MessageBuffer.MessageBufferCode, item.Index))
-                .FirstOrDefault();
+                .ToList();
+            var matchedItem = candidates.FirstOrDefault(item => item.Entry.MessageBuffer.MessageBufferCode == (byte)RxMessageBufferCode.Empty)
+                ?? candidates.LastOrDefault();
 
             if(matchedItem == null)
             {
