@@ -50,12 +50,23 @@ struct Car : ResetFirst {
   Bus &inv() { return bus(TEENSY_CAN2); }
   Bus &daq() { return bus(TEENSY_CAN3); }
 
+  // Every state change seen at the end of a tick, with the time it happened
+  struct Transition {
+    uint32_t at_ms;
+    state to;
+  };
+  std::vector<Transition> transitions;
+
   // One pass of loop(), same order as main.cpp
   void tick() {
     pedals.update_travel(apps1_raw, apps2_raw, brake_raw);
     pedals.update_steering(steering_raw);
     vcu.update_bspd(0, 0, 0);
     vcu.tick(sim::now());
+
+    state s = vcu.get_current_state();
+    if (transitions.empty() || transitions.back().to != s)
+      transitions.push_back({sim::now(), s});
   }
 
   // Run the loop at 1 kHz for `ms` of simulated time
@@ -64,6 +75,25 @@ struct Car : ResetFirst {
       tick();
       sim::advance(1);
     }
+  }
+
+  // Run until the VCU reaches `target`, giving up after `timeout_ms`
+  bool run_until(state target, uint32_t timeout_ms) {
+    uint32_t deadline = sim::now() + timeout_ms;
+    while (sim::now() < deadline) {
+      tick();
+      sim::advance(1);
+      if (vcu.get_current_state() == target)
+        return true;
+    }
+    return false;
+  }
+
+  bool ever_reached(state s) const {
+    for (const auto &t : transitions)
+      if (t.to == s)
+        return true;
+    return false;
   }
 
   //
@@ -114,6 +144,8 @@ struct Car : ResetFirst {
   bool last_inverter_command(InverterCommand *out);
   // State reported in the most recent 0x0C3 status frame on the DAQ bus
   int last_reported_state();
+  // Discharge limit in the most recent 0x202 on the inverter bus, -1 if none
+  int last_discharge_limit();
 
 private:
   can_obj_car_h_t other_boards{}; // separate DBC state, like a real node

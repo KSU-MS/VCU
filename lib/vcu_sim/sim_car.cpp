@@ -53,7 +53,7 @@ void Car::drive_to_rtd() {
   run_for(10); // -> TS_ENERGIZED
   set_brake(0.5);
   dash_rtd_button(true);
-  run_for(10); // -> TS_ENABLED, buzzer, -> READY_TO_DRIVE
+  run_until(READY_TO_DRIVE, 3000); // -> TS_ENABLED, buzzer, -> READY_TO_DRIVE
   dash_rtd_button(false);
   set_brake(0);
   run_for(10);
@@ -88,6 +88,19 @@ int Car::last_reported_state() {
   uint8_t state;
   decode_can_0x0c3_vcu_statemachine_state(&rx, &state);
   return state;
+}
+
+int Car::last_discharge_limit() {
+  const can_message *m = inv().last_sent(CAN_ID_BMS_CURRENT_LIMIT);
+  if (!m)
+    return -1;
+
+  can_obj_car_h_t rx{};
+  unpack_message(&rx, m->id, m->buf.val, m->length, 0);
+
+  uint16_t limit;
+  decode_can_0x202_BMS_Max_Discharge_Current(&rx, &limit);
+  return limit;
 }
 
 } // namespace sim
