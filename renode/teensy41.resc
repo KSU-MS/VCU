@@ -1,0 +1,46 @@
+# Boot the VCU firmware on an emulated Teensy 4.1.
+#
+#   renode renode/teensy41.resc            (GUI/monitor)
+#   renode --console --disable-gui -e "include @renode/teensy41.resc; start"
+#
+# Set $elf before including to boot something else.
+
+$elf?=@.pio/build/teensy41/firmware.elf
+
+mach create "teensy41"
+machine LoadPlatformDescription $ORIGIN/teensy41.repl
+
+# CCM_ANALOG PLLs: a model that remembers writes and reports lock, instead
+# of the 1064 platform's flipflop stub (which can't satisfy usb_pll_start)
+sysbus Unregister sysbus.analog01
+machine PyDevFromFile $ORIGIN/imxrt_analog.py 0x400D8000 0x30 True "analog_pll"
+
+# ADC1 (analogRead): Renode's IMXRT_ADC crashes on channels > 7, see
+# imxrt_adc.py
+sysbus Unregister sysbus.adc1
+machine PyDevFromFile $ORIGIN/imxrt_adc.py 0x400C4000 0x4000 True "adc1_vcu"
+
+# Cortex-M7 DWT cycle counter, which delayMicroseconds()/micros() spin on
+machine PyDevFromFile $ORIGIN/cortexm7_dwt.py 0xE0001000 0x1000 True "dwt"
+
+# The ADS1018 pedal/steering ADC on LPSPI4, compiled from source by Renode
+include $ORIGIN/ADS1018.cs
+machine LoadPlatformDescriptionFromString "ads1018: SPI.ADS1018 @ lpspi4 0"
+
+sysbus LoadELF $elf
+
+# configure_cache programs the MPU with a 4 GB no-access background region
+# and overlays on top; Renode's MPU resolves the overlap differently from
+# the silicon and everything faults. Renode has no caches to configure
+# anyway, so return straight away.
+cpu AddHook `sysbus GetSymbolAddress "configure_cache"` "cpu.PC = cpu.LR"
+
+# configure_external_ram probes for PSRAM chips on FlexSPI2 and waits for
+# IP commands that never complete with nothing attached. The VCU has no
+# PSRAM, and on the real board the probe just finds none, so skip it
+# (external_psram_size stays 0)
+cpu AddHook `sysbus GetSymbolAddress "configure_external_ram"` "cpu.PC = cpu.LR"
+
+# There's no boot ROM: it would read the IVT at 0x60001000 and jump to
+# ResetHandler, so do that ourselves
+cpu PC `sysbus GetSymbolAddress "ResetHandler"`

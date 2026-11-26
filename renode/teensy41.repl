@@ -1,0 +1,61 @@
+// Teensy 4.1 (i.MX RT1062) for Renode, built on Renode's i.MX RT1064 platform.
+// The 1064 is the same die with 4 MB of in-package flash; the peripheral map
+// matches the 1062. Experimental, see renode/README.md.
+using "platforms/cpus/imxrt1064.repl"
+
+// The Teensy core runs SysTick off the 100 kHz reference clock
+nvic:
+    systickFrequency: 100000
+
+// The RT1062's M7 has 16 MPU regions and the Teensy core configures them all
+cpu:
+    numberOfMPURegions: 16
+
+// Only the FlexSPI control registers, like Renode's mimxrt1064_evk.repl does,
+// so plain memory can sit in its AHB window
+flex_spi: @ sysbus 0x402A8000
+
+// 8 MB W25Q64 QSPI flash, mapped where the FlexSPI exposes it. Plain memory:
+// enough to boot (the core copies everything to ITCM/DTCM at reset) but the
+// OTA flash writes go through FlexSPI IP commands and won't land here.
+flash: Memory.MappedMemory @ sysbus 0x60000000
+    size: 0x800000
+
+// i.MX RT1062 FlexCAN1/2/3 (CAN3 is the CAN-FD capable one)
+can1: CAN.NXP_FlexCAN @ sysbus 0x401D0000
+    IRQ -> nvic@36
+
+can2: CAN.NXP_FlexCAN @ sysbus 0x401D4000
+    IRQ -> nvic@37
+
+can3: CAN.NXP_FlexCAN @ sysbus 0x401D8000
+    IRQ -> nvic@154
+
+// analog01 (CCM_ANALOG PLLs) gets swapped for imxrt_analog.py by
+// teensy41.resc: Python peripheral paths resolve against Renode's install
+// dir, so a script in this repo can't be named from here
+
+// Blocks the Teensy startup code pokes that the 1064 platform doesn't
+// model. flipflop alternates what reads return, so "wait for PLL lock" style
+// polling loops terminate.
+ccm: Python.PythonPeripheral @ sysbus 0x400FC000
+    size: 0x4000
+    initable: true
+    filename: "scripts/pydev/flipflop.py"
+
+iomuxc_gpr: Python.PythonPeripheral @ sysbus 0x400AC000
+    size: 0x4000
+    initable: true
+    filename: "scripts/pydev/flipflop.py"
+
+// (USBPHY and TEMPMON sit inside the 1064 platform's analog03 stub already)
+
+usb1: Python.PythonPeripheral @ sysbus 0x402E0000
+    size: 0x200
+    initable: true
+    filename: "scripts/pydev/flipflop.py"
+
+pit: Python.PythonPeripheral @ sysbus 0x40084000
+    size: 0x4000
+    initable: true
+    filename: "scripts/pydev/flipflop.py"
