@@ -177,6 +177,31 @@ TEST_CASE("a resent block is acked again but not written twice") {
   CHECK(car.staging.unerased_writes == 0);
 }
 
+TEST_CASE("flow control keeps bursts within the receive mailboxes") {
+  // Renode running the real firmware found that a 1 KB TransferData sent
+  // as one ISO-TP burst overruns FlexCAN_T4's 4 standard-ID mailboxes. The
+  // VCU's flow control has to make the tester pause before that.
+  Car car;
+  park(car);
+  start_download(car, sim::make_image(random_firmware(2000), 4));
+
+  size_t cursor = car.daq().tx.size();
+  car.uds(transfer_data(1, sim::make_image(random_firmware(2000), 4), 0, 1024));
+
+  const can_message *fc = nullptr;
+  for (size_t i = cursor; i < car.daq().tx.size(); i++)
+    if (car.daq().tx[i].id == ota::RESPONSE_ID &&
+        (car.daq().tx[i].buf.byte[0] >> 4) == 0x3) {
+      fc = &car.daq().tx[i];
+      break;
+    }
+  REQUIRE(fc != nullptr);
+  const uint8_t block_size = fc->buf.byte[1];
+  CHECK(block_size > 0);
+  CHECK(block_size < car.daq().rx_mailboxes);
+  CHECK(car.daq().rx_dropped == 0);
+}
+
 TEST_CASE("the car keeps running normally during a download") {
   Car car;
   park(car);

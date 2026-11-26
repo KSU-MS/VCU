@@ -17,7 +17,20 @@ struct Bus {
   std::deque<can_message> rx; // frames waiting for the VCU to read
   std::vector<can_message> tx; // everything the VCU has sent
 
-  void inject(const can_message &msg) { rx.push_back(msg); }
+  // ksu-fw-common runs FlexCAN_T4 in polling mode with its default layout:
+  // mailboxes 0-3 take standard IDs, 4-7 extended, 8-15 transmit. So only
+  // 4 standard frames can wait between reads; more are lost on the real
+  // board, and here too.
+  size_t rx_mailboxes = 4;
+  size_t rx_dropped = 0;
+
+  void inject(const can_message &msg) {
+    if (rx.size() >= rx_mailboxes) {
+      rx_dropped++;
+      return;
+    }
+    rx.push_back(msg);
+  }
 
   // Frames sent with a given ID, oldest first
   std::vector<can_message> sent(uint32_t id) const;
