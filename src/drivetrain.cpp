@@ -1,6 +1,8 @@
 #include "drivetrain.hpp"
 #include "parameters.hpp"
 
+#include <cmath>
+
 using vehicle::InverterKind;
 using vehicle::Position;
 
@@ -87,8 +89,13 @@ double Drivetrain::share(size_t i) const {
 }
 
 double Drivetrain::wheel_cap(size_t i) {
-  return inverters[i]->get_torque_limit_nm() * drives[i].gear_ratio *
-         drives[i].gear_eff;
+  // The torque limit, or less at speed: the motor's torque curve, as kmslap
+  // has it, so full pedal asks for what the motors can actually give
+  const double motor_nm =
+      std::fmin(inverters[i]->get_torque_limit_nm(),
+                motors::max_torque_nm(*drives[i].motor,
+                                      inverters[i]->get_motor_rpm()));
+  return motor_nm * drives[i].gear_ratio * drives[i].gear_eff;
 }
 
 void Drivetrain::set_motion(double vx_ms, double ax_ms2) {

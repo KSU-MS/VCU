@@ -83,7 +83,8 @@ private:
   // Each drive's wheel-torque capability as a share of the total
   double share(size_t i) const;
   double torque_limit_for(size_t i) const;
-  // What drive i can put on its wheel(s) at its torque limit now
+  // What drive i can put on its wheel(s) now: its torque limit, or its
+  // motor's torque curve at its speed if that's less
   double wheel_cap(size_t i);
 
   Inverter *inverters[MAX_DRIVES];

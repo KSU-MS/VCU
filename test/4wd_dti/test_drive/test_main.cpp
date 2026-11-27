@@ -97,6 +97,40 @@ TEST_CASE("full throttle: every hub at its peak, no more") {
         doctest::Approx(4 * WHEEL_CAP).epsilon(0.01));
 }
 
+TEST_CASE("at speed, full throttle is the torque curve: the pedal scales "
+          "what the motors can give there, and nothing at top speed") {
+  Car car;
+  car.drive_to_rtd();
+  // 15000 rpm: 35 kW / omega each, under the torque limit
+  const double curve = motors::max_torque_nm(motors::DTI_FMOT, 15000);
+  REQUIRE(curve < HUB_PEAK);
+  for (size_t i = 0; i < Car::HUBS; i++)
+    car.hub_rpm(i, 15000);
+  car.set_throttle(0.5);
+  car.run_for(50);
+  const double wheel_curve = curve * vehicle::HUB_RATIO * vehicle::HUB_GEAR_EFF;
+  CHECK(total_wheel_torque(car) ==
+        doctest::Approx(0.5 * 4 * wheel_curve).epsilon(0.01));
+
+  for (size_t i = 0; i < Car::HUBS; i++)
+    car.hub_rpm(i, motors::DTI_FMOT.max_rpm);
+  car.set_throttle(1.0);
+  car.run_for(50);
+  for (size_t i = 0; i < Car::HUBS; i++)
+    CHECK(hub_torque(car, i) == 0);
+}
+
+TEST_CASE("one hub at its top speed: the others make up its share") {
+  Car car;
+  car.drive_to_rtd();
+  car.hub_rpm(0, motors::DTI_FMOT.max_rpm); // fl spinning up
+  car.set_throttle(0.3);
+  car.run_for(50);
+  CHECK(hub_torque(car, 0) == 0);
+  CHECK(total_wheel_torque(car) ==
+        doctest::Approx(0.3 * 3 * WHEEL_CAP).epsilon(0.01));
+}
+
 TEST_CASE("[EV.3.3.1][EV.3.4.1] 80 kW shared four ways, each hub on its own "
           "measured power") {
   Car car;

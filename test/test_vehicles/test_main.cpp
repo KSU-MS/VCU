@@ -87,3 +87,18 @@ TEST_CASE("the 4wd cars have a hub at every wheel, the awd ones at the front") {
       CHECK(v.drive_count == 3);
   }
 }
+
+TEST_CASE("a hub motor's torque curve is kmslap's: peak torque to peak power, "
+          "none at top speed") {
+  const MotorSpec &m = motors::DTI_FMOT;
+  CHECK(motors::max_torque_nm(m, 0) == m.peak_torque_nm);
+  CHECK(motors::max_torque_nm(m, 5000) == m.peak_torque_nm);
+  // 35 kW at 15000 rpm: 22.3 N m, either way round
+  const double omega = 15000 * 2 * 3.141592653589793 / 60;
+  CHECK(motors::max_torque_nm(m, 15000) == doctest::Approx(35000 / omega));
+  CHECK(motors::max_torque_nm(m, -15000) == doctest::Approx(35000 / omega));
+  CHECK(motors::max_torque_nm(m, 20000) == 0);
+  CHECK(motors::max_torque_nm(m, 25000) == 0);
+  // The EMRAX has no curve here: the Cascadia's path is unchanged
+  CHECK(motors::max_torque_nm(motors::EMRAX_228_HV, 4000) == 230.0);
+}
