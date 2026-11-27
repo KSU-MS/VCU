@@ -402,54 +402,67 @@ TEST_CASE("losing power anywhere while the update is written keeps slot A") {
   }
 }
 
-TEST_CASE("losing power while the trial or confirm is recorded is safe") {
+// Power cut at each byte of the boot-state record being written. One test
+// per moment rather than SUBCASEs in the loop: doctest re-runs a test case
+// from the top for each subcase, which in a loop is hard to reason about.
+
+TEST_CASE("losing power while the trial is recorded is safe") {
   for (size_t k = 0; k < sizeof(BootRecord); k++) {
     CAPTURE(k);
     Board b;
     write_slot(b.flash, SLOT_B, image_for(SLOT_B, 0xB2));
+    BootState s(b.flash);
+    s.load();
+    b.flash.fail_after_bytes = b.flash.bytes_programmed + k;
+    CHECK_FALSE(start_trial(s, SLOT_A, SLOT_B));
+    b.flash.fail_after_bytes = SIZE_MAX;
+    // Never recorded, so A as before
+    CHECK(boot_once(b.flash).slot == SLOT_A);
+  }
+}
 
-    SUBCASE("starting the trial") {
+TEST_CASE("losing power while confirming is safe") {
+  for (size_t k = 0; k < sizeof(BootRecord); k++) {
+    CAPTURE(k);
+    Board b;
+    write_slot(b.flash, SLOT_B, image_for(SLOT_B, 0xB2));
+    {
       BootState s(b.flash);
       s.load();
-      b.flash.fail_after_bytes = b.flash.bytes_programmed + k;
-      CHECK_FALSE(start_trial(s, SLOT_A, SLOT_B));
-      b.flash.fail_after_bytes = SIZE_MAX;
-      // Never recorded, so A as before
-      CHECK(boot_once(b.flash).slot == SLOT_A);
+      REQUIRE(start_trial(s, SLOT_A, SLOT_B));
     }
-    SUBCASE("confirming") {
-      {
-        BootState s(b.flash);
-        s.load();
-        REQUIRE(start_trial(s, SLOT_A, SLOT_B));
-      }
-      REQUIRE(boot_once(b.flash).slot == SLOT_B);
+    REQUIRE(boot_once(b.flash).slot == SLOT_B);
+    BootState s(b.flash);
+    s.load();
+    b.flash.fail_after_bytes = b.flash.bytes_programmed + k;
+    CHECK_FALSE(confirm(s, SLOT_B));
+    b.flash.fail_after_bytes = SIZE_MAX;
+    // Not confirmed, so it counts as a failed trial: back to A, which still
+    // works. The tester sees the old version and can try again.
+    CHECK(boot_once(b.flash).slot == SLOT_A);
+  }
+}
+
+TEST_CASE("losing power while the bootloader counts the trial boot is safe") {
+  for (size_t k = 0; k < sizeof(BootRecord); k++) {
+    CAPTURE(k);
+    Board b;
+    write_slot(b.flash, SLOT_B, image_for(SLOT_B, 0xB2));
+    {
       BootState s(b.flash);
       s.load();
-      b.flash.fail_after_bytes = b.flash.bytes_programmed + k;
-      CHECK_FALSE(confirm(s, SLOT_B));
-      b.flash.fail_after_bytes = SIZE_MAX;
-      // Not confirmed, so it counts as a failed trial: back to A, which
-      // still works. The tester sees the old version and can try again.
-      CHECK(boot_once(b.flash).slot == SLOT_A);
+      REQUIRE(start_trial(s, SLOT_A, SLOT_B));
     }
-    SUBCASE("the bootloader counting the trial boot") {
-      {
-        BootState s(b.flash);
-        s.load();
-        REQUIRE(start_trial(s, SLOT_A, SLOT_B));
-      }
-      b.flash.fail_after_bytes = b.flash.bytes_programmed + k;
-      boot_once(b.flash); // the count didn't land; the bootloader still
-                          // jumps to B on real hardware
-      b.flash.fail_after_bytes = SIZE_MAX;
-      // Next reset: the attempt wasn't counted, so B gets its one try again
-      // rather than nothing working
-      Boot r = boot_once(b.flash);
-      CHECK(r.slot == SLOT_B);
-      CHECK(r.trial);
-      CHECK(boot_once(b.flash).slot == SLOT_A);
-    }
+    b.flash.fail_after_bytes = b.flash.bytes_programmed + k;
+    boot_once(b.flash); // the count didn't land; the bootloader still jumps
+                        // to B on real hardware
+    b.flash.fail_after_bytes = SIZE_MAX;
+    // Next reset: the attempt wasn't counted, so B gets its one try again
+    // rather than nothing working
+    Boot r = boot_once(b.flash);
+    CHECK(r.slot == SLOT_B);
+    CHECK(r.trial);
+    CHECK(boot_once(b.flash).slot == SLOT_A);
   }
 }
 
