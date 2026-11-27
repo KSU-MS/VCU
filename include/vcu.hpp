@@ -4,6 +4,8 @@
 #include <cstdint>
 
 #include "accumulator.hpp"
+#include "drivetrain.hpp"
+#include "freshness.hpp"
 #include "inverter.hpp"
 #include "pedal_handeler.hpp"
 #include "periodic.hpp"
@@ -49,20 +51,6 @@ enum parameter {
   TRACTION_MODE = 6,       // TractionControl::mode: 0 off, 1 slip, 2 grip map
 };
 
-// When a message that safety decisions rest on was last heard
-struct Freshness {
-  bool heard_ever = false;
-  uint32_t at_ms = 0;
-
-  void heard(uint32_t now) {
-    heard_ever = true;
-    at_ms = now;
-  }
-  bool fresh(uint32_t now, uint32_t timeout_ms) const {
-    return heard_ever && now - at_ms <= timeout_ms;
-  }
-};
-
 class VCU {
 private:
   state current_state = STARTUP;
@@ -72,7 +60,6 @@ private:
   uint32_t now_ms = 0;
   Freshness acu_status_heard;
   Freshness precharge_heard;
-  Freshness inverter_voltage_heard;
   uint8_t torque_mode = 0; // Legacy
 
   // TODO: Make the codes real and document some common failures
@@ -102,7 +89,7 @@ private:
 
 public:
   Pedals *pedals;
-  Inverter *inverter;
+  Drivetrain *drivetrain;
   Accumulator *accumulator;
   TractionControl traction;
   PiSupervisor pi;
@@ -112,7 +99,7 @@ public:
   canMan *inv_can;
   canMan *daq_can;
 
-  VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator,
+  VCU(Pedals *pedals, Drivetrain *drivetrain, Accumulator *accumulator,
       can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can, canMan *daq_can);
 
   inline void init_state_machine() { this->current_state = STARTUP; }

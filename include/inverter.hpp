@@ -65,7 +65,8 @@ public:
 
   inline void set_torque_limit(double limit) { torque_limit_nm = limit; }
   inline void set_speed_limit(uint16_t limit) { speed_limit = limit; }
-  inline void set_power_limit_kw(uint16_t limit) { power_limit_kw = limit; }
+  inline void set_power_limit_kw(double limit) { power_limit_kw = limit; }
+  inline double get_power_limit_kw() { return power_limit_kw; }
   inline void set_inverter_enable(bool enable) { inverter_enable = enable; }
 
   void calculate_motor_distance_M(uint32_t time_msec);
@@ -112,7 +113,7 @@ private:
   uint32_t time_last_msec = 0;
   double distance_M = 0;
 
-  uint16_t power_limit_kw = 0;
+  double power_limit_kw = 0;
 
   // Closed loop on measured power (regulate_power): a trim on the power the
   // open-loop torque cap allows

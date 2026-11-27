@@ -6,11 +6,11 @@
 #include <cstdint>
 #include <ota.hpp>
 
-VCU::VCU(Pedals *pedals, Inverter *inverter, Accumulator *accumulator,
+VCU::VCU(Pedals *pedals, Drivetrain *drivetrain, Accumulator *accumulator,
          can_obj_car_h_t *dbc, canMan *acc_can, canMan *inv_can,
          canMan *daq_can) {
   this->pedals = pedals;
-  this->inverter = inverter;
+  this->drivetrain = drivetrain;
   this->accumulator = accumulator;
 
   this->dbc = dbc;
@@ -31,13 +31,13 @@ bool VCU::try_ts_enabled() {
 bool VCU::safety_data_fresh() {
   return acu_status_heard.fresh(now_ms, SAFETY_DATA_TIMEOUT_MS) &&
          precharge_heard.fresh(now_ms, SAFETY_DATA_TIMEOUT_MS) &&
-         inverter_voltage_heard.fresh(now_ms, SAFETY_DATA_TIMEOUT_MS);
+         drivetrain->all_heard(now_ms, SAFETY_DATA_TIMEOUT_MS);
 }
 
 bool VCU::ts_safe() {
   return fault_code() == 0 &&
          accumulator->get_precharge_state() == PRECHARGE_OK_STATE &&
-         inverter->get_bus_voltage() > TRACTIVE_SYSTEM_MINIMUM_VOLTAGE;
+         drivetrain->min_bus_voltage() > TRACTIVE_SYSTEM_MINIMUM_VOLTAGE;
 }
 
 uint8_t VCU::fault_code() {
@@ -45,7 +45,7 @@ uint8_t VCU::fault_code() {
   if (!acu_status_heard.fresh(now_ms, SAFETY_DATA_TIMEOUT_MS) ||
       !precharge_heard.fresh(now_ms, SAFETY_DATA_TIMEOUT_MS))
     code |= FAULT_ACU_SILENT;
-  if (!inverter_voltage_heard.fresh(now_ms, SAFETY_DATA_TIMEOUT_MS))
+  if (!drivetrain->all_heard(now_ms, SAFETY_DATA_TIMEOUT_MS))
     code |= FAULT_INVERTER_SILENT;
   if (!accumulator->get_imd_ok_hs())
     code |= FAULT_IMD;
@@ -55,13 +55,13 @@ uint8_t VCU::fault_code() {
 }
 
 bool VCU::hv_maybe_present() {
-  return !inverter_voltage_heard.fresh(now_ms, SAFETY_DATA_TIMEOUT_MS) ||
-         inverter->get_bus_voltage() >= HIGH_VOLTAGE_PRESENT;
+  return !drivetrain->all_heard(now_ms, SAFETY_DATA_TIMEOUT_MS) ||
+         drivetrain->max_bus_voltage() >= HIGH_VOLTAGE_PRESENT;
 }
 
 void VCU::drop_out() {
-  inverter->set_inverter_enable(false);
-  inverter->set_torque_limit(0);
+  drivetrain->set_enable(false);
+  drivetrain->set_torque_limits(false);
   buzzer_active = false;
   hal::digital_write(BUZZER, false);
 
@@ -129,8 +129,8 @@ bool VCU::set_state(state target_state) {
       hal::digital_write(LOWSIDE2, true);
 
       // Get the inverter prepped
-      inverter->set_inverter_enable(true);
-      inverter->set_torque_limit(0);
+      drivetrain->set_enable(true);
+      drivetrain->set_torque_limits(false);
 
       return true;
     } else {
@@ -154,16 +154,16 @@ bool VCU::set_state(state target_state) {
       hal::digital_write(LOWSIDE2, true);
 
       // TODO: Make this torque limit easier to configure
-      inverter->set_inverter_enable(true);
-      inverter->set_torque_limit(MAX_TORQUE_LIMIT_NM);
+      drivetrain->set_enable(true);
+      drivetrain->set_torque_limits(true);
 
       return true;
     } else {
       buzzer_active = false;
 
       // Entering ENABLED turned the inverter on, undo that on the way out
-      inverter->set_inverter_enable(false);
-      inverter->set_torque_limit(0);
+      drivetrain->set_enable(false);
+      drivetrain->set_torque_limits(false);
 
       error_code = bool_code;
       current_state = TRACTIVE_SYSTEM_DISABLED;
@@ -176,8 +176,8 @@ bool VCU::set_state(state target_state) {
     break;
 
   case READY_TO_DRIVE: // We want to be able to leave no matter what
-    inverter->set_inverter_enable(false);
-    inverter->set_torque_limit(0);
+    drivetrain->set_enable(false);
+    drivetrain->set_torque_limits(false);
 
     buzzer_active = false;
 
@@ -189,8 +189,8 @@ bool VCU::set_state(state target_state) {
     break;
 
   default:
-    inverter->set_inverter_enable(false);
-    inverter->set_torque_limit(0);
+    drivetrain->set_enable(false);
+    drivetrain->set_torque_limits(false);
 
     buzzer_active = false;
 
@@ -317,18 +317,24 @@ void VCU::update_inv_can() {
     can_message msg_in = inv_can->get_controller_message();
     daq_can->send_controller_message(msg_in);
 
-    // The inverter's own frames first: it decodes them, we see what changed
-    const uint8_t got = inverter->on_frame(msg_in);
-    if (got & Inverter::MOTOR_SPEED)
-      traction.motor_rpm(inverter->get_motor_rpm(), now_ms);
-    if (got & Inverter::MOTOR_TORQUE)
-      traction.motor_torque(float(inverter->get_motor_torque()));
-    if (got & Inverter::DC_VOLTAGE) {
-      inverter_voltage_heard.heard(now_ms);
-      acc_can->send_controller_message(msg_in); // Forward this for precharge
-    }
-    if (got != Inverter::NOT_MINE)
+    // The inverters' own frames first: they decode them, we see what changed
+    const Drivetrain::Heard heard = drivetrain->on_frame(msg_in, now_ms);
+    if (heard.feedback != Inverter::NOT_MINE) {
+      Inverter &inv = drivetrain->inverter(heard.index);
+      // Traction control works off the rear axle's motor, if there is one
+      if (&inv == drivetrain->rear_axle()) {
+        if (heard.feedback & Inverter::MOTOR_SPEED)
+          traction.motor_rpm(inv.get_motor_rpm(), now_ms);
+        if (heard.feedback & Inverter::MOTOR_TORQUE)
+          traction.motor_torque(float(inv.get_motor_torque()));
+      }
+      // The ACU's precharge reads the Cascadia's voltage frame
+      if ((heard.feedback & Inverter::DC_VOLTAGE) &&
+          drivetrain->drive(heard.index).inverter ==
+              vehicle::InverterKind::CASCADIA_PM100)
+        acc_can->send_controller_message(msg_in);
       continue;
+    }
 
     switch (msg_in.id) {
     case CAN_ID_DASH_BUTTONS:
@@ -403,7 +409,7 @@ void VCU::update_vehicle_sensors(const can_message &msg) {
 bool VCU::safe_to_program() {
   return (current_state == STARTUP ||
           current_state == TRACTIVE_SYSTEM_DISABLED) &&
-         !inverter->get_inverter_enable();
+         !drivetrain->any_enabled();
 }
 
 void VCU::send_pedal_travel_message() {
@@ -476,7 +482,7 @@ void VCU::send_status_message() {
   encode_can_0x0c3_vcu_bspd_ok_high(dbc, bspd_ok_hs);
   encode_can_0x0c3_vcu_bms_ok_high(dbc, accumulator->get_bms_ok_hs());
   encode_can_0x0c3_vcu_imd_ok_high(dbc, accumulator->get_imd_ok_hs());
-  encode_can_0x0c3_vcu_max_torque(dbc, inverter->get_torque_limit());
+  encode_can_0x0c3_vcu_max_torque(dbc, drivetrain->torque_limit_nm());
   encode_can_0x0c3_vcu_statemachine_state(dbc, current_state);
 
   // Init and pack the message
@@ -504,7 +510,7 @@ void VCU::send_firmware_status_message() {
 }
 
 void VCU::send_power_tracking_message() {
-  encode_can_0x0cb_vcu_lifetime_distance(dbc, inverter->get_motor_distance_M());
+  encode_can_0x0cb_vcu_lifetime_distance(dbc, drivetrain->distance_m());
   encode_can_0x0cb_vcu_lifetime_ontime(dbc, accumulator->get_consumed_wh());
 
   can_message out_msg;

@@ -53,10 +53,13 @@ static_assert(vehicle::THIS.drive_count == 1 &&
                       vehicle::InverterKind::CASCADIA_PM100,
               "this vehicle's inverters aren't wired up in main.hpp yet");
 CascadiaPM100 inverter(SPIN_DIR, &inv_can, &daq_can, &kms_can, -0.69314718056);
+Inverter *const inverters[] = {&inverter};
+Drivetrain drivetrain(inverters, vehicle::THIS.drives,
+                      vehicle::THIS.drive_count);
 
 Accumulator accumulator(&kms_can, &acc_can);
 
-VCU vcu(&pedals, &inverter, &accumulator, &kms_can, &acc_can, &inv_can,
+VCU vcu(&pedals, &drivetrain, &accumulator, &kms_can, &acc_can, &inv_can,
         &daq_can);
 
 // Firmware update over the DAQ bus, see docs/ota.md

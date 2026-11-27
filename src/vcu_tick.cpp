@@ -18,7 +18,7 @@ void VCU::begin() {
 
   hal::pin_mode(BUZZER, hal::PIN_OUTPUT);
 
-  inverter->set_power_limit_kw(POWER_LIMIT_KW);
+  drivetrain->set_power_limit_kw(POWER_LIMIT_KW);
 
   // Pump fellas
   hal::pin_mode(LOWSIDE1, hal::PIN_OUTPUT);
@@ -49,7 +49,7 @@ void VCU::tick(uint32_t now) {
   // has a torque request for it to work on
   driver_nm = current_state == READY_TO_DRIVE
                   ? pedals->get_torque_request(pedals->get_travel(),
-                                               inverter->get_torque_limit())
+                                               drivetrain->max_request())
                   : 0.0;
   // Then the Pi's ceiling, if it's in control: it can only take more away
   torque_nm = pi.step(now, traction.step(now, driver_nm), !(driver_nm > 0));
@@ -86,7 +86,7 @@ void VCU::tick(uint32_t now) {
   //
   //// Math Stage
   accumulator->calculate_energy_consumed_wh(now);
-  inverter->calculate_motor_distance_M(now);
+  drivetrain->calculate_distance(now);
 
   //
   //// State machine Stage
@@ -110,7 +110,7 @@ void VCU::tick(uint32_t now) {
 
   case TRACTIVE_SYSTEM_DISABLED:
     if (timer_10hz.check(now))
-      inverter->ping();
+      drivetrain->ping();
 
     // Don't let the car go live while someone is reflashing it
     if (updater && updater->programming())
@@ -130,7 +130,7 @@ void VCU::tick(uint32_t now) {
 
   case TRACTIVE_SYSTEM_ENERGIZED:
     if (timer_10hz.check(now))
-      inverter->ping();
+      drivetrain->ping();
 
     // try_ts_enabled is just looking for the brake and RTD button
     if (try_ts_enabled()) {
@@ -155,14 +155,14 @@ void VCU::tick(uint32_t now) {
 
   case TRACTIVE_SYSTEM_ENABLED:
     if (timer_10hz.check(now))
-      inverter->ping();
+      drivetrain->ping();
 
     // Prep the inverter and start the buzzer once, on the way in
     if (entered_state) {
-      inverter->set_current_limits(INVERTER_CHARGE_LIMIT,
-                                   INVERTER_DISCHARGE_LIMIT);
+      drivetrain->set_current_limit_amps(INVERTER_CHARGE_LIMIT,
+                                         INVERTER_DISCHARGE_LIMIT);
 
-      inverter->send_clear_faults();
+      drivetrain->send_clear_faults();
 
       hal::digital_write(BUZZER, get_buzzer_state());
     }
@@ -193,14 +193,13 @@ void VCU::tick(uint32_t now) {
 
   case READY_TO_DRIVE:
     if (ts_safe()) {
-      inverter->regulate_power(now);
+      drivetrain->regulate_power(now);
       if (timer_200hz.check(now))
-        inverter->command_torque(torque_nm);
+        drivetrain->command(torque_nm);
 
       if (timer_10hz_2.check(now)) {
-        inverter->set_current_limits(
-            INVERTER_CHARGE_LIMIT, inverter->get_instant_current_limit(
-                                       accumulator->get_pack_voltage()));
+        drivetrain->set_current_limits(INVERTER_CHARGE_LIMIT,
+                                       accumulator->get_pack_voltage());
       }
     } else {
       hal::log("Something isn't safe, leaving RTD, ERROR: ");
@@ -212,7 +211,7 @@ void VCU::tick(uint32_t now) {
 
   case TRACTIVE_SYSTEM_FAULT:
     if (timer_10hz.check(now))
-      inverter->ping();
+      drivetrain->ping();
 
     // Over once the fault has cleared, or the voltage is gone; ready to
     // drive then needs the driver all over again

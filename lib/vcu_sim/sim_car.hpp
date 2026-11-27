@@ -39,8 +39,11 @@ struct Car : ResetFirst {
                 MAX_ACCELERATOR_PEDAL_2};
 
   CascadiaPM100 inverter{SPIN_DIR, &inv_can, &daq_can, &dbc, -0.69314718056};
+  Inverter *const inverters[1] = {&inverter};
+  Drivetrain drivetrain{inverters, vehicle::THIS.drives,
+                        vehicle::THIS.drive_count};
   Accumulator accumulator{&dbc, &acc_can};
-  VCU vcu{&pedals, &inverter, &accumulator, &dbc, &acc_can, &inv_can, &daq_can};
+  VCU vcu{&pedals, &drivetrain, &accumulator, &dbc, &acc_can, &inv_can, &daq_can};
 
   // Firmware update, on the DAQ bus like on the car. The whole 8 MB flash
   // chip, which starts out as a fresh USB flash: slot A, version 11111111.
