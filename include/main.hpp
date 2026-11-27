@@ -12,6 +12,7 @@ can_obj_car_h_t kms_can;
 // Local
 #include "accumulator.hpp"
 #include "cascadia_pm100.hpp"
+#include "dti_hv500.hpp"
 #include "parameters.hpp"
 #include "pedal_handeler.hpp"
 #include "vcu.hpp"
@@ -47,13 +48,21 @@ Pedals pedals(MIN_BRAKE_PEDAL, START_BRAKE_PEDAL, END_BRAKE_PEDAL,
               START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2,
               MAX_ACCELERATOR_PEDAL_2);
 
-// One Cascadia on the rear axle: the only car this firmware drives so far
-static_assert(vehicle::THIS.drive_count == 1 &&
-                  vehicle::THIS.drives[0].inverter ==
-                      vehicle::InverterKind::CASCADIA_PM100,
-              "this vehicle's inverters aren't wired up in main.hpp yet");
+// The car's inverters (vehicle.hpp)
+#if VEHICLE_HAS_CASCADIA
 CascadiaPM100 inverter(SPIN_DIR, &inv_can, &daq_can, &kms_can, -0.69314718056);
 Inverter *const inverters[] = {&inverter};
+#elif VEHICLE_HAS_DTI
+#define HUB(i)                                                                 \
+  DtiHv500(vehicle::THIS.drives[i].node, *vehicle::THIS.drives[i].motor,       \
+           vehicle::THIS.drives[i].gear_ratio, &inv_can, &daq_can)
+DtiHv500 hubs[] = {HUB(0), HUB(1), HUB(2), HUB(3)};
+#undef HUB
+Inverter *const inverters[] = {&hubs[0], &hubs[1], &hubs[2], &hubs[3]};
+#endif
+static_assert(sizeof inverters / sizeof inverters[0] ==
+                  vehicle::THIS.drive_count,
+              "an inverter for each of the vehicle's drives");
 Drivetrain drivetrain(inverters, vehicle::THIS.drives,
                       vehicle::THIS.drive_count);
 

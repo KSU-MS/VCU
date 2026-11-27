@@ -98,6 +98,22 @@ down, and kept shut down until the APPS is under 5%, with or without brake.
 
 VCU: `Pedals::PEDAL_RELEASED_TRAVEL` = 0.05. **met**
 
+## Torque
+
+### EV.3.1.3 — Control may only decrease the driver's requested torque
+p.92. An algorithm or ECU that can adjust the requested wheel torque may
+only decrease the total the driver requested, never increase it.
+
+VCU: three things adjust it, and each only ever takes away:
+- traction control returns at most the driver's torque, whatever its
+  controller says (`TractionControl::step`, tested on random inputs);
+- the Pi's torque ceiling is a minimum with it (`PiSupervisor::step`,
+  tested on random and garbage frames);
+- on cars with more than one motor, the split's total wheel torque is at
+  most the ask (`torque_split::split`).
+
+**met**
+
 ## Power
 
 ### EV.3.3.1 — At most 80 kW

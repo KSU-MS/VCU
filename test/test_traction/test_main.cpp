@@ -155,7 +155,7 @@ TEST_CASE("the grip map mode holds slip near its target too") {
   CHECK(run.peak_slip < 0.2);
 }
 
-TEST_CASE("traction control never lets through more torque than the driver "
+TEST_CASE("[EV.3.1.3] traction control never lets through more torque than the driver "
           "asked for (x2000 random inputs)") {
   std::mt19937 rng(1);
   std::uniform_real_distribution<float> u(0, 1);

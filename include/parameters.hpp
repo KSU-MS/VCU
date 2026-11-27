@@ -32,6 +32,12 @@
 #define GEAR_RATIO 4.18
 
 //
+//// Cars with more than one motor (docs/vehicles.md): how the driver's
+//// wheel torque is shared out (torque_split.hpp). By axle load, or fixed
+#define TORQUE_SPLIT_BY_LOAD 1
+#define TORQUE_SPLIT_FRONT_BIAS 0.45 // fixed: the front's share (kmslap's)
+
+//
 //// Traction control (docs/traction-control.md)
 // What it starts as: off until it's been checked on the car
 #define TC_DEFAULT_MODE 0

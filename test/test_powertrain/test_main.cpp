@@ -9,9 +9,11 @@
 #include <limits>
 #include <new>
 #include <sim_car.hpp>
+#include <sim_power.hpp>
 #include <utility>
 
 using sim::Car;
+using sim::no_violation;
 
 namespace {
 
@@ -141,27 +143,6 @@ PowerTrace flat_out(Car &car, double efficiency, int16_t rpm, uint32_t ms,
   return trace;
 }
 
-// EV.3.4.1: a violation is over the limit continuously for 100 ms, or over
-// it after a 500 ms moving average
-void no_violation(const std::vector<double> &watts) {
-  const double limit = POWER_LIMIT_KW * 1000.0;
-  uint32_t over_run = 0, longest = 0;
-  for (double w : watts) {
-    over_run = w > limit ? over_run + 1 : 0;
-    longest = std::max(longest, over_run);
-  }
-  CHECK(longest < 100);
-
-  double window = 0, worst_average = 0;
-  for (size_t i = 0; i < watts.size(); i++) {
-    window += watts[i];
-    if (i >= 500)
-      window -= watts[i - 500];
-    if (i >= 499)
-      worst_average = std::max(worst_average, window / 500);
-  }
-  CHECK(worst_average <= limit);
-}
 } // namespace
 
 TEST_CASE("[EV.3.3.1][EV.3.4.1] measured power stays under 80 kW, whatever the drivetrain loses") {

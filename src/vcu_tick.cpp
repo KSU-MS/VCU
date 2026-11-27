@@ -19,6 +19,9 @@ void VCU::begin() {
   hal::pin_mode(BUZZER, hal::PIN_OUTPUT);
 
   drivetrain->set_power_limit_kw(POWER_LIMIT_KW);
+  drivetrain->set_split(TORQUE_SPLIT_BY_LOAD ? torque_split::Mode::LOAD
+                                             : torque_split::Mode::FIXED,
+                        TORQUE_SPLIT_FRONT_BIAS);
 
   // Pump fellas
   hal::pin_mode(LOWSIDE1, hal::PIN_OUTPUT);
@@ -51,6 +54,11 @@ void VCU::tick(uint32_t now) {
                   ? pedals->get_torque_request(pedals->get_travel(),
                                                drivetrain->max_request())
                   : 0.0;
+  // The split by axle load needs the car's motion: none if VectorNav's
+  // quiet, which leaves it at the static weight
+  const bool vn_fresh = vn_heard.fresh(now, TC_INPUT_TIMEOUT_MS);
+  drivetrain->set_motion(vn_fresh ? vn_speed : 0, vn_fresh ? vn_accel : 0);
+
   // Then the Pi's ceiling, if it's in control: it can only take more away
   torque_nm = pi.step(now, traction.step(now, driver_nm), !(driver_nm > 0));
 

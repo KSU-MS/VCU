@@ -58,7 +58,7 @@ jobs:
       # Both A/B slots (signed with the dev key) and the bootloader, which
       # slot A's build bundles into firmware.hex for a USB flash
       - name: Build firmware
-        run: nix develop -c pio run -e teensy41 -e teensy41_b
+        run: nix develop -c pio run -e teensy41 -e teensy41_b -e teensy41_4wd_dti
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4

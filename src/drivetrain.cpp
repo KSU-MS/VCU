@@ -77,10 +77,28 @@ uint8_t Drivetrain::torque_limit_nm() {
 }
 
 double Drivetrain::share(size_t i) const {
+  auto capability = [this](size_t j) {
+    return torque_limit_for(j) * drives[j].gear_ratio * drives[j].gear_eff;
+  };
   double total = 0;
   for (size_t j = 0; j < n; j++)
-    total += torque_limit_for(j) * drives[j].gear_ratio;
-  return total > 0 ? torque_limit_for(i) * drives[i].gear_ratio / total : 0;
+    total += capability(j);
+  return total > 0 ? capability(i) / total : 0;
+}
+
+double Drivetrain::wheel_cap(size_t i) {
+  return inverters[i]->get_torque_limit_nm() * drives[i].gear_ratio *
+         drives[i].gear_eff;
+}
+
+void Drivetrain::set_motion(double vx_ms, double ax_ms2) {
+  vx = vx_ms;
+  ax = ax_ms2;
+}
+
+void Drivetrain::set_split(torque_split::Mode mode, double bias) {
+  split_mode = mode;
+  front_bias = bias;
 }
 
 void Drivetrain::set_power_limit_kw(double total_kw) {
@@ -123,7 +141,7 @@ double Drivetrain::max_request() {
     return inverters[0]->get_torque_limit();
   double total = 0;
   for (size_t i = 0; i < n; i++)
-    total += inverters[i]->get_torque_limit() * drives[i].gear_ratio;
+    total += wheel_cap(i);
   return total;
 }
 
@@ -132,10 +150,17 @@ void Drivetrain::command(double request) {
     inverters[0]->command_torque(request);
     return;
   }
-  // Several motors: each its share of the wheel torque, at its motor. The
-  // split by axle load comes with the hub cars' torque allocation
+  double cap[MAX_DRIVES];
   for (size_t i = 0; i < n; i++)
-    inverters[i]->command_torque(request * share(i) / drives[i].gear_ratio);
+    cap[i] = wheel_cap(i);
+  const double front =
+      torque_split::front_share(split_mode, front_bias, vx, ax);
+  torque_split::split(request, front, drives, cap, n, wheel);
+  // Wheel torque back to the motor's; the inverter still applies its own
+  // torque and power limits on top
+  for (size_t i = 0; i < n; i++)
+    inverters[i]->command_torque(
+        wheel[i] / (drives[i].gear_ratio * drives[i].gear_eff));
 }
 
 Inverter *Drivetrain::rear_axle() {

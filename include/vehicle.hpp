@@ -26,6 +26,7 @@ struct Drive {
   InverterKind inverter;
   const MotorSpec *motor;
   double gear_ratio; // motor revs per wheel rev
+  double gear_eff;   // wheel torque = motor torque x gear_ratio x gear_eff
   uint8_t node;      // the inverter's CAN node ID (DTI, AMK); 0 for Cascadia
 };
 
@@ -35,48 +36,51 @@ struct Vehicle {
   size_t drive_count;
 };
 
-// kmslap's Car.hub_ratio: an ESTIMATE until the hub gearbox is chosen
+// kmslap's Car.hub_ratio and hub_gear_eff: ESTIMATES until the hub
+// gearbox is chosen; driveline_eff for the EMRAX's chain
 constexpr double HUB_RATIO = 13.0;
+constexpr double HUB_GEAR_EFF = 0.97;
+constexpr double CHAIN_EFF = 0.95;
 
 constexpr Drive RWD_EMRAX_DRIVES[] = {
     {Position::REAR_AXLE, InverterKind::CASCADIA_PM100, &motors::EMRAX_228_HV,
-     GEAR_RATIO, 0},
+     GEAR_RATIO, CHAIN_EFF, 0},
 };
 constexpr Drive AWD_EMRAX_DTI_DRIVES[] = {
     {Position::REAR_AXLE, InverterKind::CASCADIA_PM100, &motors::EMRAX_228_HV,
-     GEAR_RATIO, 0},
+     GEAR_RATIO, CHAIN_EFF, 0},
     {Position::FL, InverterKind::DTI_HV500, &motors::DTI_FMOT,
-     HUB_RATIO, 1},
+     HUB_RATIO, HUB_GEAR_EFF, 1},
     {Position::FR, InverterKind::DTI_HV500, &motors::DTI_FMOT,
-     HUB_RATIO, 2},
+     HUB_RATIO, HUB_GEAR_EFF, 2},
 };
 constexpr Drive AWD_EMRAX_AMK_DRIVES[] = {
     {Position::REAR_AXLE, InverterKind::CASCADIA_PM100, &motors::EMRAX_228_HV,
-     GEAR_RATIO, 0},
+     GEAR_RATIO, CHAIN_EFF, 0},
     {Position::FL, InverterKind::AMK_KW26, &motors::AMK_DD5,
-     HUB_RATIO, 1},
+     HUB_RATIO, HUB_GEAR_EFF, 1},
     {Position::FR, InverterKind::AMK_KW26, &motors::AMK_DD5,
-     HUB_RATIO, 2},
+     HUB_RATIO, HUB_GEAR_EFF, 2},
 };
 constexpr Drive FOUR_WD_DTI_DRIVES[] = {
     {Position::FL, InverterKind::DTI_HV500, &motors::DTI_FMOT,
-     HUB_RATIO, 1},
+     HUB_RATIO, HUB_GEAR_EFF, 1},
     {Position::FR, InverterKind::DTI_HV500, &motors::DTI_FMOT,
-     HUB_RATIO, 2},
+     HUB_RATIO, HUB_GEAR_EFF, 2},
     {Position::RL, InverterKind::DTI_HV500, &motors::DTI_FMOT,
-     HUB_RATIO, 3},
+     HUB_RATIO, HUB_GEAR_EFF, 3},
     {Position::RR, InverterKind::DTI_HV500, &motors::DTI_FMOT,
-     HUB_RATIO, 4},
+     HUB_RATIO, HUB_GEAR_EFF, 4},
 };
 constexpr Drive FOUR_WD_AMK_DRIVES[] = {
     {Position::FL, InverterKind::AMK_KW26, &motors::AMK_DD5,
-     HUB_RATIO, 1},
+     HUB_RATIO, HUB_GEAR_EFF, 1},
     {Position::FR, InverterKind::AMK_KW26, &motors::AMK_DD5,
-     HUB_RATIO, 2},
+     HUB_RATIO, HUB_GEAR_EFF, 2},
     {Position::RL, InverterKind::AMK_KW26, &motors::AMK_DD5,
-     HUB_RATIO, 5},
+     HUB_RATIO, HUB_GEAR_EFF, 5},
     {Position::RR, InverterKind::AMK_KW26, &motors::AMK_DD5,
-     HUB_RATIO, 6},
+     HUB_RATIO, HUB_GEAR_EFF, 6},
 };
 
 template <size_t N>

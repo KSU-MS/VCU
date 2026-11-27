@@ -73,6 +73,9 @@ private:
 
   bool tc_button_was_down = false;
   double driver_nm = 0; // the pedal map's request this pass
+  // VectorNav's speed and forward acceleration, for the split by axle load
+  Freshness vn_heard;
+  double vn_speed = 0, vn_accel = 0;
   double torque_nm = 0; // after traction control and the Pi's ceiling
 
   Periodic timer_1s = Periodic(1000);    // Used for VCU status message

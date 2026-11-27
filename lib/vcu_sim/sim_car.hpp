@@ -6,6 +6,7 @@
 
 #include <accumulator.hpp>
 #include <cascadia_pm100.hpp>
+#include <dti_hv500.hpp>
 #include <vehicle.hpp>
 #include <ota.hpp>
 #include <parameters.hpp>
@@ -17,7 +18,6 @@
 
 namespace sim {
 
-#if VEHICLE_HAS_CASCADIA
 // Constructed before the canMan members so the buses are clean by the time
 // canMan's constructor "initializes" them
 struct ResetFirst {
@@ -38,8 +38,24 @@ struct Car : ResetFirst {
                 START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2,
                 MAX_ACCELERATOR_PEDAL_2};
 
+  // The car's inverters, per vehicle (vehicle.hpp)
+#if VEHICLE_HAS_CASCADIA
   CascadiaPM100 inverter{SPIN_DIR, &inv_can, &daq_can, &dbc, -0.69314718056};
   Inverter *const inverters[1] = {&inverter};
+#elif VEHICLE_HAS_DTI
+  static constexpr size_t HUBS = 4;
+  DtiHv500 hubs[HUBS] = {
+      {vehicle::THIS.drives[0].node, *vehicle::THIS.drives[0].motor,
+       vehicle::THIS.drives[0].gear_ratio, &inv_can, &daq_can},
+      {vehicle::THIS.drives[1].node, *vehicle::THIS.drives[1].motor,
+       vehicle::THIS.drives[1].gear_ratio, &inv_can, &daq_can},
+      {vehicle::THIS.drives[2].node, *vehicle::THIS.drives[2].motor,
+       vehicle::THIS.drives[2].gear_ratio, &inv_can, &daq_can},
+      {vehicle::THIS.drives[3].node, *vehicle::THIS.drives[3].motor,
+       vehicle::THIS.drives[3].gear_ratio, &inv_can, &daq_can},
+  };
+  Inverter *const inverters[HUBS] = {&hubs[0], &hubs[1], &hubs[2], &hubs[3]};
+#endif
   Drivetrain drivetrain{inverters, vehicle::THIS.drives,
                         vehicle::THIS.drive_count};
   Accumulator accumulator{&dbc, &acc_can};
@@ -137,12 +153,22 @@ struct Car : ResetFirst {
   void acu_status(bool imd_ok, bool bms_ok);
   void precharge_state(uint8_t state);
   void pack_power(double volts, double amps);
+  // Every inverter reporting this DC voltage, from now on (repeated)
   void inverter_bus_voltage(double volts);
-  void inverter_motor_rpm(int16_t rpm);
-  void inverter_bus_current(double amps);
   void dash_rtd_button(bool pressed);
   void dash_tc_button(bool pressed);
+#if VEHICLE_HAS_CASCADIA
+  void inverter_motor_rpm(int16_t rpm);
+  void inverter_bus_current(double amps);
   void inverter_torque_feedback(double nm);
+#elif VEHICLE_HAS_DTI
+  // What hub i's inverter reports, from now on (repeated with the voltage)
+  void hub_rpm(size_t i, double rpm) { hub_state[i].rpm = rpm; }
+  void hub_dc_current(size_t i, double amps) { hub_state[i].dc_amps = amps; }
+  void hub_bus_voltage(size_t i, double volts) { hub_state[i].volts = volts; }
+  // One hub's inverter going quiet (inverter_talking: all of them)
+  bool hub_talking[HUBS] = {true, true, true, true};
+#endif
   // On the DAQ bus, where the logger and the wheel speed nodes are; the VCU
   // takes them from any bus
   void vectornav(double north, double east, double accel_forward);
@@ -171,12 +197,23 @@ struct Car : ResetFirst {
     bool enable;
     bool direction;
   };
+#if VEHICLE_HAS_CASCADIA
   // Most recent 0x0C0 on the inverter bus, false if none sent yet
   bool last_inverter_command(InverterCommand *out);
-  // State reported in the most recent 0x0C3 status frame on the DAQ bus
-  int last_reported_state();
   // Discharge limit in the most recent 0x202 on the inverter bus, -1 if none
   int last_discharge_limit();
+#elif VEHICLE_HAS_DTI
+  // What the VCU last sent hub i's inverter, decoded with the DBC's code
+  struct HubCommand {
+    double ac_current_a; // A peak (dti_hv500.hpp)
+    bool enable;
+  };
+  bool last_hub_command(size_t i, HubCommand *out);
+  // The torque that current makes, at the motor
+  double last_hub_torque(size_t i);
+#endif
+  // State reported in the most recent 0x0C3 status frame on the DAQ bus
+  int last_reported_state();
 
   //
   //// A laptop on the DAQ bus doing UDS over ISO-TP. Deliberately its own
@@ -203,14 +240,19 @@ private:
   std::vector<uint32_t> repeating; // status messages sent at least once
   uint32_t last_repeat_ms = 0;
   void repeat_status();
+#if VEHICLE_HAS_DTI
+  struct HubState {
+    double rpm = 0, dc_amps = 0, volts = 0;
+  } hub_state[HUBS];
+  bool hubs_reporting = false;
+  void hub_feedback(size_t i); // its speed, voltage and currents, once
+#endif
 
   void tester_send(const std::vector<uint8_t> &request, size_t *cursor,
                    uint32_t timeout_ms);
   bool tester_wait_frame(size_t *cursor, can_message *out, uint32_t timeout_ms);
   void tester_inject(const uint8_t *bytes, size_t len);
 };
-
-#endif // VEHICLE_HAS_CASCADIA
 
 // The development signing key, keys/ota-dev.key. Its public half is what
 // the native builds trust (scripts/ota_key.py), like the bench firmware.

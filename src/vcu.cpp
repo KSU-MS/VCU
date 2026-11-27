@@ -3,6 +3,7 @@
 #include "car.h"
 #include "hal.hpp"
 #include "parameters.hpp"
+#include <cmath>
 #include <cstdint>
 #include <ota.hpp>
 
@@ -376,6 +377,8 @@ void VCU::update_vehicle_sensors(const can_message &msg) {
     decode_can_0x1f7_vn_v_n(dbc, &north);
     decode_can_0x1f7_vn_v_e(dbc, &east);
     traction.vectornav_velocity(float(north), float(east), now_ms);
+    vn_speed = std::sqrt(north * north + east * east);
+    vn_heard.heard(now_ms);
     break;
   }
   case CAN_ID_VECTORNAV_ACCELERATION: {
@@ -383,6 +386,7 @@ void VCU::update_vehicle_sensors(const can_message &msg) {
     double forward;
     decode_can_0x1f8_vn_accel_x(dbc, &forward);
     traction.vectornav_accel(float(forward));
+    vn_accel = forward;
     break;
   }
   case CAN_ID_AN1_FL_WHEELSPEED:

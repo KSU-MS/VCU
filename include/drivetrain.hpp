@@ -16,6 +16,7 @@
 
 #include "freshness.hpp"
 #include "inverter.hpp"
+#include "torque_split.hpp"
 #include "vehicle.hpp"
 
 class Drivetrain {
@@ -60,8 +61,13 @@ public:
   // Full pedal, in the drivetrain's units (above)
   double max_request();
   // The driver's (or traction control's, or the Pi's) request, in those
-  // units, out to the motors
+  // units, out to the motors: on the hub cars split by torque_split
   void command(double request);
+  // For the split by axle load: speed (m/s) and acceleration (m/s^2)
+  void set_motion(double vx, double ax);
+  void set_split(torque_split::Mode mode, double front_bias);
+  // What the last command put on each drive's wheel(s), N m (hub cars)
+  double wheel_torque(size_t i) const { return wheel[i]; }
 
   // The rear axle's motor, if the car has one (traction control's input)
   Inverter *rear_axle();
@@ -77,9 +83,15 @@ private:
   // Each drive's wheel-torque capability as a share of the total
   double share(size_t i) const;
   double torque_limit_for(size_t i) const;
+  // What drive i can put on its wheel(s) at its torque limit now
+  double wheel_cap(size_t i);
 
   Inverter *inverters[MAX_DRIVES];
   const vehicle::Drive *drives;
   size_t n;
   Freshness voltage_heard[MAX_DRIVES];
+  double wheel[MAX_DRIVES] = {};
+  double vx = 0, ax = 0;
+  torque_split::Mode split_mode = torque_split::Mode::LOAD;
+  double front_bias = 0.45;
 };

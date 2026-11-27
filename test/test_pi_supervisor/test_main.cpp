@@ -306,7 +306,7 @@ TEST_CASE("after a fallback the Pi has to earn control back") {
   CHECK(car.vcu.pi.get_mode() == PiSupervisor::PI_CONTROL);
 }
 
-TEST_CASE("nothing the Pi sends can raise the torque above the driver's "
+TEST_CASE("[EV.3.1.3] nothing the Pi sends can raise the torque above the driver's "
           "request (x3000 ms of random frames)") {
   Car car;
   FakePi pi;

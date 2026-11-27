@@ -1,13 +1,11 @@
 #include "sim_car.hpp"
 #include <algorithm>
+#include <cmath>
 #include <monocypher-ed25519.h>
 #include <string.h>
 
 namespace sim {
 
-// The Car is the rwd_emrax car so far (a Cascadia); the hub cars' come
-// with their VCU side (docs/vehicles.md)
-#if VEHICLE_HAS_CASCADIA
 
 //
 //// Tester
@@ -147,8 +145,6 @@ const char *Car::flash(const std::vector<uint8_t> &image) {
   return nullptr;
 }
 
-#endif // VEHICLE_HAS_CASCADIA
-
 const uint8_t DEV_SIGNING_SEED[32] = {
     0xe2, 0x8e, 0x3e, 0xf6, 0x00, 0x5f, 0xfa, 0xce, 0x36, 0xdb, 0xcb,
     0x4d, 0x5e, 0xc9, 0xdb, 0xf8, 0x36, 0x03, 0xa0, 0x25, 0x86, 0x06,
@@ -189,8 +185,6 @@ std::vector<uint8_t> make_image(const std::vector<uint8_t> &firmware,
   return out;
 }
 
-#if VEHICLE_HAS_CASCADIA
-
 void Car::send(Bus &b, uint32_t id) {
   can_message msg;
   msg.id = id;
@@ -201,7 +195,9 @@ void Car::send(Bus &b, uint32_t id) {
   case CAN_ID_ACU_SHUTDOWN_STATUS:
   case CAN_ID_PRECHARGE_STATUS:
   case CAN_ID_MSGID_0X6B1:
+#if VEHICLE_HAS_CASCADIA
   case CAN_ID_M167_VOLTAGE_INFO:
+#endif
     if (std::find(repeating.begin(), repeating.end(), id) == repeating.end())
       repeating.push_back(id);
     break;
@@ -209,16 +205,27 @@ void Car::send(Bus &b, uint32_t id) {
 }
 
 void Car::repeat_status() {
+#if VEHICLE_HAS_DTI
+  // The hub inverters' feedback at 100 Hz, like the Cascadia's in the rwd
+  // power tests (the HV500's rate is configurable: set it the same)
+  if (hubs_reporting && inverter_talking && sim::now() % 10 == 0)
+    for (size_t i = 0; i < HUBS; i++)
+      if (hub_talking[i])
+        hub_feedback(i);
+#endif
   if (sim::now() - last_repeat_ms < 100)
     return;
   last_repeat_ms = sim::now();
   for (uint32_t id : std::vector<uint32_t>(repeating)) {
+#if VEHICLE_HAS_CASCADIA
     if (id == CAN_ID_M167_VOLTAGE_INFO) {
       if (inverter_talking)
         send(inv(), id);
-    } else if (acu_talking) {
-      send(acc(), id);
+      continue;
     }
+#endif
+    if (acu_talking)
+      send(acc(), id);
   }
 }
 
@@ -239,20 +246,26 @@ void Car::pack_power(double volts, double amps) {
   send(acc(), CAN_ID_MSGID_0X6B1);
 }
 
+#if VEHICLE_HAS_CASCADIA
 void Car::inverter_bus_voltage(double volts) {
   encode_can_0x0a7_INV_DC_Bus_Voltage(&other_boards, volts);
   send(inv(), CAN_ID_M167_VOLTAGE_INFO);
 }
+#endif
 
+#if VEHICLE_HAS_CASCADIA
 void Car::inverter_bus_current(double amps) {
   encode_can_0x0a6_INV_DC_Bus_Current(&other_boards, amps);
   send(inv(), CAN_ID_M166_CURRENT_INFO);
 }
+#endif
 
+#if VEHICLE_HAS_CASCADIA
 void Car::inverter_motor_rpm(int16_t rpm) {
   encode_can_0x0a5_INV_Motor_Speed(&other_boards, rpm);
   send(inv(), CAN_ID_M165_MOTOR_POSITION_INFO);
 }
+#endif
 
 void Car::dash_rtd_button(bool pressed) {
   encode_can_0x0eb_dash_button5status(&other_boards, pressed);
@@ -264,10 +277,12 @@ void Car::dash_tc_button(bool pressed) {
   send(inv(), CAN_ID_DASH_BUTTONS);
 }
 
+#if VEHICLE_HAS_CASCADIA
 void Car::inverter_torque_feedback(double nm) {
   encode_can_0x0ac_INV_Torque_Feedback(&other_boards, nm);
   send(inv(), CAN_ID_M172_TORQUE_AND_TIMER_INFO);
 }
+#endif
 
 void Car::vectornav(double north, double east, double accel_forward) {
   encode_can_0x1f7_vn_v_n(&other_boards, north);
@@ -318,6 +333,7 @@ void Car::drive_to_rtd() {
   run_for(10);
 }
 
+#if VEHICLE_HAS_CASCADIA
 bool Car::last_inverter_command(InverterCommand *out) {
   const can_message *m = inv().last_sent(CAN_ID_M192_COMMAND_MESSAGE);
   if (!m)
@@ -335,6 +351,7 @@ bool Car::last_inverter_command(InverterCommand *out) {
   out->direction = direction;
   return true;
 }
+#endif
 
 int Car::last_reported_state() {
   const can_message *m = daq().last_sent(CAN_ID_VCU_STATUS);
@@ -349,6 +366,7 @@ int Car::last_reported_state() {
   return state;
 }
 
+#if VEHICLE_HAS_CASCADIA
 int Car::last_discharge_limit() {
   const can_message *m = inv().last_sent(CAN_ID_BMS_CURRENT_LIMIT);
   if (!m)
@@ -361,7 +379,88 @@ int Car::last_discharge_limit() {
   decode_can_0x202_BMS_Max_Discharge_Current(&rx, &limit);
   return limit;
 }
+#endif
 
-#endif // VEHICLE_HAS_CASCADIA
+#if VEHICLE_HAS_DTI
+// The DBC's functions are per node: these pick node n's
+#define DTI_NODE_CASES(X) X(1, FL) X(2, FR) X(3, RL) X(4, RR)
+
+void Car::inverter_bus_voltage(double volts) {
+  for (auto &h : hub_state)
+    h.volts = volts;
+  hubs_reporting = true;
+  for (size_t i = 0; i < HUBS; i++)
+    hub_feedback(i);
+}
+
+void Car::hub_feedback(size_t i) {
+  const vehicle::Drive &d = vehicle::THIS.drives[i];
+  const int32_t erpm = int32_t(std::lround(hub_state[i].rpm * d.motor->pole_pairs));
+  const int16_t volts = int16_t(std::lround(hub_state[i].volts));
+  uint32_t erpm_id = 0, current_id = 0;
+  switch (d.node) {
+#define FEEDBACK(n, pos)                                                       \
+  case n:                                                                      \
+    encode_can_0x200##n##_Actual_ERPM(&other_boards, erpm);                    \
+    encode_can_0x200##n##_Actual_InputVoltage(&other_boards, volts);           \
+    encode_can_0x210##n##_Actual_DCCurrent(&other_boards, hub_state[i].dc_amps); \
+    erpm_id = CAN_ID_INV_##pos##_ERPM_DUTY_VOLTAGE;                            \
+    current_id = CAN_ID_INV_##pos##_AC_DC_CURRENT;                             \
+    break;
+    DTI_NODE_CASES(FEEDBACK)
+#undef FEEDBACK
+  default:
+    return;
+  }
+  for (uint32_t id : {erpm_id, current_id}) {
+    can_message msg;
+    msg.id = id;
+    msg.is_extended = true;
+    msg.length = pack_message(&other_boards, id, &msg.buf.val);
+    inv().inject(msg);
+  }
+}
+
+bool Car::last_hub_command(size_t i, HubCommand *out) {
+  uint32_t current_id = 0, enable_id = 0;
+  switch (vehicle::THIS.drives[i].node) {
+#define IDS(n, pos)                                                            \
+  case n:                                                                      \
+    current_id = CAN_ID_INV_##pos##_SETACCURRENT;                              \
+    enable_id = CAN_ID_INV_##pos##_SETDRIVEENABLE;                             \
+    break;
+    DTI_NODE_CASES(IDS)
+#undef IDS
+  default:
+    return false;
+  }
+  const can_message *c = inv().last_sent(current_id);
+  const can_message *e = inv().last_sent(enable_id);
+  if (!c || !e)
+    return false;
+  can_obj_car_h_t rx{};
+  unpack_message(&rx, c->id, c->buf.val, c->length, 0);
+  unpack_message(&rx, e->id, e->buf.val, e->length, 0);
+  uint8_t enable = 0;
+  switch (vehicle::THIS.drives[i].node) {
+#define DECODE(n, pos)                                                         \
+  case n:                                                                      \
+    decode_can_0x10##n##_CMD_TargetAcCurrent(&rx, &out->ac_current_a);         \
+    decode_can_0xc0##n##_CMD_DriveEnable(&rx, &enable);                        \
+    break;
+    DTI_NODE_CASES(DECODE)
+#undef DECODE
+  }
+  out->enable = enable;
+  return true;
+}
+
+double Car::last_hub_torque(size_t i) {
+  HubCommand c{};
+  if (!last_hub_command(i, &c))
+    return 0;
+  return c.ac_current_a / hubs[i].current_for_torque(1.0);
+}
+#endif
 
 } // namespace sim

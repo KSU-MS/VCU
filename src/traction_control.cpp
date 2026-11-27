@@ -1,4 +1,5 @@
 #include "traction_control.hpp"
+#include "car_model.hpp"
 #include "parameters.hpp"
 #include <math.h>
 
@@ -12,21 +13,21 @@ vcu_config_t config(uint8_t mode) {
   vcu_config_t c{};
   c.mode = mode;
 
-  c.mass = 285.0f;
-  c.cg_height = 0.2751f;
-  c.wheelbase = 1.61544f;
-  c.cg_to_front = 0.80772f;
+  c.mass = float(car_model::MASS_KG);
+  c.cg_height = float(car_model::CG_HEIGHT_M);
+  c.wheelbase = float(car_model::WHEELBASE_M);
+  c.cg_to_front = float(car_model::CG_TO_FRONT_M);
   c.tire_radius = float(WHEEL_CIRCUMFRANCE_M / 6.283185307179586);
   c.final_drive = float(GEAR_RATIO);
   c.driveline_eff = 0.95f;
   // Wheels and driveline 0.21 (kmslap), plus the EMRAX 228's rotor through
   // the final drive (kmslap's 0.5889 is for its 3.0)
   c.rear_inertia = float(0.21 + 0.0421 * GEAR_RATIO * GEAR_RATIO);
-  c.cla = 1.69f;
-  c.cda = 1.3f;
-  c.rho = 1.226f;
-  c.crr = 0.015f;
-  c.aero_front = 0.45f;
+  c.cla = float(car_model::CLA);
+  c.cda = float(car_model::CDA);
+  c.rho = float(car_model::RHO);
+  c.crr = float(car_model::CRR);
+  c.aero_front = float(car_model::AERO_FRONT);
   c.torque_peak = float(MAX_TORQUE_LIMIT_NM);
 
   c.ws_teeth = 0;
