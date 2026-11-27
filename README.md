@@ -7,14 +7,14 @@ Everything below runs on a laptop. None of it has run on a real Teensy yet.
 ```sh
 nix develop                  # or the dev container in .devcontainer/
 pio test -e native           # the VCU logic against a simulated car (ASan/UBSan)
-pio run -e teensy41          # firmware, same as before
+pio run -e teensy41 -t upload  # over USB, as before: now bootloader + firmware (slot A)
 uv run pytest                # host tool tests (e2e ones skip without vcan)
 tools/run_e2e.sh tools/sil   # VCU as a Linux program on virtual CAN, updated over CAN
 tools/run_e2e.sh renode      # the real ARM firmware on an emulated Teensy, updated over CAN
 ```
 
 - **Tests**: `test/` drives `VCU::tick()` through a fake car (`lib/vcu_sim`): pedals, state machine, torque/power limits, OTA. Tests named `KNOWN ISSUE` print a warning instead of failing; they mark behaviour that looks wrong but needs a decision.
-- **Firmware update over CAN** (UDS on the DAQ bus, only while parked): [docs/ota.md](docs/ota.md).
+- **Firmware update over CAN** (UDS on the DAQ bus, only while parked): signed images, A/B slots with a bootloader that rolls back an update nobody confirmed. [docs/ota.md](docs/ota.md), [bootloader/](bootloader/README.md), [keys/](keys/README.md).
 - **Renode** (emulated Teensy 4.1, flash with the W25Q64's datasheet timing): [renode/README.md](renode/README.md).
 - **CI** runs on every PR: the tests, the firmware build, and both OTA end-to-end tests (SIL and Renode).
 - **Schematic vs firmware** (pump pins, brake sensor input): [docs/hardware.md](docs/hardware.md).

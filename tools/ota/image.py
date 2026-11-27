@@ -13,6 +13,7 @@ which this must match):
     uv run tools/ota/image.py build .pio/build/teensy41/firmware.hex -o vcu.ota
     uv run tools/ota/image.py info vcu.ota
     uv run tools/ota/image.py keygen keys/car      # keys/car.key + keys/car.pub
+    uv run tools/ota/image.py bundle --bootloader boot.hex vcu-a.ota -o usb.hex
 
 Images are signed with keys/ota-dev.key unless --key or VCU_OTA_KEY says
 otherwise. That key is public (it's in the repo): fine on the bench, and a
@@ -55,6 +56,25 @@ _BODY = struct.Struct("<4sHHIII16sII16s")
 assert _BODY.size + 4 == HEADER_SIZE
 
 FLAG_DIRTY = 1 << 0
+
+# A/B layout, lib/vcu_boot/boot.hpp
+SECTOR_SIZE = 4096
+BOOTLOADER_SIZE = 0x10000
+STATE_OFFSET = 0x010000
+SLOT_OFFSET = (0x020000, 0x200000)
+SLOT_SIZE = 0x1E0000
+RECORD_MAGIC = 0x5453424B  # "KBST"
+NO_SLOT = 0xFF
+
+
+def slot_firmware_address(slot: int) -> int:
+    return FLASH_BASE + SLOT_OFFSET[slot] + FIRMWARE_OFFSET
+
+
+def boot_record(sequence: int, active: int, trial: int = NO_SLOT, attempts: int = 0) -> bytes:
+    """One boot state journal entry (boot::BootRecord)"""
+    body = struct.pack("<IIBBBB16s", RECORD_MAGIC, sequence, active, trial, attempts, 0, bytes(16))
+    return body + struct.pack("<I", zlib.crc32(body))
 
 
 @dataclass
@@ -186,6 +206,52 @@ def git_version(repo: Path) -> tuple[int, bool]:
     return int(short, 16), status != ""
 
 
+def write_intel_hex(segments: list[tuple[int, bytes]], path: Path) -> None:
+    """Intel HEX with extended linear address records, 32 bytes per line"""
+    def record(rtype: int, addr: int, data: bytes) -> str:
+        raw = bytes([len(data), (addr >> 8) & 0xFF, addr & 0xFF, rtype]) + data
+        return ":" + (raw + bytes([(-sum(raw)) & 0xFF])).hex().upper()
+
+    lines, upper = [], None
+    for base, data in sorted(segments):
+        # 32 byte lines from a 32 byte aligned start never cross 64 KB
+        if base % 32:
+            raise ValueError(f"segment at 0x{base:08X} isn't 32 byte aligned")
+        for off in range(0, len(data), 32):
+            addr = base + off
+            if addr >> 16 != upper:
+                upper = addr >> 16
+                lines.append(record(0x04, 0, upper.to_bytes(2, "big")))
+            lines.append(record(0x00, addr & 0xFFFF, data[off:off + 32]))
+    lines.append(":00000001FF")
+    path.write_text("\n".join(lines) + "\n")
+
+
+def bundle(bootloader: tuple[int, bytes], slot_a_image: bytes) -> list[tuple[int, bytes]]:
+    """Everything a USB flash puts on the board: the bootloader, a boot state
+    that says "slot A, no trial", and the signed image in slot A.
+
+    The Teensy loader skips blocks that are all 0xFF, so a blank boot state
+    wouldn't erase an old one (which could point at a slot B from earlier
+    updates). Instead the first sector gets a fresh first record and the
+    second is zeroed: junk records the journal skips, and both sectors
+    really get erased and written."""
+    start, code = bootloader
+    if start != FLASH_BASE or len(code) > BOOTLOADER_SIZE:
+        raise ValueError(f"bootloader must start at 0x{FLASH_BASE:08X} and fit in "
+                         f"{BOOTLOADER_SIZE} bytes, got 0x{start:08X} + {len(code)}")
+    h = verify(slot_a_image)
+    if h.load_address != slot_firmware_address(0):
+        raise ValueError(f"slot A image is linked for 0x{h.load_address:08X}, "
+                         f"not 0x{slot_firmware_address(0):08X}")
+    state = boot_record(1, active=0).ljust(SECTOR_SIZE, b"\xFF") + bytes(SECTOR_SIZE)
+    return [
+        (FLASH_BASE, code),
+        (FLASH_BASE + STATE_OFFSET, state),
+        (FLASH_BASE + SLOT_OFFSET[0], slot_a_image),
+    ]
+
+
 def default_key_path() -> Path:
     return Path(os.environ.get("VCU_OTA_KEY", DEV_KEY))
 
@@ -214,6 +280,11 @@ def main(argv: list[str] | None = None) -> int:
     k = sub.add_parser("keygen", help="make a signing key pair: PREFIX.key (secret) and PREFIX.pub")
     k.add_argument("prefix", type=Path)
 
+    u = sub.add_parser("bundle", help="bootloader + slot A image as one .hex for a USB flash")
+    u.add_argument("slot_a", type=Path, help="signed OTA image built for slot A")
+    u.add_argument("--bootloader", type=Path, required=True, help="bootloader .hex")
+    u.add_argument("-o", "--output", type=Path, required=True)
+
     args = p.parse_args(argv)
 
     if args.cmd == "keygen":
@@ -223,6 +294,12 @@ def main(argv: list[str] | None = None) -> int:
         secret.write_text(key.private_bytes_raw().hex() + "\n")
         args.prefix.with_suffix(".pub").write_text(public_key_bytes(key).hex() + "\n")
         print(f"{secret} (keep secret) and {args.prefix.with_suffix('.pub')}")
+        return 0
+
+    if args.cmd == "bundle":
+        segments = bundle(read_intel_hex(args.bootloader), args.slot_a.read_bytes())
+        write_intel_hex(segments, args.output)
+        print(f"{args.output}: bootloader + fresh boot state + {args.slot_a} in slot A")
         return 0
 
     if args.cmd == "build":

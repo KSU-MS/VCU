@@ -1,8 +1,0 @@
-{
-  "name": "flasherx",
-  "version": "0.0.0+9d5067b",
-  "description": "FlashTxx.c/.h from FlasherX (public domain), vendored unmodified. Flash erase/write and the RAM-resident flash_move used to apply an OTA image",
-  "homepage": "https://github.com/joepasquariello/FlasherX",
-  "frameworks": "arduino",
-  "platforms": "teensy"
-}

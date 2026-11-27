@@ -69,6 +69,8 @@ size_t UdsServer::handle(const uint8_t *req, size_t len, uint8_t *resp,
     return read_did(req, len, resp);
   case sid::ECU_RESET:
     return ecu_reset(req, len, resp);
+  case sid::ROUTINE_CONTROL: // checks the session itself
+    return routine_control(req, len, resp);
   }
 
   // Everything below here reprograms the board
@@ -76,7 +78,6 @@ size_t UdsServer::handle(const uint8_t *req, size_t len, uint8_t *resp,
   case sid::REQUEST_DOWNLOAD:
   case sid::TRANSFER_DATA:
   case sid::TRANSFER_EXIT:
-  case sid::ROUTINE_CONTROL:
     if (session != Session::PROGRAMMING)
       return negative(resp, req[0], nrc::NOT_SUPPORTED_IN_SESSION);
     break;
@@ -89,10 +90,8 @@ size_t UdsServer::handle(const uint8_t *req, size_t len, uint8_t *resp,
     return request_download(req, len, resp);
   case sid::TRANSFER_DATA:
     return transfer_data(req, len, resp);
-  case sid::TRANSFER_EXIT:
-    return transfer_exit(req, len, resp);
   default:
-    return routine_control(req, len, resp);
+    return transfer_exit(req, len, resp);
   }
 }
 
@@ -163,6 +162,12 @@ size_t UdsServer::read_did(const uint8_t *req, size_t len, uint8_t *resp) {
     resp[5] = uint8_t(image_error);
     resp[6] = 0;
     return 7;
+  case DID_BOOT_STATUS:
+    platform.boot_status(resp + 3);
+    return 7;
+  case DID_DOWNLOAD_ADDRESS:
+    write_be32(resp + 3, platform.image_load_address());
+    return 7;
   default:
     return negative(resp, req[0], nrc::REQUEST_OUT_OF_RANGE);
   }
@@ -179,6 +184,9 @@ size_t UdsServer::request_download(const uint8_t *req, size_t len,
   const uint32_t size = read_be32(req + 7);
   if (size < IMAGE_FIRMWARE_OFFSET || size > staging.size())
     return negative(resp, req[0], nrc::UPLOAD_DOWNLOAD_NOT_ACCEPTED);
+  // Running an unconfirmed update: the other slot is its fallback
+  if (!platform.can_update())
+    return negative(resp, req[0], nrc::CONDITIONS_NOT_CORRECT);
 
   // Starting again is always allowed, it throws away whatever was staged
   abandon_download();
@@ -276,20 +284,34 @@ size_t UdsServer::routine_control(const uint8_t *req, size_t len,
     return negative(resp, req[0], nrc::INCORRECT_LENGTH);
   if (req[1] != 0x01)
     return negative(resp, req[0], nrc::SUBFUNCTION_NOT_SUPPORTED);
-  if (uint16_t((req[2] << 8) | req[3]) != ROUTINE_CHECK_IMAGE)
-    return negative(resp, req[0], nrc::REQUEST_OUT_OF_RANGE);
-  if (!download_complete)
-    return negative(resp, req[0], nrc::REQUEST_SEQUENCE_ERROR);
 
-  image_error = verify_staged();
-  verified = image_error == ImageError::OK;
+  uint8_t status;
+  switch (uint16_t((req[2] << 8) | req[3])) {
+  case ROUTINE_CHECK_IMAGE:
+    if (session != Session::PROGRAMMING)
+      return negative(resp, req[0], nrc::NOT_SUPPORTED_IN_SESSION);
+    if (!download_complete)
+      return negative(resp, req[0], nrc::REQUEST_SEQUENCE_ERROR);
+    image_error = verify_staged();
+    verified = image_error == ImageError::OK;
+    status = uint8_t(image_error);
+    break;
+  case ROUTINE_CONFIRM:
+    // After an update the firmware runs as a trial; this keeps it. Allowed
+    // in the default session: it's what the tester does right after the
+    // reboot, and it only ever keeps what's already running.
+    status = platform.confirm() ? 0 : 1;
+    break;
+  default:
+    return negative(resp, req[0], nrc::REQUEST_OUT_OF_RANGE);
+  }
 
   // Positive response either way, with the result as routine status
   resp[0] = req[0] + 0x40;
   resp[1] = req[1];
   resp[2] = req[2];
   resp[3] = req[3];
-  resp[4] = uint8_t(image_error);
+  resp[4] = status;
   return 5;
 }
 
@@ -301,8 +323,8 @@ size_t UdsServer::ecu_reset(const uint8_t *req, size_t len, uint8_t *resp) {
     return negative(resp, req[0], nrc::SUBFUNCTION_NOT_SUPPORTED);
 
   if (verified) {
-    // Last chance to back out: never start overwriting the running firmware
-    // unless the car is parked
+    // Last chance to back out: never switch firmware unless the car is
+    // parked
     if (!platform.safe_to_program())
       return negative(resp, req[0], nrc::CONDITIONS_NOT_CORRECT);
     reset = PendingReset::APPLY;
@@ -324,7 +346,7 @@ void UdsServer::do_pending_reset() {
   if (r == PendingReset::APPLY && verified && platform.safe_to_program()) {
     verified = false;
     session = Session::DEFAULT;
-    platform.apply_and_reboot(IMAGE_FIRMWARE_OFFSET, header.image_size);
+    platform.activate_and_reboot();
   } else if (r != PendingReset::NONE) {
     end_session();
     platform.reboot();

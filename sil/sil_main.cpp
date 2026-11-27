@@ -171,7 +171,8 @@ int main(int argc, char **argv) {
 
   const uint32_t start = monotonic_ms();
   auto car = std::make_unique<sim::Car>();
-  car->board.version = version;
+  car->board.install(boot::SLOT_A, std::vector<uint8_t>(1000, 0x5A), version);
+  car->board.power_on();
   sim::set_echo_log(verbose);
   printf("VCU SIL up: acc=%s inv=%s daq=%s, firmware %08x\n", acc_if.c_str(),
          inv_if.c_str(), daq_if.c_str(), version);
@@ -204,19 +205,23 @@ int main(int argc, char **argv) {
       printf("[%7.3f] state -> %s\n", t.at_ms / 1000.0, state_name(t.to));
     }
 
-    // The updater asked for a reboot: start over with whatever firmware
-    // the board now has, like the real thing coming back up
+    // The updater asked for a reboot, and the board has run the bootloader
+    // policy: start the VCU over as whatever firmware it picked, keeping
+    // the flash, like the real thing coming back up
     if (car->board.reboots != reboots) {
-      const bool applied = car->board.applies != 0;
-      const uint32_t new_version = car->board.version;
-      std::vector<uint8_t> firmware = std::move(car->board.firmware);
-      printf("[%7.3f] %s, rebooting into %08x\n", now / 1000.0,
-             applied ? "applied update" : "reset requested", new_version);
+      const uint8_t slot = car->board.running_slot();
+      const uint32_t new_version = car->board.running_version();
+      const bool trial = car->board.trial;
+      printf("[%7.3f] %s, rebooting into %08x (slot %c%s)\n", now / 1000.0,
+             car->board.activations ? "update activated" : "reset requested",
+             new_version, "AB"[slot], trial ? ", trial" : "");
 
+      std::vector<uint8_t> chip = std::move(car->chip.bytes);
       car = std::make_unique<sim::Car>();
       sim::set_now(now);
-      car->board.version = new_version;
-      car->board.firmware = std::move(firmware);
+      car->chip.bytes = std::move(chip);
+      car->board.resume(slot, new_version);
+      car->board.trial = trial;
       sim::set_echo_log(verbose);
       transitions_seen = 0;
     }

@@ -1,14 +1,14 @@
 #pragma once
-// Everything the OTA code needs from the board. The Teensy implementation is
-// src/ota_teensy.cpp (on top of FlasherX); lib/vcu_sim has a simulated one
-// that enforces NOR flash rules so the logic above can be tested properly.
+// Everything the OTA code needs from the board. On the VCU that's AbBoard
+// (ab_board.hpp) over the Teensy's flash (src/ota_teensy.cpp); lib/vcu_sim
+// runs the same AbBoard over simulated NOR flash.
 #include <stddef.h>
 #include <stdint.h>
 
 namespace ota {
 
-// The staging area a new image is downloaded into before it's applied.
-// Offsets are relative to the start of the staging area.
+// Where a new image is downloaded: the A/B slot that isn't running. Offsets
+// are relative to the start of the slot.
 //
 // NOR flash rules, which the simulator enforces: erase sets a whole sector
 // to 0xFF, program can only clear bits, so anything not erased first comes
@@ -33,20 +33,31 @@ public:
   // off and the inverter disabled.
   virtual bool safe_to_program() = 0;
 
-  // Copy `size` bytes starting at staging offset `staging_offset` over the
-  // running firmware and reboot into it. Doesn't return on hardware; the
-  // image has already been verified by the time this is called.
-  virtual void apply_and_reboot(uint32_t staging_offset, uint32_t size) = 0;
+  // Can an update be downloaded at all? Not while the running firmware is
+  // itself an unconfirmed update: its fallback is in the slot we'd overwrite.
+  virtual bool can_update() = 0;
+
+  // Boot the verified image in the staging slot next, as a trial, and reboot.
+  // Doesn't return on hardware.
+  virtual void activate_and_reboot() = 0;
 
   // Plain reboot, for ECUReset without a pending image
   virtual void reboot() = 0;
 
+  // The running firmware works: keep booting it. Until this is called after
+  // an update, the next reset goes back to the previous firmware.
+  virtual bool confirm() = 0;
+
   // Version of the firmware that's running now, for ReadDataByIdentifier
   virtual uint32_t running_version() = 0;
 
-  // Where a downloaded image's firmware must be linked to run. Images
-  // linked anywhere else are refused (WRONG_LOAD_ADDRESS).
+  // Where a downloaded image's firmware must be linked to run (the staging
+  // slot's). Images linked anywhere else are refused (WRONG_LOAD_ADDRESS).
   virtual uint32_t image_load_address() = 0;
+
+  // For the boot status DID: running slot, active slot, trial slot (0xFF for
+  // none), trial boots so far
+  virtual void boot_status(uint8_t out[4]) = 0;
 };
 
 } // namespace ota

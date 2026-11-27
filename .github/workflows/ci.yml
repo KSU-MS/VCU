@@ -41,12 +41,10 @@ jobs:
       - name: Host tool tests
         run: nix develop -c uv run pytest -q
 
+      # Both A/B slots (signed with the dev key) and the bootloader, which
+      # slot A's build bundles into firmware.hex for a USB flash
       - name: Build firmware
-        run: nix develop -c pio run -e teensy41
-
-      # Ready to flash over CAN with tools/ota/flash.py
-      - name: Package OTA image
-        run: nix develop -c uv run tools/ota/image.py build .pio/build/teensy41/firmware.hex -o vcu.ota
+        run: nix develop -c pio run -e teensy41 -e teensy41_b
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4
@@ -55,7 +53,10 @@ jobs:
           path: |
             .pio/build/teensy41/firmware.hex
             .pio/build/teensy41/firmware.elf
-            vcu.ota
+            .pio/build/teensy41/vcu-a.ota
+            .pio/build/teensy41_b/firmware.elf
+            .pio/build/teensy41_b/vcu-b.ota
+            .pio/build/bootloader/firmware.elf
 
       # The VCU as a Linux process on virtual CAN, flashed by tools/ota/flash.py.
       # vcan lives in linux-modules-extra on the runner's Azure kernel.

@@ -41,11 +41,15 @@ ota::ImageError verify(const Bytes &img, uint32_t load_address,
                            ota::IMAGE_PUBLIC_KEY, h);
 }
 
+// Where updates to a fresh board (running slot A) are linked for
+constexpr uint32_t SLOT_B = boot::slot_firmware_address(boot::SLOT_B);
+
 // The car as it'll usually be on the bench: GLV on, TS off
 void park(Car &car) {
   car.run_for(10);
   REQUIRE(car.vcu.get_current_state() == TRACTIVE_SYSTEM_DISABLED);
-  car.board.firmware = random_firmware(1000, 99); // "old" firmware
+  car.board.install(boot::SLOT_A, random_firmware(1000, 99), 0x11111111);
+  car.board.power_on(); // "old" firmware
 }
 
 bool positive(const Bytes &r, uint8_t sid) { return !r.empty() && r[0] == sid + 0x40; }
@@ -124,14 +128,14 @@ TEST_CASE("signature check") {
   ota::ImageHeader h;
 
   SUBCASE("signed with our key") {
-    CHECK(verify(sim::make_image(fw, 1), 0x60000000, &h) == ota::ImageError::OK);
+    CHECK(verify(sim::make_image(fw, 1), SLOT_B, &h) == ota::ImageError::OK);
   }
   SUBCASE("signed with someone else's key") {
     uint8_t stranger[32];
     for (int i = 0; i < 32; i++)
       stranger[i] = uint8_t(i * 7 + 3);
-    Bytes img = sim::make_image(fw, 1, ota::IMAGE_TARGET, 0x60000000, stranger);
-    CHECK(verify(img, 0x60000000, &h) == ota::ImageError::BAD_SIGNATURE);
+    Bytes img = sim::make_image(fw, 1, ota::IMAGE_TARGET, SLOT_B, stranger);
+    CHECK(verify(img, SLOT_B, &h) == ota::ImageError::BAD_SIGNATURE);
   }
   SUBCASE("firmware changed after signing, CRC fixed up") {
     Bytes img = sim::make_image(fw, 1);
@@ -143,12 +147,12 @@ TEST_CASE("signature check") {
     fixed.header_crc32 = ota::crc32(reinterpret_cast<uint8_t *>(&fixed),
                                     offsetof(ota::ImageHeader, header_crc32));
     memcpy(img.data(), &fixed, sizeof(fixed));
-    CHECK(verify(img, 0x60000000, &h) == ota::ImageError::BAD_SIGNATURE);
+    CHECK(verify(img, SLOT_B, &h) == ota::ImageError::BAD_SIGNATURE);
   }
   SUBCASE("signature bytes damaged") {
     Bytes img = sim::make_image(fw, 1);
     img[ota::IMAGE_SIGNATURE_OFFSET + 5] ^= 0x80;
-    CHECK(verify(img, 0x60000000, &h) == ota::ImageError::BAD_SIGNATURE);
+    CHECK(verify(img, SLOT_B, &h) == ota::ImageError::BAD_SIGNATURE);
   }
   SUBCASE("linked for somewhere else") {
     Bytes img = sim::make_image(fw, 1, ota::IMAGE_TARGET, 0x60201000);
@@ -220,16 +224,17 @@ TEST_CASE("flashes a new image and reboots into it") {
   Bytes fw = random_firmware(120 * 1024); // about the size of the VCU today
   CHECK(car.flash(sim::make_image(fw, 0xC0FFEE01)) == nullptr);
 
-  CHECK(car.board.applies == 1);
-  CHECK(car.board.firmware == fw);
-  CHECK(car.board.version == 0xC0FFEE01);
-  CHECK(car.staging.unerased_writes == 0);
+  CHECK(car.board.activations == 1);
+  CHECK(car.board.firmware() == fw);
+  CHECK(car.board.running_version() == 0xC0FFEE01);
+  CHECK(car.chip.unerased_writes == 0);
 }
 
 TEST_CASE("reports the running version") {
   Car car;
   park(car);
-  car.board.version = 0x12345678;
+  car.board.install(boot::SLOT_A, random_firmware(1000), 0x12345678);
+  car.board.power_on();
   CHECK(car.uds({0x22, 0xF1, 0x89}) == Bytes{0x62, 0xF1, 0x89, 0x12, 0x34, 0x56, 0x78});
 }
 
@@ -239,7 +244,7 @@ TEST_CASE("block counter wraps from 0xFF to 0x00") {
   park(car);
   Bytes fw = random_firmware(300 * 1024, 7);
   CHECK(car.flash(sim::make_image(fw, 2)) == nullptr);
-  CHECK(car.board.firmware == fw);
+  CHECK(car.board.firmware() == fw);
 }
 
 TEST_CASE("a resent block is acked again but not written twice") {
@@ -263,7 +268,7 @@ TEST_CASE("a resent block is acked again but not written twice") {
   Bytes r = car.uds({0x31, 0x01, 0xFF, 0x01});
   REQUIRE(r.size() == 5);
   CHECK(r[4] == 0);
-  CHECK(car.staging.unerased_writes == 0);
+  CHECK(car.chip.unerased_writes == 0);
 }
 
 TEST_CASE("flow control keeps bursts within the receive queue") {
@@ -360,7 +365,7 @@ TEST_CASE("TesterPresent keeps the session open") {
 TEST_CASE("won't apply if the car stops being safe before the reset") {
   Car car;
   park(car);
-  Bytes old = car.board.firmware;
+  Bytes old = car.board.firmware();
   Bytes img = sim::make_image(random_firmware(4000), 5);
   start_download(car, img);
   for (size_t off = 0, n = 1; off < img.size(); off += 1024, n++)
@@ -371,8 +376,8 @@ TEST_CASE("won't apply if the car stops being safe before the reset") {
   car.board.safe = [] { return false; };
   CHECK(nrc_of(car.uds({0x11, 0x01})) == ota::nrc::CONDITIONS_NOT_CORRECT);
   car.run_for(100);
-  CHECK(car.board.applies == 0);
-  CHECK(car.board.firmware == old);
+  CHECK(car.board.activations == 0);
+  CHECK(car.board.firmware() == old);
 }
 
 //
@@ -441,7 +446,7 @@ TEST_CASE("won't finish a download that's missing data") {
 TEST_CASE("a bad image is caught by the check and never applied") {
   Car car;
   park(car);
-  Bytes old = car.board.firmware;
+  Bytes old = car.board.firmware();
   Bytes fw = random_firmware(20000, 8);
   Bytes img = sim::make_image(fw, 9);
   ota::ImageError expected;
@@ -465,17 +470,17 @@ TEST_CASE("a bad image is caught by the check and never applied") {
   // Even if the tester ignores the failed check and resets anyway
   CHECK(positive(car.uds({0x11, 0x01}), 0x11));
   car.run_for(10);
-  CHECK(car.board.applies == 0);
+  CHECK(car.board.activations == 0);
   CHECK(car.board.reboots >= 1);
-  CHECK(car.board.firmware == old);
+  CHECK(car.board.firmware() == old);
 }
 
 TEST_CASE("a flash write failure aborts the download") {
   Car car;
   park(car);
-  Bytes old = car.board.firmware;
+  Bytes old = car.board.firmware();
   Bytes img = sim::make_image(random_firmware(10000), 11);
-  car.staging.fail_after_bytes = 5000;
+  car.chip.fail_after_bytes = 5000;
 
   start_download(car, img);
   Bytes r;
@@ -485,12 +490,12 @@ TEST_CASE("a flash write failure aborts the download") {
       break;
   }
   CHECK(nrc_of(r) == ota::nrc::GENERAL_PROGRAMMING_FAILURE);
-  CHECK(car.board.firmware == old);
+  CHECK(car.board.firmware() == old);
 
   // And it recovers once the flash behaves again
-  car.staging.fail_after_bytes = SIZE_MAX;
+  car.chip.fail_after_bytes = SIZE_MAX;
   CHECK(car.flash(img) == nullptr);
-  CHECK(car.board.applies == 1);
+  CHECK(car.board.activations == 1);
 }
 
 TEST_CASE("giving up at any point leaves the old firmware in place") {
@@ -504,7 +509,7 @@ TEST_CASE("giving up at any point leaves the old firmware in place") {
     CAPTURE(stop_after);
     Car car;
     park(car);
-    Bytes old = car.board.firmware;
+    Bytes old = car.board.firmware();
 
     size_t steps = 0;
     auto step = [&](const Bytes &req, uint8_t sid) {
@@ -523,10 +528,133 @@ TEST_CASE("giving up at any point leaves the old firmware in place") {
 
     car.run_for(ota::SESSION_TIMEOUT_MS + 100);
     CHECK_FALSE(car.updater.programming());
-    CHECK(car.board.applies == 0);
-    CHECK(car.board.firmware == old);
+    CHECK(car.board.activations == 0);
+    CHECK(car.board.firmware() == old);
 
     CHECK(car.flash(img) == nullptr);
-    CHECK(car.board.firmware == fw);
+    CHECK(car.board.firmware() == fw);
   }
+}
+
+//
+//// A/B: trial, confirm, rollback
+
+namespace {
+// 22 F102: running slot, active slot, trial slot, attempts
+Bytes boot_status(Car &car) {
+  Bytes r = car.uds({0x22, 0xF1, 0x02});
+  REQUIRE(r.size() == 7);
+  return Bytes(r.begin() + 3, r.end());
+}
+
+uint32_t download_address(Car &car) {
+  Bytes r = car.uds({0x22, 0xF1, 0x03});
+  REQUIRE(r.size() == 7);
+  return (uint32_t(r[3]) << 24) | (uint32_t(r[4]) << 16) | (uint32_t(r[5]) << 8) | r[6];
+}
+
+const Bytes CONFIRM = {0x31, 0x01, 0xFF, 0x02};
+} // namespace
+
+TEST_CASE("a fresh board runs slot A and downloads into slot B") {
+  Car car;
+  park(car);
+  CHECK(boot_status(car) == Bytes{0, 0, 0xFF, 0});
+  CHECK(download_address(car) == SLOT_B);
+}
+
+TEST_CASE("an update runs as a trial until the tester confirms it") {
+  Car car;
+  park(car);
+  Bytes fw = random_firmware(30000, 5);
+  REQUIRE(car.flash(sim::make_image(fw, 0xB0000001)) == nullptr);
+
+  CHECK(car.board.running_slot() == boot::SLOT_B);
+  CHECK(car.board.trial);
+  CHECK(car.board.running_version() == 0xB0000001);
+  // running B, A still the known-good one, B on its first try
+  CHECK(boot_status(car) == Bytes{1, 0, 1, 1});
+
+  // Confirm works from the default session, right after the reboot
+  CHECK_FALSE(car.updater.programming());
+  CHECK(car.uds(CONFIRM) == Bytes{0x71, 0x01, 0xFF, 0x02, 0x00});
+  CHECK(boot_status(car) == Bytes{1, 1, 0xFF, 0});
+
+  // ...and it sticks across resets
+  car.board.reboot();
+  car.board.reboot();
+  CHECK(car.board.running_slot() == boot::SLOT_B);
+  CHECK(car.board.firmware() == fw);
+}
+
+TEST_CASE("an update nobody confirms is rolled back on the next reset") {
+  // The new firmware boots but can't talk CAN, crashes, or the tester's
+  // laptop dies: the next power cycle goes back to what worked
+  Car car;
+  park(car);
+  Bytes old = car.board.firmware();
+  REQUIRE(car.flash(sim::make_image(random_firmware(30000, 5), 0xB0000001)) == nullptr);
+  REQUIRE(car.board.running_slot() == boot::SLOT_B);
+
+  car.board.reboot();
+  CHECK(car.board.running_slot() == boot::SLOT_A);
+  CHECK_FALSE(car.board.trial);
+  CHECK(car.board.running_version() == 0x11111111);
+  CHECK(car.board.firmware() == old);
+  CHECK(boot_status(car) == Bytes{0, 0, 0xFF, 0});
+}
+
+TEST_CASE("no new update while the running one is unconfirmed") {
+  // Its fallback is in the slot the download would overwrite
+  Car car;
+  park(car);
+  REQUIRE(car.flash(sim::make_image(random_firmware(30000, 5), 0xB0000001)) == nullptr);
+  car.run_for(10);
+  REQUIRE(positive(car.uds({0x10, 0x02}), 0x10));
+  CHECK(nrc_of(car.uds(request_download(8192))) == ota::nrc::CONDITIONS_NOT_CORRECT);
+
+  REQUIRE(car.uds(CONFIRM).size() == 5);
+  CHECK(positive(car.uds(request_download(8192)), 0x34));
+}
+
+TEST_CASE("updates alternate slots, and an image for the wrong one is refused") {
+  Car car;
+  park(car);
+  REQUIRE(car.flash(sim::make_image(random_firmware(30000, 5), 0xB0000001)) == nullptr);
+  REQUIRE(car.uds(CONFIRM).size() == 5);
+
+  // Now running B: the next update must be built for A
+  const uint32_t slot_a = boot::slot_firmware_address(boot::SLOT_A);
+  CHECK(download_address(car) == slot_a);
+
+  Bytes for_b = sim::make_image(random_firmware(30000, 6), 0xB0000002);
+  CHECK(car.flash(for_b) != nullptr);
+  CHECK(car.updater.server().last_image_error() == ota::ImageError::WRONG_LOAD_ADDRESS);
+  CHECK(car.board.running_slot() == boot::SLOT_B);
+
+  Bytes fw = random_firmware(30000, 7);
+  REQUIRE(car.flash(sim::make_image(fw, 0xA0000002, ota::IMAGE_TARGET, slot_a)) == nullptr);
+  CHECK(car.board.running_slot() == boot::SLOT_A);
+  CHECK(car.board.firmware() == fw);
+}
+
+TEST_CASE("confirming firmware that's already confirmed is harmless") {
+  Car car;
+  park(car);
+  CHECK(car.uds(CONFIRM) == Bytes{0x71, 0x01, 0xFF, 0x02, 0x00});
+  car.board.reboot();
+  CHECK(car.board.running_slot() == boot::SLOT_A);
+}
+
+TEST_CASE("the update never touches the running slot") {
+  Car car;
+  park(car);
+  const Bytes before(car.chip.bytes.begin() + boot::SLOT_OFFSET[boot::SLOT_A],
+                     car.chip.bytes.begin() + boot::SLOT_OFFSET[boot::SLOT_A] +
+                         boot::SLOT_SIZE);
+  REQUIRE(car.flash(sim::make_image(random_firmware(300 * 1024, 5), 2)) == nullptr);
+  const Bytes after(car.chip.bytes.begin() + boot::SLOT_OFFSET[boot::SLOT_A],
+                    car.chip.bytes.begin() + boot::SLOT_OFFSET[boot::SLOT_A] +
+                        boot::SLOT_SIZE);
+  CHECK(before == after);
 }

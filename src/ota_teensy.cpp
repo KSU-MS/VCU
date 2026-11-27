@@ -1,78 +1,59 @@
-// The Teensy 4.1 side of the firmware update: where the image is staged, and
-// how it's copied over the running firmware. Everything else (transport,
-// protocol, verification) is in lib/ota and tested in the simulator.
+// The Teensy 4.1 side of the firmware update: its flash chip through the
+// Teensy core's own erase/program routines, and rebooting.
 //
 // THIS FILE HAS NOT BEEN RUN ON HARDWARE YET. See docs/ota.md for what to
 // check on the bench.
 #if defined(__IMXRT1062__)
 #include "ota_teensy.hpp"
 #include "parameters.hpp"
+#include <Arduino.h>
 #include <string.h>
 
+// cores/teensy4/eeprom.c. Interrupts are off while each one runs and the
+// chip is busy, and back on after.
 extern "C" {
-#include <FlashTxx.h>
+void eepromemu_flash_write(void *addr, const void *data, uint32_t len);
+void eepromemu_flash_erase_sector(void *addr);
 }
 
-// 1 MB staging area, 4 MB into the 8 MB flash: far above the firmware
-// (~100 KB today) and well clear of the top of flash, where the Teensy keeps
-// EEPROM emulation and the restore program
-static constexpr uint32_t STAGING_ADDR = FLASH_BASE_ADDR + 0x400000;
-static constexpr uint32_t STAGING_SIZE = 0x100000;
-
-size_t TeensyStagingFlash::size() const { return STAGING_SIZE; }
-size_t TeensyStagingFlash::sector_size() const { return FLASH_SECTOR_SIZE; }
-
-bool TeensyStagingFlash::erase_sector(uint32_t offset) {
-  if (offset % FLASH_SECTOR_SIZE || offset >= STAGING_SIZE)
-    return false;
-  return flash_erase_block(STAGING_ADDR + offset, FLASH_SECTOR_SIZE) == 0;
+void TeensyFlash::read(uint32_t offset, uint8_t *out, size_t len) const {
+  // Flash is memory mapped. The core's flash routines invalidate the cache
+  // for what they touch, so this sees what was actually written.
+  memcpy(out, reinterpret_cast<const void *>(boot::FLASH_BASE + offset), len);
 }
 
-// The flash takes aligned 32 bit writes, from a buffer in RAM. Blocks don't
-// have to be a multiple of 4 long, so merge each word with what's already
-// there; re-programming bytes with their current value is a no-op on NOR.
-bool TeensyStagingFlash::program(uint32_t offset, const uint8_t *data,
-                                 size_t len) {
-  if (offset + len > STAGING_SIZE)
+bool TeensyFlash::erase_sector(uint32_t offset) {
+  // Never the bootloader, never the core's EEPROM emulation
+  if (offset % boot::SECTOR_SIZE || offset < boot::BOOTLOADER_SIZE ||
+      offset >= boot::EEPROM_OFFSET)
     return false;
+  eepromemu_flash_erase_sector(reinterpret_cast<void *>(boot::FLASH_BASE + offset));
+  return true;
+}
 
-  uint32_t addr = STAGING_ADDR + offset;
-  const uint32_t end = addr + len;
-  while (addr < end) {
-    const uint32_t word_addr = addr & ~3u;
-    uint32_t word;
-    memcpy(&word, (const void *)word_addr, 4);
-
-    uint8_t *w = reinterpret_cast<uint8_t *>(&word);
-    for (uint32_t a = addr; a < word_addr + 4 && a < end; a++)
-      w[a - word_addr] = *data++;
-
-    eepromemu_flash_write((void *)word_addr, &word, 4);
-    addr = word_addr + 4;
+bool TeensyFlash::program(uint32_t offset, const uint8_t *data, size_t len) {
+  if (offset < boot::BOOTLOADER_SIZE || offset >= boot::EEPROM_OFFSET ||
+      len > boot::EEPROM_OFFSET - offset)
+    return false;
+  // A page program wraps at the 256 byte page boundary, so never cross one
+  while (len) {
+    size_t n = 256 - (offset % 256);
+    if (n > len)
+      n = len;
+    eepromemu_flash_write(reinterpret_cast<void *>(boot::FLASH_BASE + offset),
+                          data, n);
+    offset += n;
+    data += n;
+    len -= n;
   }
   return true;
 }
 
-void TeensyStagingFlash::read(uint32_t offset, uint8_t *out, size_t len) const {
-  // Flash is memory mapped. The core's flash write/erase routines invalidate
-  // the cache for what they touch, so this sees what was actually written.
-  memcpy(out, (const void *)(STAGING_ADDR + offset), len);
-}
+TeensyBoard::TeensyBoard(TeensyFlash &flash, VCU &vcu)
+    : ota::AbBoard(flash, VCU_SLOT, AUTO_VERSION), vcu(vcu) {}
 
 bool TeensyBoard::safe_to_program() { return vcu.safe_to_program(); }
 
-void TeensyBoard::apply_and_reboot(uint32_t staging_offset, uint32_t size) {
-  // Point of no return. flash_move runs from RAM, erases and rewrites the
-  // firmware sector by sector, then reboots. Losing power in the next few
-  // seconds (up to ~25 s at the flash's datasheet max, see docs/ota.md)
-  // leaves a board that needs a USB reflash. The core's flash routines
-  // re-enable interrupts after each operation, so ISRs must not touch flash.
-  __disable_irq();
-  flash_move(FLASH_BASE_ADDR, STAGING_ADDR + staging_offset, size);
-}
-
-void TeensyBoard::reboot() { REBOOT; }
-
-uint32_t TeensyBoard::running_version() { return AUTO_VERSION; }
+void TeensyBoard::reboot() { SCB_AIRCR = 0x05FA0004; }
 
 #endif

@@ -1,8 +1,8 @@
 #pragma once
 // Simulated flash and board for the OTA code.
+#include <ab_board.hpp>
 #include <boot.hpp>
 #include <functional>
-#include <ota_platform.hpp>
 #include <vector>
 
 namespace sim {
@@ -41,28 +41,41 @@ public:
   bool interrupt_next_erase = false;
 };
 
-// The "board": whatever firmware it's running, and what happened to it
-class Board : public ota::Platform {
+// The board: the same A/B OTA code as the VCU, on simulated flash. A reboot
+// runs the bootloader's policy (boot::decide) and carries on as whatever
+// firmware it picked, in place: the VCU's own state isn't reset, the tests
+// only look at which firmware is running.
+class Board : public ota::AbBoard {
 public:
-  explicit Board(NorFlash &staging) : staging(staging) {}
+  explicit Board(NorFlash &chip) : ota::AbBoard(chip, boot::SLOT_A, 0), chip(chip) {}
 
   std::function<bool()> safe = [] { return true; };
 
   bool safe_to_program() override { return safe(); }
-  void apply_and_reboot(uint32_t staging_offset, uint32_t size) override;
-  void reboot() override { reboots++; }
-  uint32_t running_version() override { return version; }
-  uint32_t image_load_address() override { return load_address; }
+  void activate_and_reboot() override;
+  void reboot() override;
 
-  NorFlash &staging;
+  // Put a signed image of `firmware` built for `slot` there, like a USB
+  // flash or an earlier update would have
+  void install(uint8_t slot, const std::vector<uint8_t> &firmware,
+               uint32_t version);
 
-  // What's in program flash, and the version it reports
-  std::vector<uint8_t> firmware;
-  uint32_t version = 0x11111111;
-  uint32_t load_address = 0x60000000;
+  // What the bootloader does on reset
+  void power_on();
+
+  // Carry on as this firmware without running the bootloader (the SIL
+  // making a fresh Car for a firmware that has already booted)
+  void resume(uint8_t slot, uint32_t fw_version) { set_running(slot, fw_version); }
+
+  // The firmware in the slot that's running
+  std::vector<uint8_t> firmware() const;
+
+  NorFlash &chip;
+  bool trial = false;  // running an update that isn't confirmed yet
+  bool bricked = false; // the bootloader found nothing to boot
 
   size_t reboots = 0;
-  size_t applies = 0;
+  size_t activations = 0;
 };
 
 } // namespace sim

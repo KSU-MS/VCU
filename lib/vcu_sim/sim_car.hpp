@@ -39,10 +39,11 @@ struct Car : ResetFirst {
   Accumulator accumulator{&dbc, &acc_can};
   VCU vcu{&pedals, &inverter, &accumulator, &dbc, &acc_can, &inv_can, &daq_can};
 
-  // Firmware update, on the DAQ bus like on the car
-  NorFlash staging{1024 * 1024};
-  Board board{staging};
-  ota::Service updater{board, staging, &daq_can};
+  // Firmware update, on the DAQ bus like on the car. The whole 8 MB flash
+  // chip, which starts out as a fresh USB flash: slot A, version 11111111.
+  NorFlash chip{8 * 1024 * 1024};
+  Board board{chip};
+  ota::Service updater{board, board.staging(), &daq_can};
 
   // Raw ADC counts fed to the pedals every tick, defaulting to released
   // pedals that are inside their valid ranges
@@ -52,6 +53,8 @@ struct Car : ResetFirst {
   uint16_t steering_raw = 2048;
 
   Car() {
+    board.install(boot::SLOT_A, std::vector<uint8_t>(1000, 0x5A), 0x11111111);
+    board.power_on();
     board.safe = [this] { return vcu.safe_to_program(); };
     vcu.attach_updater(&updater);
     vcu.begin();
@@ -185,11 +188,13 @@ private:
 extern const uint8_t DEV_SIGNING_SEED[32];
 
 // An OTA image in the same format tools/ota/image.py makes, signed with
-// `seed` (the dev key unless a test wants a stranger's)
-std::vector<uint8_t> make_image(const std::vector<uint8_t> &firmware,
-                                uint32_t version,
-                                const char *target = ota::IMAGE_TARGET,
-                                uint32_t load_address = 0x60000000,
-                                const uint8_t *seed = DEV_SIGNING_SEED);
+// `seed` (the dev key unless a test wants a stranger's). Built for slot B
+// unless said otherwise: a fresh board runs A, so that's where its first
+// update goes.
+std::vector<uint8_t> make_image(
+    const std::vector<uint8_t> &firmware, uint32_t version,
+    const char *target = ota::IMAGE_TARGET,
+    uint32_t load_address = boot::slot_firmware_address(boot::SLOT_B),
+    const uint8_t *seed = DEV_SIGNING_SEED);
 
 } // namespace sim

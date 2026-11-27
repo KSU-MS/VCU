@@ -55,9 +55,9 @@ VCU vcu(&pedals, &inverter, &accumulator, &kms_can, &acc_can, &inv_can,
 // Firmware update over the DAQ bus, see docs/ota.md
 #include "ota_teensy.hpp"
 #include <ota.hpp>
-TeensyStagingFlash ota_staging;
-TeensyBoard ota_board(vcu);
-ota::Service updater(ota_board, ota_staging, &daq_can);
+TeensyFlash ota_flash;
+TeensyBoard ota_board(ota_flash, vcu);
+ota::Service updater(ota_board, ota_board.staging(), &daq_can);
 
 //
 //// Gizmos

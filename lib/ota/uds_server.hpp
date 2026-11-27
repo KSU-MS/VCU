@@ -3,12 +3,17 @@
 //
 //   10 02            DiagnosticSessionControl -> programming (only when safe)
 //   3E 00            TesterPresent, keeps the session alive
-//   22 F189 / F101   ReadDataByIdentifier: running version / OTA status
+//   22 F189          ReadDataByIdentifier: running version
+//   22 F101          ... OTA status (session, download state, last error)
+//   22 F102          ... boot status (running/active/trial slot, attempts)
+//   22 F103          ... the load address an update must be linked for
 //   34 00 44 a4 s4   RequestDownload of s bytes (address ignored)
 //   36 nn data       TransferData block nn (1, 2, ... 0xFF, 0, 1, ...)
 //   37               RequestTransferExit
-//   31 01 FF01       RoutineControl: check the staged image (signature etc)
-//   11 01            ECUReset: apply the staged image if verified, reboot
+//   31 01 FF01       RoutineControl: check the downloaded image (signature)
+//   11 01            ECUReset: boot the checked image once as a trial
+//   31 01 FF02       RoutineControl: confirm the running firmware (any
+//                    session); without it the next reset rolls back
 //
 // Anything else gets the matching negative response.
 #include <stddef.h>
@@ -47,7 +52,10 @@ constexpr uint8_t NOT_SUPPORTED_IN_SESSION = 0x7F;
 
 constexpr uint16_t DID_SOFTWARE_VERSION = 0xF189;
 constexpr uint16_t DID_OTA_STATUS = 0xF101;
+constexpr uint16_t DID_BOOT_STATUS = 0xF102;
+constexpr uint16_t DID_DOWNLOAD_ADDRESS = 0xF103;
 constexpr uint16_t ROUTINE_CHECK_IMAGE = 0xFF01;
+constexpr uint16_t ROUTINE_CONFIRM = 0xFF02;
 
 // TransferData payload per block (the block length we advertise is this
 // plus the SID and counter bytes). One flash sector = 4 blocks on Teensy.

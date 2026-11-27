@@ -56,9 +56,9 @@ def firmware(size=120 * 1024, seed=1) -> bytes:
     return random.Random(seed).randbytes(size)
 
 
-def build(fw: bytes, version: int, **kw) -> bytes:
-    # The SIL runs the logic of a whole-flash build, signed with the dev key
-    return ota_image.build(fw, version, load_address=0x60000000,
+def build(fw: bytes, version: int, slot: int = 1, **kw) -> bytes:
+    # Signed with the dev key, for slot B by default: a fresh SIL runs A
+    return ota_image.build(fw, version, load_address=ota_image.slot_firmware_address(slot),
                            key=ota_image.load_private_key(ota_image.DEV_KEY), **kw)
 
 
@@ -73,7 +73,7 @@ def test_flash_and_reboot_into_new_version(daq):
             ota_flash.flash(client, img, quiet=True)
             elapsed = time.monotonic() - started
             assert ota_flash.read_version(client) == 0xBBBB0002
-        sil.wait_for("applied update, rebooting into bbbb0002")
+        sil.wait_for("update activated, rebooting into bbbb0002 (slot B, trial)")
         print(f"\n  {len(img)} bytes in {elapsed:.1f} s ({len(img) / elapsed / 1024:.0f} KiB/s)")
     finally:
         sil.stop()
@@ -99,5 +99,41 @@ def test_rejects_image_for_another_board(daq):
                 ota_flash.flash(client, img, quiet=True)
             # And it's still running the old firmware
             assert ota_flash.read_version(client) == 0xAAAA0001
+    finally:
+        sil.stop()
+
+
+def test_unconfirmed_update_rolls_back_on_reset(daq):
+    sil = Sil("--version", "aaaa0001")
+    try:
+        sil.wait_for("TRACTIVE_SYSTEM_DISABLED")
+        with ota_flash.connect(daq) as client:
+            ota_flash.flash(client, build(firmware(), 0xBBBB0002), confirm_update=False, quiet=True)
+            assert ota_flash.read_version(client) == 0xBBBB0002
+            assert ota_flash.boot_status(client) == (1, 0, 1, 1)  # B on trial
+
+            # A reset before anyone confirms it: back to A
+            client.ecu_reset(1)
+            sil.wait_for("reset requested, rebooting into aaaa0001 (slot A)")
+            time.sleep(0.2)
+            assert ota_flash.read_version(client) == 0xAAAA0001
+            assert ota_flash.boot_status(client) == (0, 0, 0xFF, 0)
+    finally:
+        sil.stop()
+
+
+def test_updates_alternate_slots(daq):
+    sil = Sil("--version", "aaaa0001")
+    try:
+        sil.wait_for("TRACTIVE_SYSTEM_DISABLED")
+        images = [build(firmware(seed=2), 0xAAAA0002, slot=0),
+                  build(firmware(seed=3), 0xBBBB0002, slot=1)]
+        with ota_flash.connect(daq) as client:
+            ota_flash.flash(client, images, quiet=True)  # A -> B
+            assert ota_flash.boot_status(client) == (1, 1, 0xFF, 0)
+            time.sleep(0.2)
+            ota_flash.flash(client, images, quiet=True)  # B -> A
+            assert ota_flash.read_version(client) == 0xAAAA0002
+            assert ota_flash.boot_status(client) == (0, 0, 0xFF, 0)
     finally:
         sil.stop()
