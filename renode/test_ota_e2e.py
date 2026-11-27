@@ -18,7 +18,7 @@ chip would have ignored fails the test.
 
     tools/run_e2e.sh renode [--flash-timing=max]
 
-Takes a few minutes: the emulator runs ~6x slower than real time.
+About 5 minutes: CAN from the host is slow in Renode (renode/README.md).
 """
 import os
 import shutil
@@ -36,7 +36,7 @@ import image as ota_image
 from conftest import ROOT, needs_vcan
 
 BUILD_A = ROOT / ".pio/build/teensy41"
-# The emulated VCU runs several times slower than real time
+# Generous: the emulated VCU's speed relative to the host varies
 TIMEOUT_SCALE = 10
 
 pytestmark = [

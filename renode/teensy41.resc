@@ -27,6 +27,13 @@ machine PyDevFromFile $ORIGIN/imxrt_analog.py 0x400D8000 0x30 True "analog_pll"
 sysbus Unregister sysbus.adc1
 machine PyDevFromFile $ORIGIN/imxrt_adc.py 0x400C4000 0x4000 True "adc1_vcu"
 
+# Don't hold virtual time back to the host clock when the CPU isn't doing
+# anything useful: busy waits are fast-forwarded (CortexM7_DWT.cs, and the
+# flash's busy bit in TeensyFlexSPI.cs), and that skipped time would
+# otherwise be paced to real time. With both, the firmware runs several
+# times faster than real time instead of ~10x slower.
+emulation SetAdvanceImmediately true
+
 # Cortex-M7 DWT cycle counter, which delayMicroseconds()/micros() spin on
 include $ORIGIN/CortexM7_DWT.cs
 # 600 MHz / Renode's default 100 MIPS = 6 cycles per instruction

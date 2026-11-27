@@ -4,11 +4,13 @@
 // CYCCNT is derived from the CPU's executed instruction count, scaled so it
 // ticks at the Teensy's 600 MHz relative to emulated time:
 // cyclesPerInstruction = 600 / cpu.PerformanceInMips (100 by default).
-// That keeps delays correct in emulated time. C# rather than a Python
-// peripheral because delay loops read it constantly.
+// That keeps delays correct in emulated time, to within SkipMicroseconds
+// (see FastForwardBusyWait). C# rather than a Python peripheral because
+// delay loops read it constantly.
 using Antmicro.Renode.Core;
 using Antmicro.Renode.Peripherals.Bus;
 using Antmicro.Renode.Peripherals.CPU;
+using Antmicro.Renode.Time;
 
 namespace Antmicro.Renode.Peripherals.Miscellaneous
 {
@@ -30,6 +32,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                 case CtrlOffset:
                     return ctrl;
                 case CyccntOffset:
+                    FastForwardBusyWait();
                     return Cycles();
                 default:
                     return 0;
@@ -45,7 +48,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                     break;
                 case CyccntOffset:
                     // Writing CYCCNT sets the current count
-                    bias = value - RawCycles();
+                    bias = value - RawCycles() - skippedCycles;
                     break;
             }
         }
@@ -56,6 +59,27 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             bias = 0;
         }
 
+        // A delay loop polls CYCCNT every few instructions until it passes a
+        // target. Emulating that costs one slow peripheral access per
+        // iteration (nearly all of the VCU's time: the ADS1018 driver waits
+        // 4 x 500 us per loop). So when CYCCNT is read again within a few
+        // instructions, jump the CPU ahead SkipMicroseconds instead: the loop
+        // ends at most that late, and timers stay consistent because it's
+        // real virtual time. SkipTime doesn't count as executed
+        // instructions, so CYCCNT adds it itself.
+        private void FastForwardBusyWait()
+        {
+            var executed = cpu.ExecutedInstructions;
+            var polling = executed - lastRead < TightLoopInstructions;
+            lastRead = executed;
+            if(!polling)
+            {
+                return;
+            }
+            cpu.SkipTime(TimeInterval.FromMicroseconds(SkipMicroseconds));
+            skippedCycles += (uint)(SkipMicroseconds * CpuMhz);
+        }
+
         private uint RawCycles()
         {
             return (uint)(cpu.ExecutedInstructions * cyclesPerInstruction);
@@ -63,13 +87,18 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
 
         private uint Cycles()
         {
-            return RawCycles() + bias;
+            return RawCycles() + skippedCycles + bias;
         }
 
         private readonly TranslationCPU cpu;
         private readonly uint cyclesPerInstruction;
         private uint ctrl;
         private uint bias;
+        private ulong lastRead;
+        private uint skippedCycles;
+        private const ulong TightLoopInstructions = 32;
+        private const ulong SkipMicroseconds = 20;
+        private const ulong CpuMhz = 600;
 
         private const long CtrlOffset = 0x0;
         private const long CyccntOffset = 0x4;
