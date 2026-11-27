@@ -188,6 +188,30 @@ void Car::send(Bus &b, uint32_t id) {
   msg.id = id;
   msg.length = pack_message(&other_boards, id, &msg.buf.val);
   b.inject(msg);
+
+  switch (id) {
+  case CAN_ID_ACU_SHUTDOWN_STATUS:
+  case CAN_ID_PRECHARGE_STATUS:
+  case CAN_ID_MSGID_0X6B1:
+  case CAN_ID_M167_VOLTAGE_INFO:
+    if (std::find(repeating.begin(), repeating.end(), id) == repeating.end())
+      repeating.push_back(id);
+    break;
+  }
+}
+
+void Car::repeat_status() {
+  if (sim::now() - last_repeat_ms < 100)
+    return;
+  last_repeat_ms = sim::now();
+  for (uint32_t id : std::vector<uint32_t>(repeating)) {
+    if (id == CAN_ID_M167_VOLTAGE_INFO) {
+      if (inverter_talking)
+        send(inv(), id);
+    } else if (acu_talking) {
+      send(acc(), id);
+    }
+  }
 }
 
 void Car::acu_status(bool imd_ok, bool bms_ok) {

@@ -10,6 +10,14 @@
 #define PRECHARGE_OK_STATE 2
 #define MINIMUM_BRAKE_FOR_RTD 0.3
 #define RTD_BUZZER_DURATION_MS 2151
+// The ACU's shutdown and precharge status and the inverter's bus voltage
+// must each have arrived within this long, or the tractive system counts as
+// unsafe: a dead ACU or a broken CAN wire mustn't leave the car live on the
+// last thing it said. Check it's several of the boards' real send periods.
+#define SAFETY_DATA_TIMEOUT_MS 500
+// At or above this the tractive system counts as live (T.9.1.1's high
+// voltage, where the Ready to Move light flashes, EV.6.2.7)
+#define HIGH_VOLTAGE_PRESENT 60
 
 #define INVERTER_CHARGE_LIMIT 60
 #define INVERTER_DISCHARGE_LIMIT 600

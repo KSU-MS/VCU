@@ -21,6 +21,18 @@ enum state {
   READY_TO_DRIVE = 4,            // Try not to hit a curb plz
   LAUNCH_WAIT = 5,               // Make sure everything is chill for launch
   LAUNCH = 6,                    // Accelerate, but faster
+  // Something's wrong (IMD or BMS tripped, the ACU or inverter gone quiet)
+  // and there may still be high voltage: no torque, no ready to drive, and
+  // fault_code() says why. Until it clears or the voltage is gone.
+  TRACTIVE_SYSTEM_FAULT = 7,
+};
+
+// fault_code() bits: why the tractive system can't be trusted
+enum fault : uint8_t {
+  FAULT_ACU_SILENT = 1 << 0,      // ACU status or precharge not heard lately
+  FAULT_INVERTER_SILENT = 1 << 1, // inverter voltage not heard lately
+  FAULT_IMD = 1 << 2,
+  FAULT_BMS = 1 << 3,
 };
 
 // TODO: Make this neatly documented somewhere in the readme or something, and
@@ -36,9 +48,30 @@ enum parameter {
   TRACTION_MODE = 6,       // Look at traction_control.hpp for mode defs
 };
 
+// When a message that safety decisions rest on was last heard
+struct Freshness {
+  bool heard_ever = false;
+  uint32_t at_ms = 0;
+
+  void heard(uint32_t now) {
+    heard_ever = true;
+    at_ms = now;
+  }
+  bool fresh(uint32_t now, uint32_t timeout_ms) const {
+    return heard_ever && now - at_ms <= timeout_ms;
+  }
+};
+
 class VCU {
 private:
   state current_state = STARTUP;
+
+  // The ACU's and inverter's status, as of when it was last heard: ts_safe()
+  // only trusts it while it keeps arriving (SAFETY_DATA_TIMEOUT_MS)
+  uint32_t now_ms = 0;
+  Freshness acu_status_heard;
+  Freshness precharge_heard;
+  Freshness inverter_voltage_heard;
   uint8_t torque_mode = 0; // Legacy
 
   // TODO: Make the codes real and document some common failures
@@ -97,7 +130,21 @@ public:
   bool set_state(state target_state);
   bool try_ts_energized();
   bool try_ts_enabled();
+  // Everything's fine for the tractive system to be (or go) live. No side
+  // effects.
   bool ts_safe();
+  // The ACU and inverter are still talking: their last status is recent
+  // enough to go on
+  bool safety_data_fresh();
+  // FAULT_* bits for what's wrong now, 0 if nothing is
+  uint8_t fault_code();
+  // There may be high voltage outside the accumulator: the inverter says so,
+  // or isn't saying anything
+  bool hv_maybe_present();
+  // Leave a live state because ts_safe() failed: to TRACTIVE_SYSTEM_FAULT if
+  // that's a fault and there may still be high voltage, else back to
+  // TRACTIVE_SYSTEM_DISABLED
+  void drop_out();
 
   void update_acc_can();
   void update_inv_can();

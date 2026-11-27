@@ -204,7 +204,7 @@ TEST_CASE("a fault during the buzzer never reaches ready to drive") {
   car.run_for(3000);
 
   CHECK_FALSE(car.ever_reached(READY_TO_DRIVE));
-  CHECK(car.vcu.get_current_state() == TRACTIVE_SYSTEM_DISABLED);
+  CHECK(car.vcu.get_current_state() == TRACTIVE_SYSTEM_FAULT); // still live
   CHECK_FALSE(sim::pin(BUZZER));
 
   // Entering ENABLED turned the inverter on, so backing out has to turn it off
@@ -339,24 +339,30 @@ TEST_CASE("[T.4.2.5][T.4.3.3][EV.4.7.2] a pedal fault zeroes torque but stays re
 //
 //// Faults while live
 
-TEST_CASE("drops out of ready to drive when TS goes unsafe") {
+TEST_CASE("a fault while live goes to the fault state, not disabled") {
+  // The ACU tripping doesn't make the high voltage go away: the VCU mustn't
+  // claim the tractive system is disabled while it may still be live
   Car car;
   car.drive_to_rtd();
   car.set_throttle(0.5);
   car.run_for(20);
   REQUIRE(car.vcu.get_current_state() == READY_TO_DRIVE);
 
-  SUBCASE("IMD trips") { car.acu_status(false, true); }
-  SUBCASE("BMS trips") { car.acu_status(true, false); }
-  SUBCASE("precharge drops") { car.precharge_state(0); }
-  SUBCASE("bus voltage sags") {
-    car.inverter_bus_voltage(TRACTIVE_SYSTEM_MINIMUM_VOLTAGE - 50);
+  uint8_t expected = 0;
+  SUBCASE("IMD trips") {
+    car.acu_status(false, true);
+    expected = FAULT_IMD;
+  }
+  SUBCASE("BMS trips") {
+    car.acu_status(true, false);
+    expected = FAULT_BMS;
   }
 
   car.run_for(20);
-  CHECK(car.vcu.get_current_state() == TRACTIVE_SYSTEM_DISABLED);
+  CHECK(car.vcu.get_current_state() == TRACTIVE_SYSTEM_FAULT);
+  CHECK(car.vcu.fault_code() == expected);
   CHECK_FALSE(car.inverter.get_inverter_enable());
-  CHECK_FALSE(sim::pin(LOWSIDE1));
+  CHECK(sim::pin(LOWSIDE1)); // pumps stay on while it may be live
 
   // And whatever it sends the inverter from here on is a disabled ping
   car.run_for(200);
@@ -366,7 +372,22 @@ TEST_CASE("drops out of ready to drive when TS goes unsafe") {
   CHECK(cmd.torque_nm == 0);
 }
 
-TEST_CASE("drops out of energized when TS goes unsafe") {
+TEST_CASE("an ordinary shutdown goes back to disabled") {
+  // No fault: the driver switched the tractive system off
+  Car car;
+  car.drive_to_rtd();
+  SUBCASE("precharge undone") { car.precharge_state(0); }
+  SUBCASE("bus voltage falling") {
+    car.inverter_bus_voltage(TRACTIVE_SYSTEM_MINIMUM_VOLTAGE - 50);
+  }
+  car.run_for(20);
+  CHECK(car.vcu.get_current_state() == TRACTIVE_SYSTEM_DISABLED);
+  CHECK(car.vcu.fault_code() == 0);
+  CHECK_FALSE(car.inverter.get_inverter_enable());
+  CHECK_FALSE(sim::pin(LOWSIDE1));
+}
+
+TEST_CASE("a fault in energized goes to the fault state too") {
   Car car;
   car.run_for(10);
   car.make_ts_healthy();
@@ -375,22 +396,61 @@ TEST_CASE("drops out of energized when TS goes unsafe") {
 
   car.acu_status(false, true);
   car.run_for(20);
-  CHECK(car.vcu.get_current_state() == TRACTIVE_SYSTEM_DISABLED);
-  CHECK_FALSE(sim::pin(LOWSIDE1));
+  CHECK(car.vcu.get_current_state() == TRACTIVE_SYSTEM_FAULT);
 }
 
-TEST_CASE("recovers to energized once the fault clears") {
+TEST_CASE("no ready to drive from the fault state, whatever the driver does") {
   Car car;
   car.drive_to_rtd();
   car.acu_status(false, true);
   car.run_for(20);
-  REQUIRE(car.vcu.get_current_state() == TRACTIVE_SYSTEM_DISABLED);
+  REQUIRE(car.vcu.get_current_state() == TRACTIVE_SYSTEM_FAULT);
+  const size_t transitions = car.transitions.size();
+
+  car.set_brake(0.8);
+  car.dash_rtd_button(true);
+  car.set_throttle(0.5);
+  car.run_for(5000);
+  CHECK(car.vcu.get_current_state() == TRACTIVE_SYSTEM_FAULT);
+  CHECK(car.transitions.size() == transitions);
+  Car::InverterCommand cmd;
+  REQUIRE(car.last_inverter_command(&cmd));
+  CHECK(cmd.torque_nm == 0);
+  CHECK_FALSE(cmd.enable);
+}
+
+TEST_CASE("the fault clears: disabled, then energized, then it needs the driver") {
+  Car car;
+  car.drive_to_rtd();
+  car.acu_status(false, true);
+  car.run_for(20);
+  REQUIRE(car.vcu.get_current_state() == TRACTIVE_SYSTEM_FAULT);
 
   car.acu_status(true, true);
   car.run_for(20);
   CHECK(car.vcu.get_current_state() == TRACTIVE_SYSTEM_ENERGIZED);
+  CHECK(car.ever_reached(TRACTIVE_SYSTEM_DISABLED));
   // ...but has to go through RTD again before driving
   CHECK_FALSE(car.inverter.get_inverter_enable());
+}
+
+TEST_CASE("the voltage gone ends the fault state, even if the fault hasn't") {
+  // IMD still tripped, but the accumulator's disconnected and the inverter
+  // reads the bus discharged: not live any more
+  Car car;
+  car.drive_to_rtd();
+  car.acu_status(false, true);
+  car.run_for(20);
+  REQUIRE(car.vcu.get_current_state() == TRACTIVE_SYSTEM_FAULT);
+
+  car.inverter_bus_voltage(HIGH_VOLTAGE_PRESENT + 10);
+  car.run_for(200);
+  CHECK(car.vcu.get_current_state() == TRACTIVE_SYSTEM_FAULT);
+
+  car.inverter_bus_voltage(HIGH_VOLTAGE_PRESENT - 10);
+  car.run_for(200);
+  CHECK(car.vcu.get_current_state() == TRACTIVE_SYSTEM_DISABLED);
+  CHECK(car.vcu.fault_code() == FAULT_IMD); // and still says why
 }
 
 //
@@ -458,7 +518,7 @@ TEST_CASE("every frame that arrived since the last loop is handled") {
     car.pack_power(450, 0);
   car.acu_status(false, true); // IMD trips, queued behind the chatter
   car.run_for(1);
-  CHECK(car.vcu.get_current_state() == TRACTIVE_SYSTEM_DISABLED);
+  CHECK(car.vcu.get_current_state() == TRACTIVE_SYSTEM_FAULT);
 }
 
 TEST_CASE("a burst of frames between loops isn't lost") {
@@ -487,16 +547,95 @@ TEST_CASE("a flooded bus drops new frames, not the loop") {
 }
 
 //
+//// The other boards going quiet: a dead ACU or inverter, or a broken CAN
+//// wire, mustn't leave the car live on the last thing they said
+
+namespace {
+// Run until the VCU leaves `from`, return how long that took (or `limit`)
+uint32_t ms_to_leave(Car &car, state from, uint32_t limit) {
+  for (uint32_t t = 0; t < limit; t++) {
+    if (car.vcu.get_current_state() != from)
+      return t;
+    car.run_for(1);
+  }
+  return limit;
+}
+} // namespace
+
+TEST_CASE("the ACU going silent drops out of ready to drive") {
+  Car car;
+  car.drive_to_rtd();
+  car.set_throttle(0.5);
+  car.run_for(200);
+  REQUIRE(car.vcu.get_current_state() == READY_TO_DRIVE);
+
+  uint8_t expected = 0;
+  SUBCASE("ACU") {
+    car.acu_talking = false;
+    expected = FAULT_ACU_SILENT;
+  }
+  SUBCASE("inverter") {
+    // Can't tell whether there's still voltage: that counts as maybe live
+    car.inverter_talking = false;
+    expected = FAULT_INVERTER_SILENT;
+  }
+
+  // Its last status was up to 100 ms old already
+  CHECK(ms_to_leave(car, READY_TO_DRIVE, 2000) <= SAFETY_DATA_TIMEOUT_MS + 2);
+  CHECK(car.vcu.get_current_state() == TRACTIVE_SYSTEM_FAULT);
+  CHECK(car.vcu.fault_code() == expected);
+  CHECK_FALSE(car.vcu.safety_data_fresh());
+
+  car.run_for(50);
+  Car::InverterCommand cmd;
+  REQUIRE(car.last_inverter_command(&cmd));
+  CHECK_FALSE(cmd.enable);
+  CHECK(cmd.torque_nm == 0);
+}
+
+TEST_CASE("a gap shorter than the timeout is ridden through") {
+  Car car;
+  car.drive_to_rtd();
+  const size_t transitions = car.transitions.size();
+  car.acu_talking = false;
+  car.inverter_talking = false;
+  car.run_for(SAFETY_DATA_TIMEOUT_MS - 150); // plus up to 100 ms already
+  car.acu_talking = true;
+  car.inverter_talking = true;
+  car.run_for(500);
+  CHECK(car.vcu.get_current_state() == READY_TO_DRIVE);
+  CHECK(car.transitions.size() == transitions); // never left
+}
+
+TEST_CASE("back from silence: energized again, but ready to drive needs the driver") {
+  Car car;
+  car.drive_to_rtd();
+  car.acu_talking = false;
+  car.run_for(1000);
+  REQUIRE(car.vcu.get_current_state() == TRACTIVE_SYSTEM_FAULT);
+
+  car.acu_talking = true;
+  car.set_throttle(0.5);
+  car.run_for(1000);
+  CHECK(car.vcu.get_current_state() == TRACTIVE_SYSTEM_ENERGIZED);
+  Car::InverterCommand cmd;
+  REQUIRE(car.last_inverter_command(&cmd));
+  CHECK(cmd.torque_nm == 0);
+}
+
+TEST_CASE("never heard from the ACU: the tractive system can't energize") {
+  // Nothing at all on the ACU bus since boot, but the inverter reports
+  // voltage: the ACU's defaults mustn't count as its say-so
+  Car car;
+  car.run_for(10);
+  car.inverter_bus_voltage(450);
+  car.run_for(2000);
+  CHECK_FALSE(car.ever_reached(TRACTIVE_SYSTEM_ENERGIZED));
+}
+
+//
 //// Known issues: behaviour that looks wrong but needs a call from whoever
 //// owns this code. These WARN instead of failing.
 
-TEST_CASE("KNOWN ISSUE: should leave ready to drive if the ACU goes silent") {
-  // ts_safe() trusts the last IMD/BMS/precharge values forever. If the ACU
-  // board dies or its CAN line breaks, the car stays live.
-  Car car;
-  car.drive_to_rtd();
-  car.run_for(2000); // no ACU frames at all for 2 s
-  WARN(car.vcu.get_current_state() != READY_TO_DRIVE);
-}
 
 

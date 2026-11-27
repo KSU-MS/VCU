@@ -70,6 +70,13 @@ This should be stable code that you can push to the car at any point, if it does
   - CAN message from the 8CU saying its bad 
   - DC bus voltage < 360
 
+### ``TRACTIVE_SYSTEM_FAULT = 7`` <- Gate
+  - Something's wrong while there may still be high voltage: the IMD or BMS tripped, or the ACU or inverter stopped talking for `SAFETY_DATA_TIMEOUT_MS`. Not TRACTIVE_SYSTEM_DISABLED, which would say the car isn't live.
+  - Inverter disabled, no torque, no way to READY_TO_DRIVE. Pumps stay on. `fault_code()` says why (`FAULT_*` in vcu.hpp).
+  - An ordinary shutdown (precharge undone, voltage falling, no fault) still goes straight to TRACTIVE_SYSTEM_DISABLED.
+
+  `Next state -> TRACTIVE_SYSTEM_DISABLED` once the fault clears, or the inverter reads under 60 V (`HIGH_VOLTAGE_PRESENT`) so it's not live any more. READY_TO_DRIVE then needs the driver all over again.
+
 
 ## Some structure things
 ### src

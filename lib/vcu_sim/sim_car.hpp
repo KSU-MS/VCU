@@ -74,6 +74,7 @@ struct Car : ResetFirst {
 
   // One pass of loop(), same order as main.cpp
   void tick() {
+    repeat_status();
     pedals.update_travel(apps1_raw, apps2_raw, brake_raw, sim::now());
     pedals.update_steering(steering_raw);
     vcu.update_bspd(0, 0, 0);
@@ -174,9 +175,19 @@ struct Car : ResetFirst {
   // first step that failed, or nullptr if the image was applied.
   const char *flash(const std::vector<uint8_t> &image);
 
+  // Like the real boards, the ACU and inverter repeat their status every
+  // 100 ms once a test has set it. Clear these to see what the VCU does when
+  // one dies or its CAN wire breaks.
+  bool acu_talking = true;
+  bool inverter_talking = true;
+
 private:
   can_obj_car_h_t other_boards{}; // separate DBC state, like a real node
   void send(Bus &b, uint32_t id);
+
+  std::vector<uint32_t> repeating; // status messages sent at least once
+  uint32_t last_repeat_ms = 0;
+  void repeat_status();
 
   void tester_send(const std::vector<uint8_t> &request, size_t *cursor,
                    uint32_t timeout_ms);

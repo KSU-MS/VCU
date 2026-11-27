@@ -28,15 +28,57 @@ bool VCU::try_ts_enabled() {
   }
 }
 
+bool VCU::safety_data_fresh() {
+  return acu_status_heard.fresh(now_ms, SAFETY_DATA_TIMEOUT_MS) &&
+         precharge_heard.fresh(now_ms, SAFETY_DATA_TIMEOUT_MS) &&
+         inverter_voltage_heard.fresh(now_ms, SAFETY_DATA_TIMEOUT_MS);
+}
+
 bool VCU::ts_safe() {
-  if (accumulator->get_precharge_state() == PRECHARGE_OK_STATE &&
-      accumulator->get_bms_ok_hs() && accumulator->get_imd_ok_hs() &&
-      inverter->get_bus_voltage() > TRACTIVE_SYSTEM_MINIMUM_VOLTAGE) {
-    return true;
-  } else {
-    set_state(TRACTIVE_SYSTEM_DISABLED);
-    return false;
+  return fault_code() == 0 &&
+         accumulator->get_precharge_state() == PRECHARGE_OK_STATE &&
+         inverter->get_bus_voltage() > TRACTIVE_SYSTEM_MINIMUM_VOLTAGE;
+}
+
+uint8_t VCU::fault_code() {
+  uint8_t code = 0;
+  if (!acu_status_heard.fresh(now_ms, SAFETY_DATA_TIMEOUT_MS) ||
+      !precharge_heard.fresh(now_ms, SAFETY_DATA_TIMEOUT_MS))
+    code |= FAULT_ACU_SILENT;
+  if (!inverter_voltage_heard.fresh(now_ms, SAFETY_DATA_TIMEOUT_MS))
+    code |= FAULT_INVERTER_SILENT;
+  if (!accumulator->get_imd_ok_hs())
+    code |= FAULT_IMD;
+  if (!accumulator->get_bms_ok_hs())
+    code |= FAULT_BMS;
+  return code;
+}
+
+bool VCU::hv_maybe_present() {
+  return !inverter_voltage_heard.fresh(now_ms, SAFETY_DATA_TIMEOUT_MS) ||
+         inverter->get_bus_voltage() >= HIGH_VOLTAGE_PRESENT;
+}
+
+void VCU::drop_out() {
+  inverter->set_inverter_enable(false);
+  inverter->set_torque_limit(0);
+  buzzer_active = false;
+  hal::digital_write(BUZZER, false);
+
+  if (fault_code() && hv_maybe_present()) {
+    // Not TRACTIVE_SYSTEM_DISABLED: that would say the car isn't live. Keep
+    // the pumps going, there may be voltage and a hot inverter.
+    current_state = TRACTIVE_SYSTEM_FAULT;
+    hal::log("FAULT with high voltage possibly present, code ");
+    hal::log(long(fault_code()));
+    hal::logln("");
+    return;
   }
+
+  // The driver switched the tractive system off, or precharge was undone
+  current_state = TRACTIVE_SYSTEM_DISABLED;
+  hal::digital_write(LOWSIDE1, false);
+  hal::digital_write(LOWSIDE2, false);
 }
 
 bool VCU::set_state(state target_state) {
@@ -278,10 +320,12 @@ void VCU::update_acc_can() {
 
     switch (msg_in.id) {
     case CAN_ID_ACU_SHUTDOWN_STATUS:
+      acu_status_heard.heard(now_ms);
       accumulator->update_acu_status(msg_in.buf.val, msg_in.length);
       break;
 
     case CAN_ID_PRECHARGE_STATUS:
+      precharge_heard.heard(now_ms);
       accumulator->update_precharge_status(msg_in.buf.val, msg_in.length);
       break;
 
@@ -320,6 +364,7 @@ void VCU::update_inv_can() {
       break;
 
     case CAN_ID_M167_VOLTAGE_INFO:
+      inverter_voltage_heard.heard(now_ms);
       inverter->update_bus_voltage(msg_in.buf.val, msg_in.length);
       acc_can->send_controller_message(msg_in); // Forward this for precharge
       break;

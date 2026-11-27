@@ -21,6 +21,8 @@ void VCU::begin() {
 }
 
 void VCU::tick(uint32_t now) {
+  now_ms = now;
+
   //
   //// CAN Stage
   update_acc_can();
@@ -120,7 +122,7 @@ void VCU::tick(uint32_t now) {
       hal::log("Something isn't safe, leaving ENERGIZED, ERROR: ");
       hal::log(long(get_error_code()));
       hal::logln("");
-      set_state(TRACTIVE_SYSTEM_DISABLED);
+      drop_out();
     }
     break;
 
@@ -145,8 +147,7 @@ void VCU::tick(uint32_t now) {
       hal::log("Something isn't safe, leaving ENABLED, ERROR: ");
       hal::log(long(get_error_code()));
       hal::logln("");
-
-      hal::digital_write(BUZZER, get_buzzer_state());
+      drop_out();
       break;
     }
 
@@ -179,7 +180,21 @@ void VCU::tick(uint32_t now) {
       hal::log("Something isn't safe, leaving RTD, ERROR: ");
       hal::log(long(get_error_code()));
       hal::logln("");
-      set_state(TRACTIVE_SYSTEM_DISABLED);
+      drop_out();
+    }
+    break;
+
+  case TRACTIVE_SYSTEM_FAULT:
+    if (timer_10hz.check(now))
+      inverter->ping();
+
+    // Over once the fault has cleared, or the voltage is gone; ready to
+    // drive then needs the driver all over again
+    if (fault_code() == 0 || !hv_maybe_present()) {
+      hal::logln("Fault over, tractive system disabled");
+      current_state = TRACTIVE_SYSTEM_DISABLED;
+      hal::digital_write(LOWSIDE1, false);
+      hal::digital_write(LOWSIDE2, false);
     }
     break;
 
