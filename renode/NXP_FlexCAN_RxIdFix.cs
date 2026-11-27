@@ -2,7 +2,8 @@
 // 1.17.0 was built from), MIT licensed, Copyright (c) 2010-2026 Antmicro.
 // NXP_FlexCAN_RxIdFix.cs and NXP_FlexCAN_Structures.cs merged into one file (Renode
 // compiles each included file separately, so a partial class can't span
-// two) and renamed, with two fixes (search for "FIX"):
+// two) and renamed, with two fixes and one emulation change (search for
+// "FIX"):
 //
 //   1. MessageBufferStructure.FillReceivedFrame never copied the received
 //      frame's ID/IDE/RTR into the mailbox, so firmware polling mailboxes
@@ -10,6 +11,13 @@
 //      "accept all". The legacy RX FIFO path did it right.
 //   2. Receive mailbox selection preferred a Full mailbox over an Empty
 //      one, so back-to-back frames overwrote each other.
+//   3. (Emulation, not a bug) Renode's CAN hub delivers a burst of frames
+//      from the host in zero virtual time, so 64 back-to-back frames hit
+//      the mailboxes at once and overran them before any interrupt could
+//      run. A real bus spaces them one frame time apart (~110 us for 8 bytes
+//      at 1 Mbit/s). Received frames are now paced like that, the same way
+//      upstream already paces transmission, and still overrun a mailbox if
+//      the firmware doesn't keep up.
 //
 // Drop this file once those are fixed upstream.
 using Antmicro.Renode.Core;
@@ -62,6 +70,7 @@ namespace Antmicro.Renode.Peripherals.CAN
 
             legacyRxFifo = new Queue<KeyValuePair<ushort, CANMessageFrame>>();
             transmitFrames = new Queue<ulong>();
+            pendingFrames = new Queue<CANMessageFrame>();
 
             freeRunningTimer = new LimitTimer(machine.ClockSource, this.baudRate, this, nameof(freeRunningTimer), limit: UInt16.MaxValue, direction: Time.Direction.Ascending, enabled: true);
 
@@ -90,12 +99,55 @@ namespace Antmicro.Renode.Peripherals.CAN
                 }
             }
 
-            OnFrameReceivedInner(message);
+            Receive(message);
+        }
+
+        // FIX 3 (see top of file): one frame per frame time, in arrival order
+        private void Receive(CANMessageFrame frame)
+        {
+            lock(pendingFrames)
+            {
+                pendingFrames.Enqueue(frame);
+                if(!deliveryScheduled)
+                {
+                    ScheduleDelivery();
+                }
+            }
+        }
+
+        private void ScheduleDelivery()
+        {
+            deliveryScheduled = true;
+            var frame = pendingFrames.Peek();
+            // Bits on the wire without stuffing: SOF, ID, control, CRC, ACK,
+            // EOF, interframe space
+            var bits = (frame.ExtendedFormat ? 67 : 47) + 8 * frame.Data.Length;
+            machine.ScheduleAction(TimeInterval.FromSeconds(bits / (double)baudRate), _ =>
+            {
+                lock(pendingFrames)
+                {
+                    deliveryScheduled = false;
+                    if(pendingFrames.Count == 0)
+                    {
+                        return; // cleared by a reset meanwhile
+                    }
+                    OnFrameReceivedInner(pendingFrames.Dequeue());
+                    if(pendingFrames.Count > 0)
+                    {
+                        ScheduleDelivery();
+                    }
+                }
+            });
         }
 
         public override void Reset()
         {
             base.Reset();
+            lock(pendingFrames)
+            {
+                pendingFrames.Clear();
+                deliveryScheduled = false;
+            }
             freeRunningTimer.Reset();
 
             // Reset state is "Freeze" which implies disabled timer
@@ -1130,6 +1182,8 @@ namespace Antmicro.Renode.Peripherals.CAN
 
         private readonly ArrayMemory messageBuffers;
         private readonly Queue<KeyValuePair<ushort, CANMessageFrame>> legacyRxFifo;
+        private readonly Queue<CANMessageFrame> pendingFrames; // FIX 3
+        private bool deliveryScheduled;
         private readonly Queue<ulong> transmitFrames;
         private readonly LimitTimer freeRunningTimer;
 
