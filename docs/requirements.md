@@ -105,11 +105,22 @@ p.92. The power measured by the Energy Meter must not exceed 80 kW
 (a violation is 100 ms continuous, or over a 500 ms moving average,
 EV.3.4.1).
 
-VCU: torque is capped at `POWER_LIMIT_KW` × 0.90 / motor speed, so the
-motor's shaft power never exceeds 72 kW. **partial**: that's 80 kW
-electrical only if the drivetrain is at least 90% efficient. The Energy
-Meter measures pack V × I; the closed-loop limit on measured power in
-`Inverter::command_torque` is commented out.
+VCU: torque is capped at `POWER_LIMIT_KW` × 0.90 / motor speed (shaft
+power), trimmed in closed loop on the inverter's measured DC bus V × I
+(`Inverter::regulate_power`): each sample over 97% of the limit scales the
+cap to land on it, and below it creeps back up. So it holds whatever the
+drivetrain loses (tested at 70-99% efficiency), and uses the budget rather
+than stopping at 72 kW. With no fresh measurement it falls back to the
+open-loop cap. **met**, **assumption** (the inverter's DC current and
+voltage read within ~3% of the Energy Meter)
+
+### EV.3.4.1 — A violation is 100 ms over, or over on a 500 ms average
+p.92. Using more than the maximum power is a violation if it lasts 100 ms
+continuously, or after a 500 ms moving average.
+
+VCU: how the power tests judge a run: the model drivetrain's electrical
+power, every ms, must never be over 80 kW for 100 ms straight or on any
+500 ms average. **met**
 
 ### EV.3.3.3 — No regen between 0 and 5 km/h
 p.92. The powertrain must not regenerate energy at 0-5 km/h.
@@ -150,7 +161,7 @@ VCU: the buzzer only sounds on the way into Ready to Drive. **met**
 Rules around the VCU that hardware or other boards meet, listed so it's
 clear they were considered: T.4.2.1-2, T.4.2.7-8 and T.4.3.1-2 (pedal
 hardware, connectors for inspection), T.4.2.11 / T.4.3.5 (digital pedal
-signals: ours are analogue), EV.3.4 (Energy Meter), EV.6.2 (Ready to Move
+signals: ours are analogue), EV.3.4.2-3 (Energy Meter data and tampering), EV.6.2 (Ready to Move
 light: hard-wired, software control not permitted), EV.8 (shutdown circuit,
 BSPD: hardware; the VCU only reads the BSPD's state), EV.10.4.2 (TS active:
 the shutdown circuit and accumulator).

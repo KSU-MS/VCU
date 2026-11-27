@@ -166,6 +166,7 @@ void VCU::tick(uint32_t now) {
 
   case READY_TO_DRIVE:
     if (ts_safe()) {
+      inverter->regulate_power(now);
       if (timer_200hz.check(now)) {
         inverter->command_torque(pedals->get_torque_request(
             pedals->get_travel(), inverter->get_torque_limit()));

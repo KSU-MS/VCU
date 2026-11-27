@@ -4,6 +4,9 @@
 //// Some car values
 #define MAX_TORQUE_LIMIT_NM 240
 #define POWER_LIMIT_KW 80
+// regulate_power() aims for this much of it, measured: margin for the
+// Energy Meter's own error and the loop's overshoot (EV.3.3.1, EV.3.4.1)
+#define POWER_LIMIT_TARGET 0.97
 #define SPIN_DIR 0
 
 #define TRACTIVE_SYSTEM_MINIMUM_VOLTAGE 400

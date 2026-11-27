@@ -236,6 +236,11 @@ void Car::inverter_bus_voltage(double volts) {
   send(inv(), CAN_ID_M167_VOLTAGE_INFO);
 }
 
+void Car::inverter_bus_current(double amps) {
+  encode_can_0x0a6_INV_DC_Bus_Current(&other_boards, amps);
+  send(inv(), CAN_ID_M166_CURRENT_INFO);
+}
+
 void Car::inverter_motor_rpm(int16_t rpm) {
   encode_can_0x0a5_INV_Motor_Speed(&other_boards, rpm);
   send(inv(), CAN_ID_M165_MOTOR_POSITION_INFO);

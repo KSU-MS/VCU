@@ -2,6 +2,7 @@
 // the energy/distance integrators.
 #include <sim_test_main.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <limits>
@@ -83,10 +84,9 @@ TEST_CASE("[EV.3.3.1] power limit caps torque by motor speed, either direction")
         doctest::Approx(expected).epsilon(0.01));
 }
 
-TEST_CASE("[EV.3.3.1] shaft power at the limit leaves 10% for drivetrain losses") {
-  // The limit is open loop, on motor speed: the Energy Meter's 80 kW is
-  // electrical, so the shaft gets 80 kW x 0.90 and the inverter and motor
-  // must lose no more than 10% (docs/requirements.md: partial)
+TEST_CASE("[EV.3.3.1] without measured power, shaft power stops at 80 kW x 0.90") {
+  // The open-loop cap, which is all there is until the inverter reports its
+  // DC current (regulate_power): it needs the drivetrain to lose <= 10%
   Car car;
   enable(car);
   for (int16_t rpm : {500, 1000, 2000, 3500, 5000, 7500, 10000, -5000}) {
@@ -98,6 +98,105 @@ TEST_CASE("[EV.3.3.1] shaft power at the limit leaves 10% for drivetrain losses"
     CHECK(shaft_kw <= POWER_LIMIT_KW * 0.90 + 0.01);
   }
   CHECK(POWER_LIMIT_KW <= 80);
+}
+
+//
+//// Closed loop on measured power (EV.3.3.1, EV.3.4.1): a drivetrain model
+//// the VCU commands, reporting its DC current like the inverter does
+
+namespace {
+struct PowerTrace {
+  std::vector<double> watts; // electrical, every ms
+  double settled_kw;         // mean over the last second
+};
+
+// The car flat out on a long straight: the motor at `rpm`, torque following
+// the command with a 20 ms lag, electrical power = shaft / efficiency,
+// reported (DC bus V and I) every 10 ms
+PowerTrace flat_out(Car &car, double efficiency, int16_t rpm, uint32_t ms,
+                    bool report_current = true) {
+  const double volts = 450, omega = rpm * 2 * M_PI / 60;
+  double torque = 0;
+  PowerTrace trace{};
+  car.set_throttle(1.0);
+  for (uint32_t t = 0; t < ms; t++) {
+    car.run_for(1);
+    Car::InverterCommand cmd;
+    if (car.last_inverter_command(&cmd))
+      torque += (cmd.torque_nm - torque) / 20;
+    const double watts = torque * omega / efficiency;
+    trace.watts.push_back(watts);
+    if (t % 10 == 0) {
+      car.inverter_motor_rpm(rpm);
+      car.inverter_bus_voltage(volts);
+      if (report_current)
+        car.inverter_bus_current(watts / volts);
+    }
+  }
+  double sum = 0;
+  for (uint32_t t = ms - 1000; t < ms; t++)
+    sum += trace.watts[t];
+  trace.settled_kw = sum / 1000 / 1000;
+  return trace;
+}
+
+// EV.3.4.1: a violation is over the limit continuously for 100 ms, or over
+// it after a 500 ms moving average
+void no_violation(const std::vector<double> &watts) {
+  const double limit = POWER_LIMIT_KW * 1000.0;
+  uint32_t over_run = 0, longest = 0;
+  for (double w : watts) {
+    over_run = w > limit ? over_run + 1 : 0;
+    longest = std::max(longest, over_run);
+  }
+  CHECK(longest < 100);
+
+  double window = 0, worst_average = 0;
+  for (size_t i = 0; i < watts.size(); i++) {
+    window += watts[i];
+    if (i >= 500)
+      window -= watts[i - 500];
+    if (i >= 499)
+      worst_average = std::max(worst_average, window / 500);
+  }
+  CHECK(worst_average <= limit);
+}
+} // namespace
+
+TEST_CASE("[EV.3.3.1][EV.3.4.1] measured power stays under 80 kW, whatever the drivetrain loses") {
+  for (double efficiency : {0.70, 0.80, 0.85, 0.90, 0.95, 0.99}) {
+    CAPTURE(efficiency);
+    Car car;
+    car.drive_to_rtd();
+    PowerTrace p = flat_out(car, efficiency, 6000, 5000);
+    no_violation(p.watts);
+    // and uses the budget: within a few % of the target, not 72 kW
+    CHECK(p.settled_kw >= POWER_LIMIT_KW * POWER_LIMIT_TARGET * 0.97);
+    CHECK(p.settled_kw <= POWER_LIMIT_KW);
+  }
+}
+
+TEST_CASE("[EV.3.3.1][EV.3.4.1] coming onto the power limit from below") {
+  // Accelerating through the speed where 240 Nm reaches 80 kW: torque
+  // limited, then power limited, with the trim having crept up meanwhile
+  Car car;
+  car.drive_to_rtd();
+  std::vector<double> all;
+  for (int16_t rpm = 1000; rpm <= 8000; rpm += 500) {
+    PowerTrace p = flat_out(car, 0.85, rpm, 300);
+    all.insert(all.end(), p.watts.begin(), p.watts.end());
+  }
+  no_violation(all);
+}
+
+TEST_CASE("[EV.3.3.1] measured power going stale falls back to the open-loop cap") {
+  Car car;
+  car.drive_to_rtd();
+  flat_out(car, 0.99, 6000, 3000); // a lossless-looking drivetrain: trim > 1
+  REQUIRE(car.inverter.get_power_trim() > 1.0);
+  PowerTrace p = flat_out(car, 0.99, 6000, 2000, /*report_current=*/false);
+  CHECK(car.inverter.get_power_trim() <= 1.0);
+  CHECK(p.settled_kw * 0.99 <= POWER_LIMIT_KW * 0.90 + 0.1); // shaft power
 }
 
 TEST_CASE("[EV.3.3.3] never asks for regen, at any speed") {

@@ -28,6 +28,13 @@ private:
   double bus_current = 0;
   uint16_t power_limit_kw = 0;
 
+  // Closed loop on measured power (regulate_power): a trim on the power the
+  // open-loop torque cap allows
+  double power_trim = 1.0;
+  bool power_sample_new = false;
+  bool power_sample_ever = false;
+  uint32_t power_sample_ms = 0;
+
   bool (*timer_mc_kick)() = nullptr;
   bool (*timer_current_limit)() = nullptr;
   bool (*timer_motor_controller_send)() = nullptr;
@@ -73,5 +80,17 @@ public:
   void ping();
   void send_clear_faults();
   void command_torque(double torque_request);
+
+  // EV.3.3.1 limits the power the Energy Meter measures, V x I at the
+  // accumulator, not shaft power. command_torque caps torque at the power
+  // limit x 0.90 assumed drivetrain efficiency / motor speed; this trims that
+  // cap on the inverter's measured DC bus V x I: each new sample over
+  // POWER_LIMIT_TARGET of the limit scales it down so the next one lands on
+  // it, and below the target it creeps back up (to 1/0.90, the full limit
+  // at the shaft, if the drivetrain turns out lossless). Without fresh
+  // samples it never allows more than the open-loop cap. Call every loop.
+  void regulate_power(uint32_t now_ms);
+  inline double get_power_trim() { return power_trim; }
+  inline double get_measured_power_w() { return bus_voltage * bus_current; }
   void command_speed(int16_t speed_request);
 };

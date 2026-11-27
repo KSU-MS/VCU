@@ -134,6 +134,7 @@ struct Car : ResetFirst {
   void pack_power(double volts, double amps);
   void inverter_bus_voltage(double volts);
   void inverter_motor_rpm(int16_t rpm);
+  void inverter_bus_current(double amps);
   void dash_rtd_button(bool pressed);
   void set_parameter(uint8_t target, uint32_t value);
 
