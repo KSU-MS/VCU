@@ -45,6 +45,14 @@ public:
   static constexpr double APPS_IMPLAUSIBLE_TRAVEL = 0.10;
   static constexpr uint32_t APPS_IMPLAUSIBLE_MS = 100;
 
+  // EV.4.7.1: mechanical brakes actuated and the APPS over 25%: cut power.
+  // EV.4.7.2: until the APPS is under 5%, whatever the brake does.
+  static constexpr double APPS_BSE_TRIP_TRAVEL = 0.25;
+  static constexpr double PEDAL_RELEASED_TRAVEL = 0.05;
+  // Where the brakes start to bite. The brake input is a pressure sensor;
+  // calibrate this on the car.
+  static constexpr double BRAKE_ACTUATED_TRAVEL = 0.10;
+
 public:
   // Each sensor: a fault below `low_fault` or above `high_fault` (open or
   // shorted), travel 0..1 from `start` to `end`
@@ -95,8 +103,11 @@ public:
     apps2_travel = apps2_ok ? clamp01((raw_apps2 - apps2_start) * apps2_ratio) : 0;
     brake_travel = bse_fault ? 0 : clamp01((raw_brake - brake_start) * brake_ratio);
 
-    // Reset if the pedals are released, and both sensors work
-    if (apps1_ok && apps2_ok && apps1_travel < 0.1 && apps2_travel < 0.1) {
+    // Either sensor, so neither can hide the pedal being pressed
+    const double apps_max = std::fmax(apps1_travel, apps2_travel);
+
+    // Reset if the pedals are released (EV.4.7.2), and both sensors work
+    if (apps1_ok && apps2_ok && apps_max < PEDAL_RELEASED_TRAVEL) {
       apps_fault = false;
       apps_bse_fault = false;
     }
@@ -113,17 +124,14 @@ public:
     if (apps_disagree && now_ms - disagree_since > APPS_IMPLAUSIBLE_MS)
       apps_fault = true;
 
-    if (apps_fault || apps_disagree || bse_fault || apps_bse_fault) {
-      travel = 0;
-    } else {
-      travel = apps1_travel;
+    // EV.4.7.1: brake and throttle at once
+    if (brake_travel > BRAKE_ACTUATED_TRAVEL && apps_max > APPS_BSE_TRIP_TRAVEL)
+      apps_bse_fault = true;
 
-      // Check that the driver isn't using both pedals at once
-      if ((travel > 0.3) && (brake_travel > 0.3)) {
-        apps_bse_fault = true;
-        travel = 0;
-      }
-    }
+    if (apps_fault || apps_disagree || bse_fault || apps_bse_fault)
+      travel = 0;
+    else
+      travel = apps1_travel;
   }
   static double clamp01(double x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
 

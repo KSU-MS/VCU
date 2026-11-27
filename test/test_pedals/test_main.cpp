@@ -1,5 +1,17 @@
-// Pedals on their own: travel mapping, sensor range faults and the
-// APPS/BSE plausibility checks from the rules.
+// Pedals on their own: travel mapping, sensor faults and the plausibility
+// checks from the FSAE rules:
+//
+//   T.4.2.4   APPS more than 10 points of travel apart is an implausibility
+//   T.4.2.5   an implausibility lasting more than 100 ms must cut motor power
+//   T.4.2.10  an APPS open or shorted (signal out of range) is a failure,
+//             treated as an implausibility
+//   T.4.3.4   a BSE open or shorted is a failure
+//   EV.4.7.1  brakes actuated and APPS over 25% travel: cut motor power
+//   EV.4.7.2  ...until the APPS is under 5%, whatever the brake does
+//
+// Numbering from the 2024/2025 FSAE rules; CHECK IT AGAINST THE CURRENT
+// RULEBOOK, these move between years. The limits themselves are constants
+// in pedal_handeler.hpp, so a change is one line plus these tests.
 #include <sim_test_main.hpp>
 
 #include <parameters.hpp>
@@ -258,11 +270,84 @@ TEST_CASE("brake + throttle together kills throttle and latches until lift") {
   CHECK(p.get_travel() > 0.4);
 }
 
-TEST_CASE("light brake with throttle is allowed (trail braking)") {
+//
+//// Brake plausibility (EV.4.7): brakes actuated and APPS over 25% cuts power
+//// until the APPS is under 5%, whatever the brake does.
+
+TEST_CASE("a foot resting on the brake, short of where it bites, is fine") {
   Pedals p = make_pedals();
-  press(p, 0.5, 0.1);
+  press(p, 0.5, Pedals::BRAKE_ACTUATED_TRAVEL - 0.02);
   CHECK_FALSE(p.get_apps_bse_fault_ok_low());
   CHECK(p.get_travel() > 0.4);
+
+  press(p, 0.5, Pedals::BRAKE_ACTUATED_TRAVEL + 0.02);
+  CHECK(p.get_apps_bse_fault_ok_low());
+  CHECK(p.get_travel() == 0);
+}
+
+TEST_CASE("the 25% line (EV.4.7.1)") {
+  Pedals p = make_pedals();
+  press(p, 0.24, 0.5);
+  CHECK_FALSE(p.get_apps_bse_fault_ok_low());
+  CHECK(p.get_travel() > 0.2);
+
+  press(p, 0.26, 0.5);
+  CHECK(p.get_apps_bse_fault_ok_low());
+  CHECK(p.get_travel() == 0);
+}
+
+TEST_CASE("held until the APPS is under 5%, whatever the brake does (EV.4.7.2)") {
+  Pedals p = make_pedals();
+  press(p, 0.5, 0.5);
+  REQUIRE(p.get_apps_bse_fault_ok_low());
+
+  press(p, 0.5, 0); // brake off
+  CHECK(p.get_apps_bse_fault_ok_low());
+  press(p, 0.06, 0);
+  CHECK(p.get_apps_bse_fault_ok_low());
+  CHECK(p.get_travel() == 0);
+
+  press(p, 0.04, 0);
+  CHECK_FALSE(p.get_apps_bse_fault_ok_low());
+  press(p, 0.5, 0);
+  CHECK(p.get_travel() > 0.4);
+}
+
+TEST_CASE("either pedal first") {
+  Pedals p = make_pedals();
+  SUBCASE("on the throttle, then the brake") {
+    press(p, 0.5);
+    press(p, 0.5, 0.5);
+  }
+  SUBCASE("on the brake, then the throttle") {
+    press(p, 0, 0.5);
+    press(p, 0.5, 0.5);
+  }
+  CHECK(p.get_apps_bse_fault_ok_low());
+  CHECK(p.get_travel() == 0);
+}
+
+TEST_CASE("either APPS over 25% trips it") {
+  // Within the 10 points they're allowed to differ, the higher one counts
+  Pedals p = make_pedals();
+  SUBCASE("APPS1 higher") {
+    update(p, apps1_at(0.27), apps2_at(0.20), brake_at(0.5));
+  }
+  SUBCASE("APPS2 higher") {
+    update(p, apps1_at(0.20), apps2_at(0.27), brake_at(0.5));
+  }
+  CHECK(p.get_apps_bse_fault_ok_low());
+  CHECK(p.get_travel() == 0);
+}
+
+TEST_CASE("the same rule releases an APPS fault: under 5%") {
+  Pedals p = make_pedals();
+  hold(p, apps1_at(0.8), apps2_at(0.3), brake_at(0), 150);
+  REQUIRE(p.get_apps_fault_ok_low());
+  press(p, 0.06);
+  CHECK(p.get_apps_fault_ok_low());
+  press(p, 0.04);
+  CHECK_FALSE(p.get_apps_fault_ok_low());
 }
 
 //
@@ -415,26 +500,3 @@ TEST_CASE("a hard brake press isn't mistaken for a short") {
   CHECK_FALSE(p.get_bse_fault_ok_low());
   CHECK(p.get_brake_travel() == doctest::Approx(1.0));
 }
-
-//
-//// Thresholds that look looser than the FSAE rules. These are judgement calls
-//// for whoever owns the pedal code (maybe they were loosened on purpose for
-//// noisy sensors), so they WARN rather than fail. Check them against the
-//// current rulebook before changing anything.
-
-TEST_CASE("KNOWN ISSUE: brake + >25% throttle should fault "
-          "(EV.4.7.1, code uses 0.3)") {
-  Pedals p = make_pedals();
-  press(p, 0.27, 0.5);
-  WARN(p.get_apps_bse_fault_ok_low());
-}
-
-TEST_CASE("KNOWN ISSUE: brake/throttle fault should hold until APPS < 5% "
-          "(EV.4.7.2, code clears below 10%)") {
-  Pedals p = make_pedals();
-  press(p, 0.5, 0.5);
-  REQUIRE(p.get_apps_bse_fault_ok_low());
-  press(p, 0.07, 0);
-  WARN(p.get_apps_bse_fault_ok_low());
-}
-
