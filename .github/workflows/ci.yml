@@ -39,7 +39,9 @@ jobs:
 
       # Each test step writes JUnit XML into reports/, published at the end
       - name: Software-in-the-loop tests
-        run: nix develop -c pio test -e native --junit-output-path reports/native.xml
+        run: |
+          mkdir -p reports # pio doesn't make it
+          nix develop -c pio test -e native --junit-output-path reports/native.xml
 
       # The e2e tests in there skip without vcan; they run below
       - name: Host tool tests
