@@ -142,6 +142,9 @@ struct Car : ResetFirst {
   // takes them from any bus
   void vectornav(double north, double east, double accel_forward);
   void wheel_rpm(uint16_t fl, uint16_t fr, uint16_t rl, uint16_t rr);
+  // A frame from the Pi on the DAQ bus, as is (pi_frame::encode makes a
+  // good one)
+  void pi_frame(const uint8_t *data, uint8_t len = 8);
   void set_parameter(uint8_t target, uint32_t value);
 
   // Everything the rest of the car needs to see for the VCU to let TS go live

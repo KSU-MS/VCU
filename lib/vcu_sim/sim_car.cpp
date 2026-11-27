@@ -283,6 +283,15 @@ void Car::wheel_rpm(uint16_t fl, uint16_t fr, uint16_t rl, uint16_t rr) {
   send(daq(), CAN_ID_AN1_RR_WHEELSPEED);
 }
 
+void Car::pi_frame(const uint8_t *data, uint8_t len) {
+  can_message msg;
+  msg.id = CAN_ID_PI_TORQUE_COMMAND;
+  msg.length = len;
+  for (uint8_t i = 0; i < len && i < 8; i++)
+    msg.buf.byte[i] = data[i];
+  daq().inject(msg);
+}
+
 void Car::set_parameter(uint8_t target, uint32_t value) {
   encode_can_0x0c9_vcu_target_parameter(&other_boards, target);
   encode_can_0x0c9_vcu_parameter_value(&other_boards, value);

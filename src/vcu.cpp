@@ -366,6 +366,8 @@ void VCU::update_daq_can(uint32_t now) {
 
     if (updater && ota::Service::wants(msg_in))
       updater->on_frame(msg_in, now);
+    else if (msg_in.id == CAN_ID_PI_TORQUE_COMMAND)
+      pi.on_frame(msg_in.buf.byte, msg_in.length, now);
     else
       update_vehicle_sensors(msg_in);
   }
@@ -519,6 +521,32 @@ void VCU::send_power_tracking_message() {
   can_message out_msg;
   out_msg.id = CAN_ID_VCU_LIFETIME_DISTANCE_AND_ONTIME;
   out_msg.length = pack_message(dbc, out_msg.id, &out_msg.buf.val);
+
+  daq_can->send_controller_message(out_msg);
+}
+
+void VCU::send_pi_status_message() {
+  // Not in ksu-ms-dbc yet, see tools/can/vcu_local.dbc
+  auto deci = [](double nm) {
+    const double raw = nm * 10 + 0.5;
+    return uint16_t(raw <= 0 ? 0 : raw >= 65534 ? 65534 : raw);
+  };
+  const double ceiling = pi.ceiling();
+  const uint16_t driver = deci(driver_nm), sent = deci(torque_nm),
+                 cap = ceiling < 0 ? 0xFFFF : deci(ceiling);
+
+  can_message out_msg;
+  out_msg.id = CAN_ID_VCU_PI_STATUS;
+  out_msg.length = 8;
+  uint8_t *d = out_msg.buf.byte;
+  d[0] = uint8_t(pi.get_mode() | pi.get_reason() << 1);
+  d[1] = pi.rejected_frames();
+  d[2] = uint8_t(driver);
+  d[3] = uint8_t(driver >> 8);
+  d[4] = uint8_t(sent);
+  d[5] = uint8_t(sent >> 8);
+  d[6] = uint8_t(cap);
+  d[7] = uint8_t(cap >> 8);
 
   daq_can->send_controller_message(out_msg);
 }

@@ -7,6 +7,7 @@
 #include "inverter.hpp"
 #include "pedal_handeler.hpp"
 #include "periodic.hpp"
+#include "pi_supervisor.hpp"
 #include "traction_control.hpp"
 
 namespace ota {
@@ -84,13 +85,15 @@ private:
   bool bspd_current_high = false;
 
   bool tc_button_was_down = false;
-  double tc_torque_nm = 0; // what traction control lets through this pass
+  double driver_nm = 0; // the pedal map's request this pass
+  double torque_nm = 0; // after traction control and the Pi's ceiling
 
   Periodic timer_1s = Periodic(1000);    // Used for VCU status message
   Periodic timer_10hz = Periodic(100);   // Used for inverter ping
   Periodic timer_10hz_2 = Periodic(100); // Used for inverter current limit
   Periodic timer_20hz = Periodic(50);    // Used for pedal/DAQ messages
   Periodic timer_200hz = Periodic(5);    // Used for inverter command message
+  Periodic timer_100hz = Periodic(10);   // Used for the Pi's status frame
 
   state state_last_tick = STARTUP; // To spot transitions in tick()
   uint32_t state_entered_ms = 0;
@@ -102,6 +105,7 @@ public:
   Inverter *inverter;
   Accumulator *accumulator;
   TractionControl traction;
+  PiSupervisor pi;
 
   can_obj_car_h_t *dbc;
   canMan *acc_can;
@@ -170,6 +174,7 @@ public:
   void send_brake_pressure_message(uint16_t raw_brake);
   void send_firmware_status_message();
   void send_traction_control_message();
+  void send_pi_status_message();
 
   void send_power_tracking_message();
 };

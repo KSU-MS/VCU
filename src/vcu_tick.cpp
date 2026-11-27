@@ -43,12 +43,15 @@ void VCU::tick(uint32_t now) {
   // Traction control runs all the time, so its estimates (speed, accel
   // bias while parked) are ready when the driver is. Only ready to drive
   // has a torque request for it to work on
-  const double driver_nm =
-      current_state == READY_TO_DRIVE
-          ? pedals->get_torque_request(pedals->get_travel(),
-                                       inverter->get_torque_limit())
-          : 0.0;
-  tc_torque_nm = traction.step(now, driver_nm);
+  driver_nm = current_state == READY_TO_DRIVE
+                  ? pedals->get_torque_request(pedals->get_travel(),
+                                               inverter->get_torque_limit())
+                  : 0.0;
+  // Then the Pi's ceiling, if it's in control: it can only take more away
+  torque_nm = pi.step(now, traction.step(now, driver_nm), !(driver_nm > 0));
+
+  if (timer_100hz.check(now))
+    send_pi_status_message();
 
   if (timer_1s.check(now)) {
     send_firmware_status_message();
@@ -188,7 +191,7 @@ void VCU::tick(uint32_t now) {
     if (ts_safe()) {
       inverter->regulate_power(now);
       if (timer_200hz.check(now))
-        inverter->command_torque(tc_torque_nm);
+        inverter->command_torque(torque_nm);
 
       if (timer_10hz_2.check(now)) {
         inverter->set_current_limits(

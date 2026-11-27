@@ -42,6 +42,20 @@
 #define CAN_ID_VCU_TRACTION_CONTROL 0x0CC
 
 //
+//// The Pi's torque ceiling (docs/pi-supervisor.md, pi_supervisor.hpp)
+// Its command on the DAQ bus, a low ID so it wins arbitration, and the
+// VCU's status for it. Neither is in ksu-ms-dbc yet: tools/can/vcu_local.dbc
+#define CAN_ID_PI_TORQUE_COMMAND 0x010
+#define CAN_ID_VCU_PI_STATUS 0x0CD
+// The Pi sends at 100 Hz: this is three frames
+#define PI_COMMAND_TIMEOUT_MS 30
+// Clean frames for this long before the Pi gets control (back)
+#define PI_HEALTHY_MS 500
+// Leaving the Pi's control mid-throttle, the torque climbs back this fast
+// from its last ceiling: 0 to full in about a quarter of a second
+#define PI_FALLBACK_RAMP_NM_PER_S 1000
+
+//
 //// Hardcoded pedal values
 // Raw counts. MIN/MAX are fault thresholds: a reading outside them means the
 // sensor is open or shorted (T.4.2.10, T.4.3.4), so they sit between the
