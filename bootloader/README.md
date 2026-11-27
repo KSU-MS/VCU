@@ -7,8 +7,9 @@ The first 64 KB of flash. On every reset it:
    Ed25519 signature against the public key built in (`scripts/ota_key.py`),
 3. lets `boot::decide()` pick one: a pending update gets one trial boot,
    an unconfirmed one is rolled back, a broken slot falls back to the other,
-4. records that, and jumps to the chosen firmware's entry point (the second
-   word of its IVT, as the boot ROM would).
+4. records that, starts the watchdog (4 s to boot, then the firmware sets
+   1 s; `docs/ota.md`), and jumps to the chosen firmware's entry point (the
+   second word of its IVT, as the boot ROM would).
 
 All of that policy is in `lib/vcu_boot` and tested natively
 (`test/test_boot`). This directory is only the bare-metal glue:

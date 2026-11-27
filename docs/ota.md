@@ -75,11 +75,41 @@ otherwise, and the firmware and bootloader trust `keys/ota-dev.pub` unless
 repo: fine on the bench, never on the car. See `keys/README.md`. The build
 prints which key it trusts.
 
+## Watchdog
+
+The bootloader starts the i.MX RT's RTWDOG (WDOG3) on every boot, before it
+jumps to the firmware, clocked from the 32.768 kHz crystal:
+
+1. **Boot window, 4 s.** The firmware takes over a second to reach its
+   loop: the Teensy core waits 300 ms for USB, then the logger's
+   `Serial.begin()` waits up to 750 ms for a terminal (2 s if a laptop is
+   plugged in). The bootloader leaves the watchdog reconfigurable once
+   (`CS[UPDATE] = 1`).
+2. **Running, 1 s, locked.** At the end of `VCU::begin()`,
+   `hal::watchdog_start()` sets 1 s and `CS[UPDATE] = 0`: nothing can change
+   or stop it now until the next reset. `VCU::tick()` feeds it as its last
+   act, every pass of the loop.
+
+A hang (main loop stuck, interrupts or not) resets the board. An update on
+trial that hangs is rolled back by that reset, like any other. After a
+watchdog reset the firmware logs "Reset by the watchdog" and reports it in
+DID 0xF104 (1 = watchdog, 0 = anything else), `flash.reset_by_watchdog()`.
+
+It's for recovery, not torque safety: a hung VCU stops sending torque
+commands at once, and it's the inverter's own CAN timeout that zeros the
+torque (bench checklist). 1 s is the time the car is without its VCU before
+it reboots, and booting takes about another second.
+
+Firmware loaded without the bootloader (a plain `app.hex`) never has the
+watchdog: the boot ROM leaves it off and `watchdog_start()` only shortens
+one that's already running.
+
 ## Known limitations
 
-- A trial that hangs without resetting stays hung until the power cycles
-  (then it rolls back). The bootloader could start the watchdog for a trial
-  boot, with the firmware kicking it; not done yet.
+- A trial that hangs is reset by the watchdog (see below) and rolls back,
+  but one that keeps its loop running while broken in some other way (CAN
+  dead, wrong torque) stays until someone resets it: the confirm step in
+  `flash.py` is the only check that an update works.
 - Signed images stop someone on the DAQ bus from flashing their own
   firmware, but not from re-flashing an older image we signed (no
   anti-rollback counter), and only if the car's key isn't the dev key.
@@ -109,3 +139,8 @@ flash chip and the Teensy's own USB bootloader.
 6. A programming session is refused with TS live.
 7. Pull power mid-download and while the bootloader runs: always boots.
 8. Measure the bootloader's added boot time.
+9. Watchdog: boot with a laptop on USB and without, no terminal open:
+   never a watchdog reset (`22 F104` says 0). Then a firmware whose
+   `loop()` does `if (millis() > 10000) while (1);`: it resets every
+   ~11 s and `22 F104` reads 1 in the 10 s it answers. With the inverter enabled, check how
+   long it takes the inverter to drop torque when the VCU stops talking.
