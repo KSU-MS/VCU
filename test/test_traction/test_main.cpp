@@ -17,7 +17,7 @@ using sim::Launch;
 
 namespace {
 
-// The 0x0CC status frame (tools/can/vcu_local.dbc), decoded
+// The vcu_traction_control status frame, decoded with the DBC's code
 struct TcStatus {
   int selected, active, reasons;
   double slip, speed, scale, grip;
@@ -28,14 +28,25 @@ bool last_tc_status(TcStatus *out) {
       sim::bus(TEENSY_CAN3).last_sent(CAN_ID_VCU_TRACTION_CONTROL);
   if (!m)
     return false;
-  const uint8_t *d = m->buf.byte;
-  out->selected = d[0] & 3;
-  out->active = (d[0] >> 2) & 3;
-  out->reasons = d[1];
-  out->slip = int16_t(d[2] | d[3] << 8) * 0.001;
-  out->speed = uint16_t(d[4] | d[5] << 8) * 0.01;
-  out->scale = d[6] * 0.01;
-  out->grip = d[7] * 0.02;
+  can_obj_car_h_t rx{};
+  unpack_message(&rx, m->id, m->buf.val, m->length, 0);
+  uint8_t selected, active, no_vn, no_motor, gear, lift;
+  decode_can_0x0cc_vcu_tc_selected(&rx, &selected);
+  decode_can_0x0cc_vcu_tc_active(&rx, &active);
+  decode_can_0x0cc_vcu_tc_no_vectornav(&rx, &no_vn);
+  decode_can_0x0cc_vcu_tc_no_motor_speed(&rx, &no_motor);
+  decode_can_0x0cc_vcu_tc_gear_ratio_fault(&rx, &gear);
+  decode_can_0x0cc_vcu_tc_waiting_for_lift(&rx, &lift);
+  decode_can_0x0cc_vcu_tc_slip(&rx, &out->slip);
+  decode_can_0x0cc_vcu_tc_speed(&rx, &out->speed);
+  decode_can_0x0cc_vcu_tc_scale(&rx, &out->scale);
+  decode_can_0x0cc_vcu_tc_grip(&rx, &out->grip);
+  out->selected = selected;
+  out->active = active;
+  out->reasons = (no_vn ? TractionControl::TC_NO_VECTORNAV : 0) |
+                 (no_motor ? TractionControl::TC_NO_MOTOR_SPEED : 0) |
+                 (gear ? TractionControl::TC_GEAR_RATIO : 0) |
+                 (lift ? TractionControl::TC_WAITING_FOR_LIFT : 0);
   return true;
 }
 

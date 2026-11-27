@@ -526,51 +526,47 @@ void VCU::send_power_tracking_message() {
 }
 
 void VCU::send_pi_status_message() {
-  // Not in ksu-ms-dbc yet, see tools/can/vcu_local.dbc
-  auto deci = [](double nm) {
-    const double raw = nm * 10 + 0.5;
-    return uint16_t(raw <= 0 ? 0 : raw >= 65534 ? 65534 : raw);
-  };
+  // The DBC's encoders zero anything out of range, so keep it in range
+  auto nm = [](double v) { return v < 0 ? 0 : v > 6553.4 ? 6553.4 : v; };
   const double ceiling = pi.ceiling();
-  const uint16_t driver = deci(driver_nm), sent = deci(torque_nm),
-                 cap = ceiling < 0 ? 0xFFFF : deci(ceiling);
+  encode_can_0x0cd_vcu_pi_mode(dbc, pi.get_mode());
+  encode_can_0x0cd_vcu_pi_reason(dbc, pi.get_reason());
+  encode_can_0x0cd_vcu_pi_rejected_frames(dbc, pi.rejected_frames());
+  encode_can_0x0cd_vcu_pi_driver_torque(dbc, nm(driver_nm));
+  encode_can_0x0cd_vcu_pi_torque_sent(dbc, nm(torque_nm));
+  encode_can_0x0cd_vcu_pi_ceiling(dbc, ceiling < 0 ? 6553.5 : nm(ceiling));
 
   can_message out_msg;
   out_msg.id = CAN_ID_VCU_PI_STATUS;
-  out_msg.length = 8;
-  uint8_t *d = out_msg.buf.byte;
-  d[0] = uint8_t(pi.get_mode() | pi.get_reason() << 1);
-  d[1] = pi.rejected_frames();
-  d[2] = uint8_t(driver);
-  d[3] = uint8_t(driver >> 8);
-  d[4] = uint8_t(sent);
-  d[5] = uint8_t(sent >> 8);
-  d[6] = uint8_t(cap);
-  d[7] = uint8_t(cap >> 8);
+  out_msg.length = pack_message(dbc, out_msg.id, &out_msg.buf.val);
 
   daq_can->send_controller_message(out_msg);
 }
 
 void VCU::send_traction_control_message() {
-  // Not in ksu-ms-dbc yet, see tools/can/vcu_local.dbc
+  // The DBC's encoders zero anything out of range, so keep it in range
   auto clamp = [](double v, double lo, double hi) {
-    return v < lo ? lo : (v > hi ? hi : v);
+    return !(v == v) ? 0 : v < lo ? lo : (v > hi ? hi : v); // NaN: 0
   };
-  const int16_t slip = int16_t(clamp(traction.slip() * 1000, -32768, 32767));
-  const uint16_t speed = uint16_t(clamp(traction.speed() * 100, 0, 65535));
+  const uint8_t reasons = traction.reasons();
+  encode_can_0x0cc_vcu_tc_selected(dbc, traction.selected());
+  encode_can_0x0cc_vcu_tc_active(dbc, traction.active());
+  encode_can_0x0cc_vcu_tc_no_vectornav(
+      dbc, bool(reasons & TractionControl::TC_NO_VECTORNAV));
+  encode_can_0x0cc_vcu_tc_no_motor_speed(
+      dbc, bool(reasons & TractionControl::TC_NO_MOTOR_SPEED));
+  encode_can_0x0cc_vcu_tc_gear_ratio_fault(
+      dbc, bool(reasons & TractionControl::TC_GEAR_RATIO));
+  encode_can_0x0cc_vcu_tc_waiting_for_lift(
+      dbc, bool(reasons & TractionControl::TC_WAITING_FOR_LIFT));
+  encode_can_0x0cc_vcu_tc_slip(dbc, clamp(traction.slip(), -32.7, 32.7));
+  encode_can_0x0cc_vcu_tc_speed(dbc, clamp(traction.speed(), 0, 655.3));
+  encode_can_0x0cc_vcu_tc_scale(dbc, clamp(traction.scale(), 0, 2.55));
+  encode_can_0x0cc_vcu_tc_grip(dbc, clamp(traction.grip(), 0, 5.1));
 
   can_message out_msg;
   out_msg.id = CAN_ID_VCU_TRACTION_CONTROL;
-  out_msg.length = 8;
-  uint8_t *d = out_msg.buf.byte;
-  d[0] = uint8_t(traction.selected() | traction.active() << 2);
-  d[1] = traction.reasons();
-  d[2] = uint8_t(slip);
-  d[3] = uint8_t(uint16_t(slip) >> 8);
-  d[4] = uint8_t(speed);
-  d[5] = uint8_t(speed >> 8);
-  d[6] = uint8_t(clamp(traction.scale() * 100, 0, 255));
-  d[7] = uint8_t(clamp(traction.grip() * 50, 0, 255));
+  out_msg.length = pack_message(dbc, out_msg.id, &out_msg.buf.val);
 
   daq_can->send_controller_message(out_msg);
 }

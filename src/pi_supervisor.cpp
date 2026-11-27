@@ -1,5 +1,6 @@
 #include "pi_supervisor.hpp"
 #include "parameters.hpp"
+#include <car.h>
 
 namespace pi_frame {
 

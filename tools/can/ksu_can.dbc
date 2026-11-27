@@ -33,7 +33,7 @@ NS_ :
 
 BS_:
 
-BU_: module1 module2 module3 module4 module5 tcu acu vcu dash an1_fm evelogger an1_mm an1_fl an1_fr an1_rl an1_rr an1_rm BMS Third_Party_Device INV ElconCharger
+BU_: module1 module2 module3 module4 module5 tcu acu vcu dash an1_fm evelogger an1_mm an1_fl an1_fr an1_rl an1_rr an1_rm pi tester BMS Third_Party_Device INV ElconCharger
 
 
 BO_ 31 module1_temps: 8 module1
@@ -369,6 +369,38 @@ BO_ 957 dash_board_data: 8 dash
  SG_ board_on_time_seconds : 32|16@1+ (1,0) [0|65535] "seconds" Vector__XXX
  SG_ firmware_version : 0|32@1+ (1,0) [0|4294967295] "" Vector__XXX
 
+BO_ 204 vcu_traction_control: 8 vcu
+ SG_ vcu_tc_grip : 56|8@1+ (0.02,0) [0.0|5.1000000000000005] "" Vector__XXX
+ SG_ vcu_tc_scale : 48|8@1+ (0.01,0) [0.0|2.5500000000000003] "" Vector__XXX
+ SG_ vcu_tc_speed : 32|16@1+ (0.01,0) [0.0|655.35] "m/s" Vector__XXX
+ SG_ vcu_tc_slip : 16|16@1- (0.001,0) [-32.768|32.767] "" Vector__XXX
+ SG_ vcu_tc_waiting_for_lift : 11|1@1+ (1,0) [0|1] "bool" Vector__XXX
+ SG_ vcu_tc_gear_ratio_fault : 10|1@1+ (1,0) [0|1] "bool" Vector__XXX
+ SG_ vcu_tc_no_motor_speed : 9|1@1+ (1,0) [0|1] "bool" Vector__XXX
+ SG_ vcu_tc_no_vectornav : 8|1@1+ (1,0) [0|1] "bool" Vector__XXX
+ SG_ vcu_tc_active : 2|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ vcu_tc_selected : 0|2@1+ (1,0) [0|3] "" Vector__XXX
+
+BO_ 205 vcu_pi_status: 8 vcu
+ SG_ vcu_pi_ceiling : 48|16@1+ (0.1,0) [0.0|6553.5] "Newton-meters" Vector__XXX
+ SG_ vcu_pi_torque_sent : 32|16@1+ (0.1,0) [0.0|6553.5] "Newton-meters" Vector__XXX
+ SG_ vcu_pi_driver_torque : 16|16@1+ (0.1,0) [0.0|6553.5] "Newton-meters" Vector__XXX
+ SG_ vcu_pi_rejected_frames : 8|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ vcu_pi_reason : 1|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ vcu_pi_mode : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 16 pi_torque_command: 8 pi
+ SG_ pi_checksum : 56|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ pi_counter : 48|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ pi_engage : 16|1@1+ (1,0) [0|1] "bool" Vector__XXX
+ SG_ pi_torque_ceiling : 0|16@1+ (0.1,0) [0.0|6553.5] "Newton-meters" Vector__XXX
+
+BO_ 2016 vcu_uds_request: 8 tester
+ SG_ vcu_uds_request_data : 0|64@1+ (1,0) [0|18446744073709551615] "" Vector__XXX
+
+BO_ 2024 vcu_uds_response: 8 vcu
+ SG_ vcu_uds_response_data : 0|64@1+ (1,0) [0|18446744073709551615] "" Vector__XXX
+
 BO_ 1713 MSGID_0X6B1: 8 BMS
  SG_ Pack_Summed_Voltage : 55|16@0+ (0.01,0) [0|0] "Volts"  Third_Party_Device
  SG_ Pack_Open_Voltage : 39|16@0+ (0.1,0) [0|0] "Volts"  Third_Party_Device
@@ -652,12 +684,12 @@ CM_ SG_ 199 vcu_ain_10 "VCU pcb non specific analog channel";
 CM_ BO_ 200 "distance tracking data using motor as speed";
 CM_ BO_ 201 "The first byte is the target, the last 4 are the value to set";
 CM_ SG_ 201 vcu_parameter_value "The actual value that you want to set the parameter to";
-CM_ SG_ 201 vcu_target_parameter "look in the vcu.hpp file in the VCU repo for the enum of targets";
+CM_ SG_ 201 vcu_target_parameter "look in the vcu.hpp file in the VCU repo for the enum of targets (6: traction control mode)";
 CM_ BO_ 202 "A multiplexed signal that handles the pedal encoder settings";
 CM_ SG_ 202 vcu_pedals_settings_MUX "mux signal for VCU pedal threshold information message";
 CM_ BO_ 203 "The total ontime of the vcu and distance";
 CM_ BO_ 235 "status of buttons on the dash";
-CM_ SG_ 235 dash_button6status "status of button6 on dash (1 = pressed)";
+CM_ SG_ 235 dash_button6status "status of button6 on dash (1 = pressed). VCU: traction control on/off";
 CM_ SG_ 235 dash_button5status "status of button5 on dash (1 = pressed)";
 CM_ SG_ 235 dash_button4status "status of button4 on dash (1 = pressed)";
 CM_ SG_ 235 dash_button3status "status of button3 on dash (1 = pressed)";
@@ -806,6 +838,33 @@ CM_ SG_ 957 firmware_is_dirty "if the compiled firmware had uncommitted changes 
 CM_ SG_ 957 firmware_on_main "if the compiled firmware was from main branch (1) or not (0)";
 CM_ SG_ 957 board_on_time_seconds "time in seconds which the board has been powered on and running";
 CM_ SG_ 957 firmware_version "short hash of the firmware";
+CM_ BO_ 204 "Traction control status, 20 Hz (kms-vcu docs/traction-control.md)";
+CM_ SG_ 204 vcu_tc_grip "Grip map mode: learned friction coefficient";
+CM_ SG_ 204 vcu_tc_scale "Torque multiplier";
+CM_ SG_ 204 vcu_tc_speed "Ground speed estimate";
+CM_ SG_ 204 vcu_tc_slip "Rear slip ratio the controller measures";
+CM_ SG_ 204 vcu_tc_waiting_for_lift "A change waits for the driver to lift";
+CM_ SG_ 204 vcu_tc_gear_ratio_fault "Motor and rear wheel speeds disagree with the final drive";
+CM_ SG_ 204 vcu_tc_no_motor_speed "No fresh motor speed";
+CM_ SG_ 204 vcu_tc_no_vectornav "No fresh VectorNav speed";
+CM_ SG_ 204 vcu_tc_active "What's controlling now: off while it has stepped aside";
+CM_ SG_ 204 vcu_tc_selected "What the driver or pits chose";
+CM_ BO_ 205 "The VCU's view of the Pi's torque ceiling, 100 Hz (kms-vcu docs/pi-supervisor.md)";
+CM_ SG_ 205 vcu_pi_ceiling "The ceiling in force (0xFFFF raw: none)";
+CM_ SG_ 205 vcu_pi_torque_sent "What the VCU commands";
+CM_ SG_ 205 vcu_pi_driver_torque "The driver's pedal request";
+CM_ SG_ 205 vcu_pi_rejected_frames "Pi frames rejected since boot (stops at 255)";
+CM_ SG_ 205 vcu_pi_reason "Why control is local";
+CM_ SG_ 205 vcu_pi_mode "Who has control";
+CM_ BO_ 16 "The Pi's torque ceiling for the VCU, 100 Hz. Bytes 3-5 and unused bits must be 0 (kms-vcu docs/pi-supervisor.md)";
+CM_ SG_ 16 pi_checksum "CRC-8 SAE J1850 over the ID (2 bytes, little endian) and bytes 0-6";
+CM_ SG_ 16 pi_counter "Rolling counter, +1 each frame";
+CM_ SG_ 16 pi_engage "The Pi wants control";
+CM_ SG_ 16 pi_torque_ceiling "Most torque the VCU may command";
+CM_ BO_ 2016 "UDS over ISO-TP to the VCU: firmware update (kms-vcu docs/ota.md)";
+CM_ SG_ 2016 vcu_uds_request_data "ISO-TP frame";
+CM_ BO_ 2024 "UDS over ISO-TP from the VCU";
+CM_ SG_ 2024 vcu_uds_response_data "ISO-TP frame";
 CM_ BO_ 1713 "This ID Transmits at 8 ms.";
 CM_ BO_ 1714 "This ID Transmits at 8 ms.";
 CM_ BO_ 1715 "This ID Transmits at 104 ms.";
@@ -961,7 +1020,11 @@ BA_ "GenMsgCycleTime" BO_ 175 10;
 BA_ "GenMsgCycleTime" BO_ 176 3;
 BA_ "GenMsgCycleTime" BO_ 177 10;
 BA_ "GenMsgCycleTime" BO_ 2566869221 1000;
-VAL_ 195 vcu_statemachine_state 0 "STARTUP" 1 "TRACTIVE_SYSTEM_DISABLED" 2 "TRACTIVE_SYSTEM_ENERGIZED" 3 "TRACTIVE_SYSTEM_ENABLED" 4 "READY_TO_DRIVE" 5 "LAUNCH_WAIT" 6 "LAUNCH" ;
+VAL_ 195 vcu_statemachine_state 0 "STARTUP" 1 "TRACTIVE_SYSTEM_DISABLED" 2 "TRACTIVE_SYSTEM_ENERGIZED" 3 "TRACTIVE_SYSTEM_ENABLED" 4 "READY_TO_DRIVE" 7 "TRACTIVE_SYSTEM_FAULT" ;
+VAL_ 204 vcu_tc_active 0 "off" 1 "slip" 2 "grip map" ;
+VAL_ 204 vcu_tc_selected 0 "off" 1 "slip" 2 "grip map" ;
+VAL_ 205 vcu_pi_reason 0 "ok" 1 "silent" 2 "not requested" 3 "bad checksum" 4 "bad counter" 5 "bad value" 6 "settling" 7 "waiting for lift" ;
+VAL_ 205 vcu_pi_mode 0 "local" 1 "pi" ;
 VAL_ 192 VCU_INV_Inverter_Discharge 0 "Discharge Disable" 1 "Discharge Enable (if EEPROM parameter is set)" ;
 VAL_ 192 VCU_INV_Inverter_Enable 0 "Turn the inverter OFF" 1 "Turn the Inverter ON" ;
 VAL_ 192 VCU_INV_Direction_Command 0 "CW" 1 "CCW" ;

@@ -27,7 +27,8 @@ and losing power at any point leaves something bootable.
 ```
 
 1. Tester on the DAQ bus talks UDS over ISO-TP: request `0x7E0`, response
-   `0x7E8` (not yet reserved in ksu-ms-dbc, do that first).
+   `0x7E8` (reserved as `vcu_uds_request`/`vcu_uds_response` on
+   ksu-ms-dbc's `vcu-traction-pi` branch).
 2. `22 F103` says which address an update must be linked for (the other
    slot's). `pio run -e teensy41 -e teensy41_b` builds both, and `flash.py`
    sends the matching one.

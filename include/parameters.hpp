@@ -38,15 +38,12 @@
 // VectorNav speed and motor speed older than this: no slip to control, so
 // it steps aside. Several of their send periods
 #define TC_INPUT_TIMEOUT_MS 200
-// Status frame on the DAQ bus. Not in ksu-ms-dbc yet: tools/can/vcu_local.dbc
-#define CAN_ID_VCU_TRACTION_CONTROL 0x0CC
+// Its status frame is vcu_traction_control (0x0CC) on the DAQ bus
 
 //
 //// The Pi's torque ceiling (docs/pi-supervisor.md, pi_supervisor.hpp)
-// Its command on the DAQ bus, a low ID so it wins arbitration, and the
-// VCU's status for it. Neither is in ksu-ms-dbc yet: tools/can/vcu_local.dbc
-#define CAN_ID_PI_TORQUE_COMMAND 0x010
-#define CAN_ID_VCU_PI_STATUS 0x0CD
+// Its command is pi_torque_command (0x010, a low ID so it wins
+// arbitration) on the DAQ bus, the VCU's status for it vcu_pi_status (0x0CD)
 // The Pi sends at 100 Hz: this is three frames
 #define PI_COMMAND_TIMEOUT_MS 30
 // Clean frames for this long before the Pi gets control (back)

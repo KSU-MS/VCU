@@ -36,7 +36,7 @@ struct FakePi {
   }
 };
 
-// The 0x0CD status frame (tools/can/vcu_local.dbc), decoded
+// The vcu_pi_status frame, decoded with the DBC's code
 struct PiStatus {
   int mode, reason, rejected;
   double driver_nm, sent_nm, ceiling_nm; // ceiling < 0: none
@@ -45,14 +45,22 @@ struct PiStatus {
 PiStatus pi_status() {
   const can_message *m = sim::bus(TEENSY_CAN3).last_sent(CAN_ID_VCU_PI_STATUS);
   REQUIRE(m != nullptr);
-  const uint8_t *d = m->buf.byte;
-  const uint16_t cap = uint16_t(d[6] | d[7] << 8);
-  return {d[0] & 1,
-          d[0] >> 1,
-          d[1],
-          uint16_t(d[2] | d[3] << 8) * 0.1,
-          uint16_t(d[4] | d[5] << 8) * 0.1,
-          cap == 0xFFFF ? -1.0 : cap * 0.1};
+  can_obj_car_h_t rx{};
+  unpack_message(&rx, m->id, m->buf.val, m->length, 0);
+  uint8_t mode, reason, rejected;
+  PiStatus s{};
+  decode_can_0x0cd_vcu_pi_mode(&rx, &mode);
+  decode_can_0x0cd_vcu_pi_reason(&rx, &reason);
+  decode_can_0x0cd_vcu_pi_rejected_frames(&rx, &rejected);
+  decode_can_0x0cd_vcu_pi_driver_torque(&rx, &s.driver_nm);
+  decode_can_0x0cd_vcu_pi_torque_sent(&rx, &s.sent_nm);
+  decode_can_0x0cd_vcu_pi_ceiling(&rx, &s.ceiling_nm);
+  s.mode = mode;
+  s.reason = reason;
+  s.rejected = rejected;
+  if (s.ceiling_nm > 6553)
+    s.ceiling_nm = -1; // 0xFFFF: none
+  return s;
 }
 
 double commanded_torque(Car &car) {
@@ -76,6 +84,26 @@ TEST_CASE("the Pi's frame checksum is CRC-8 SAE J1850") {
   // go in as the ID, little endian
   const uint8_t rest[] = {'3', '4', '5', '6', '7', '8', '9'};
   CHECK(pi_frame::crc8('1' | '2' << 8, rest, sizeof rest) == 0x4B);
+}
+
+TEST_CASE("pi_frame::encode makes the frame the DBC describes") {
+  uint8_t d[8];
+  pi_frame::encode(d, 123.4, true, 9);
+  uint64_t raw = 0;
+  for (int i = 7; i >= 0; i--)
+    raw = raw << 8 | d[i];
+  can_obj_car_h_t rx{};
+  unpack_message(&rx, CAN_ID_PI_TORQUE_COMMAND, raw, 8, 0);
+  double ceiling;
+  uint8_t engage, counter, checksum;
+  decode_can_0x010_pi_torque_ceiling(&rx, &ceiling);
+  decode_can_0x010_pi_engage(&rx, &engage);
+  decode_can_0x010_pi_counter(&rx, &counter);
+  decode_can_0x010_pi_checksum(&rx, &checksum);
+  CHECK(ceiling == doctest::Approx(123.4));
+  CHECK(engage == 1);
+  CHECK(counter == 9);
+  CHECK(checksum == pi_frame::crc8(CAN_ID_PI_TORQUE_COMMAND, d, 7));
 }
 
 TEST_CASE("with no Pi the VCU drives exactly as before") {

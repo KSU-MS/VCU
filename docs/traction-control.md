@@ -58,8 +58,9 @@ power limit and the torque limit all still apply after it.
 ## Status frame
 
 `0x0CC` on the DAQ bus at 20 Hz: mode chosen and active, the reasons above,
-slip, ground speed, torque scale, learned grip. It's not in ksu-ms-dbc yet;
-`tools/can/vcu_local.dbc` has it until it's reserved there.
+slip, ground speed, torque scale, learned grip. `vcu_traction_control` in
+ksu-ms-dbc's `vcu-traction-pi` branch, which the firmware pins until it's
+merged.
 
 ## Before it goes on the car
 
@@ -80,4 +81,5 @@ slip, ground speed, torque scale, learned grip. It's not in ksu-ms-dbc yet;
   they're on. The VCU reads them from any of its three.
 - **Learned values aren't saved** across power cycles yet (radii, accel bias,
   grip: `vcu_learned_t`). kmslap's design says EEPROM.
-- **DBC:** reserve `0x0CC` and dash button 6's meaning in ksu-ms-dbc.
+- **DBC:** merge ksu-ms-dbc's `vcu-traction-pi` branch (0x0CC, dash button
+  6's meaning), then pin a numbered release again.

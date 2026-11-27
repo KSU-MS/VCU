@@ -2,8 +2,8 @@
 the ACU and inverter saying the tractive system is up, the dash's RTD
 button, and a record of every torque command the VCU sends.
 
-Frames are encoded with ksu-ms-dbc's DBC (tools/can/ksu_can.dbc, the release
-the firmware's can_lib comes from).
+Frames are encoded with ksu-ms-dbc's DBC (tools/can/ksu_can.dbc, from the
+same release as the firmware's can_lib, platformio.ini).
 """
 from __future__ import annotations
 
