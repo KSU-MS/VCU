@@ -1,0 +1,7 @@
+{
+  "name": "vcu_control",
+  "version": "0.1.0",
+  "description": "kmslap's launch/traction controller (vendored from python-data-analysis/controller). Hardware-free C ABI",
+  "platforms": "*",
+  "build": {"flags": "-Wdouble-promotion"}
+}
