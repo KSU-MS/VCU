@@ -5,8 +5,8 @@ An image is a 64 byte header followed by the raw Teensy flash contents, i.e.
 exactly what teensy_loader would write starting at 0x60000000. The header
 layout must match lib/ota/ota_image.hpp.
 
-    python tools/ota/image.py build .pio/build/teensy41/firmware.hex -o vcu.ota
-    python tools/ota/image.py info vcu.ota
+    uv run tools/ota/image.py build .pio/build/teensy41/firmware.hex -o vcu.ota
+    uv run tools/ota/image.py info vcu.ota
 """
 from __future__ import annotations
 

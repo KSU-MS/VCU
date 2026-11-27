@@ -1,4 +1,4 @@
-"""pytest tools/ota"""
+"""uv run pytest tools/ota"""
 import sys
 import zlib
 from pathlib import Path

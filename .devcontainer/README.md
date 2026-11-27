@@ -13,7 +13,7 @@ docker run --rm -it --cap-add NET_ADMIN -v "$PWD":/workspaces/vcu \
   -w /workspaces/vcu ghcr.io/ksu-ms/vcu-dev:latest
 pio test -e native          # SIL tests
 pio run -e teensy41         # firmware
-tools/sil/run_e2e.sh        # OTA end to end on vcan (Linux hosts only)
+tools/run_e2e.sh            # OTA end to end on vcan (Linux hosts only)
 ```
 
 **Build it yourself** (needs Nix):

@@ -10,3 +10,4 @@ compile_commands.json
 __pycache__/
 .pytest_cache/
 result
+.venv/

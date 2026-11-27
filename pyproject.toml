@@ -1,0 +1,26 @@
+# Host-side Python: the OTA tools, the SIL/Renode end-to-end tests and the
+# schematic scripts. Not a package, just pinned dependencies (uv.lock):
+#
+#   uv run pytest
+#   uv run tools/ota/flash.py vcu.ota
+[project]
+name = "kms-vcu-tools"
+version = "0"
+requires-python = ">=3.11"
+dependencies = [
+    "python-can>=4.3",   # CAN on SocketCAN/PCAN/etc. (OTA flasher, e2e tests)
+    "can-isotp>=2.0",    # ISO-TP over any python-can interface
+    "udsoncan>=1.23",    # UDS client for tools/ota/flash.py
+    "olefile>=0.47",     # tools/schematic reads Altium files
+]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tools", "renode"]
+# tools/schematic has helpers named test-ish; only test_*.py are tests
+python_files = ["test_*.py"]

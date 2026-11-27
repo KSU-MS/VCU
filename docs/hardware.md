@@ -6,9 +6,9 @@ of eyes against the real board before acting on it.
 
 ```sh
 cd tools/schematic
-python3 netlist.py ../../schematic/*.SchDoc > nets.json
-python3 pins.py nets.json U14          # every Teensy pin
-python3 trace.py nets.json A10_Buff    # follow a net out to the J1 harness
+uv run netlist.py ../../schematic/*.SchDoc > nets.json
+uv run pins.py nets.json U14          # every Teensy pin
+uv run trace.py nets.json A10_Buff    # follow a net out to the J1 harness
 ```
 
 ## Needs a decision
