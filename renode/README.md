@@ -13,14 +13,17 @@ pio run -e teensy41
 renode --console --disable-gui -e "include @renode/vcan.resc; start"
 
 # full OTA update A -> B over CAN, no root needed (vcan module loaded)
-renode/ota_e2e.sh
+tools/run_e2e.sh renode
+tools/run_e2e.sh renode --flash-timing=max   # flash datasheet max times
 ```
+
+CI runs it on every PR (the `renode-ota` job).
 
 ## Status
 
 Works end to end: an OTA update of the real ARM firmware over CAN.
-`ota_e2e.sh` boots build A, sends build B (another commit, so a different
-version) with `tools/ota/flash.py`, the VCU stages and CRC-checks it in
+`test_ota_e2e.py` boots build A, sends build B (the same source plus an
+empty commit, so a different version) with `tools/ota/flash.py`, the VCU stages and CRC-checks it in
 flash, FlasherX's `flash_move` copies it over A from RAM and resets, and
 the board comes back reporting B's version. About 3.5 minutes; the
 emulator runs ~6x slower than real time (`flash.py --timeout-scale`).
@@ -32,8 +35,19 @@ ADS1018 model and brake/BSPD from the ADC model, and talks CAN to the host.
 It found a real-hardware bug the SIL missed: a 1 KB ISO-TP burst overruns
 FlexCAN_T4's 4 standard-ID receive mailboxes (see commit 9081b11).
 
+The flash behaves like the Teensy 4.1's W25Q64JV: datasheet erase/program
+times (typical, or max with `--flash-timing=max`), the busy bit, write enable,
+page wrap, and blank flash reading 0xFF (the model chip-erases before the
+ELF is loaded; with Renode's default of zeros FlasherX erased ~1900 "dirty"
+sectors after every update). A command the real chip would ignore (sent
+while it's busy, or without write enable) is logged as an error and fails
+the test. The Teensy core and FlasherX get this right; the test keeps it
+that way.
+
 Not modelled: USB serial output, timing accuracy beyond "delays end", power
-loss during `flash_move`, the real W25Q64's erase/program times.
+loss during `flash_move`, reads of the flash while it's busy (the real chip
+returns garbage; the core's flash routines run from RAM with interrupts off
+so nothing should read it, but nothing checks that either).
 
 ## What's modelled and how
 
@@ -43,12 +57,12 @@ loss during `flash_move`, the real W25Q64's erase/program times.
 | `teensy41.resc` | loads everything; on every reset jumps to the IVT entry in flash | there's no boot ROM; reading flash (not the ELF) boots a freshly applied image |
 | `vcan.resc` | bridges FlexCAN1/2/3 to `vcan_acc/inv/daq` | same buses as the SIL, so the same tools work |
 | `NXP_FlexCAN_RxIdFix.cs` | Renode's FlexCAN with two receive fixes | see below |
-| `TeensyFlexSPI.cs` | FlexSPI IP commands (erase/program/status) against flash, NOR rules | the Teensy core's flash routines, OTA staging and `flash_move` |
+| `TeensyFlexSPI.cs` | FlexSPI IP commands against flash, as a W25Q64JV: NOR rules, datasheet busy times, write enable | the Teensy core's flash routines, OTA staging and `flash_move` |
 | `CortexM7_DWT.cs` | DWT cycle counter from executed instructions | Renode has no DWT; `delayMicroseconds()` spins on it forever |
 | `ADS1018.cs` | the pedal/steering ADC on LPSPI4 | nothing was attached to the SPI bus |
 | `imxrt_adc.py` | ADC1 for `analogRead()` | Renode's `IMXRT_ADC` crashes on channels > 7 (see below) |
 | `imxrt_analog.py` | CCM_ANALOG PLLs that remember writes and report lock | the stock flipflop stub can't satisfy `usb_pll_start` |
-| `ota_e2e.sh` | the A -> B update test | |
+| `test_ota_e2e.py` | the A -> B update test (pytest, via `tools/run_e2e.sh renode`) | |
 
 One shortcut: `configure_cache` is skipped. Renode's MPU resolves the
 Teensy's overlapping regions differently from the silicon and everything

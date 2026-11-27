@@ -41,6 +41,10 @@ sysbus Unregister sysbus.flex_spi2
 machine LoadPlatformDescriptionFromString "flexspi1: SPI.TeensyFlexSPI @ sysbus 0x402A8000 { ahbBase: 0x60000000 }"
 machine LoadPlatformDescriptionFromString "flexspi2: SPI.TeensyFlexSPI @ sysbus 0x402A4000 { ahbBase: 0x70000000; hasDevice: false }"
 
+# Blank flash reads 0xFF, not Renode's 0: FlasherX erases every sector after
+# the new image that isn't blank, ~1900 of them if they're all zeros
+sysbus.flexspi1 ChipErase
+
 sysbus LoadELF $elf
 
 # configure_cache programs the MPU with a 4 GB no-access background region

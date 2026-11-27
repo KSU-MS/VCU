@@ -15,9 +15,9 @@ cpu:
 // so plain memory can sit in its AHB window
 flex_spi: @ sysbus 0x402A8000
 
-// 8 MB W25Q64 QSPI flash, mapped where the FlexSPI exposes it. Plain memory:
-// enough to boot (the core copies everything to ITCM/DTCM at reset) but the
-// OTA flash writes go through FlexSPI IP commands and won't land here.
+// 8 MB W25Q64 QSPI flash, mapped where the FlexSPI exposes it. Plain memory
+// that TeensyFlexSPI.cs erases and programs (and chip-erases to 0xFF before
+// the ELF is loaded, see teensy41.resc).
 flash: Memory.MappedMemory @ sysbus 0x60000000
     size: 0x800000
 
