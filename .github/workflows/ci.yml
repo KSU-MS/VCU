@@ -1,9 +1,17 @@
 name: CI
 
+# PRs run on pull_request only; push covers the long-lived branches they
+# merge into. Pushing to a PR's branch therefore runs CI once, not twice.
 on:
   push:
+    branches: [main, new-vcu]
   pull_request:
   workflow_dispatch:
+
+# A new push to the same PR/branch cancels the run it supersedes
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test-and-build:
@@ -29,15 +37,16 @@ jobs:
       - name: Software-in-the-loop tests
         run: nix develop -c pio test -e native
 
+      # The e2e tests in there skip without vcan; they run below
       - name: Host tool tests
-        run: nix develop -c python3 -m pytest -q tools/ota
+        run: nix develop -c uv run pytest -q
 
       - name: Build firmware
         run: nix develop -c pio run -e teensy41
 
       # Ready to flash over CAN with tools/ota/flash.py
       - name: Package OTA image
-        run: nix develop -c python3 tools/ota/image.py build .pio/build/teensy41/firmware.hex -o vcu.ota
+        run: nix develop -c uv run tools/ota/image.py build .pio/build/teensy41/firmware.hex -o vcu.ota
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4
@@ -59,7 +68,41 @@ jobs:
           sudo tools/sil/setup_vcan.sh
 
       - name: End-to-end OTA over vcan
-        run: nix develop -c tools/sil/run_e2e.sh
+        run: nix develop -c tools/run_e2e.sh tools/sil
+
+  # The real ARM firmware on an emulated Teensy 4.1 (renode/), updated A -> B
+  # over CAN with the W25Q64's datasheet timing. Slower than the SIL e2e, so
+  # it runs alongside test-and-build rather than after it.
+  renode-ota:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+
+      - name: Allow unprivileged user namespaces
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.ini', 'flake.lock') }}
+          restore-keys: ${{ runner.os }}-pio-
+
+      # run_e2e.sh makes its own vcan buses in a network namespace; it only
+      # needs the module
+      - name: Load vcan
+        run: |
+          if ! sudo modprobe vcan 2>/dev/null; then
+            sudo apt-get update -q
+            sudo apt-get install -y -q linux-modules-extra-$(uname -r)
+            sudo modprobe vcan
+          fi
+
+      - name: OTA update in Renode
+        run: nix develop -c tools/run_e2e.sh renode
 
   # Publish the dev container (flake.nix packages.devcontainer) for people
   # without Nix. Only from main, so branches don't overwrite :latest.
