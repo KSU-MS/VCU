@@ -2,9 +2,9 @@
 
 Proof of concept, not yet run on a real Teensy. What has been checked:
 
-- **Host SIL** (`pio test -e native`, `tools/sil/run_e2e.sh`): the protocol,
+- **Host SIL** (`pio test -e native`, `tools/run_e2e.sh tools/sil`): the protocol,
   staging logic, interlocks and failure handling, against a NOR flash model.
-- **Renode** (`renode/ota_e2e.sh`): the real ARM firmware on an emulated
+- **Renode** (`tools/run_e2e.sh renode`): the real ARM firmware on an emulated
   Teensy 4.1 updated end to end over CAN: staging through the Teensy core's
   flash routines, CRC read-back, FlasherX's `flash_move` and the reset into
   the new image. See `renode/README.md`.
@@ -27,16 +27,26 @@ Proof of concept, not yet run on a real Teensy. What has been checked:
 
 ```sh
 nix develop
-python3 tools/ota/image.py build .pio/build/teensy41/firmware.hex -o vcu.ota
-python3 tools/ota/flash.py vcu.ota --interface socketcan --channel can0
-tools/sil/run_e2e.sh     # SIL VCU on vcan, flashed by the real tool, no root
-renode/ota_e2e.sh        # real ARM firmware in Renode, A -> B, no root
+uv run tools/ota/image.py build .pio/build/teensy41/firmware.hex -o vcu.ota
+uv run tools/ota/flash.py vcu.ota --interface socketcan --channel can0
+tools/run_e2e.sh tools/sil   # SIL VCU on vcan, flashed by the real tool, no root
+tools/run_e2e.sh renode      # real ARM firmware in Renode, A -> B, no root
 ```
 
 ## Known limitations
 
-- Not power-fail safe during the final copy (~1 s): losing power then needs
-  a USB reflash. An A/B bootloader would fix this.
+- Not power-fail safe during the final copy: losing power then needs a USB
+  reflash. An A/B bootloader would fix this. The copy erases and rewrites
+  the firmware and then erases the staged copy, 4 KB at a time: for a 110 KB
+  image about 4 s at the W25Q64's typical times, up to ~25 s at its
+  datasheet max (`apply_time()` in `tools/ota/flash.py`, which is also how
+  long the tool waits for the new version to answer).
+- Interrupts aren't off for the whole copy: the Teensy core's flash routines
+  re-enable them after every erase/program (`flash_wait()` in `eeprom.c`;
+  FlasherX's `leave_interrupts_disabled` only applies to Teensy 3.x). An ISR
+  that ran code or read constants from flash then would see a half-written
+  image. The VCU's ISRs (systick, USB) run from RAM, but it's worth knowing
+  before adding interrupt-driven CAN.
 - No authentication: anyone on the DAQ bus can flash a parked car. Signing
   images (e.g. ed25519) is the next step.
 - `flash_move` erases everything above the new image, including EEPROM

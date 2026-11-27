@@ -5,11 +5,11 @@ Talks UDS over ISO-TP to the VCU on the DAQ bus (request 0x7E0, response
 0x7E8). Works with anything python-can supports:
 
     # SIL VCU on a virtual bus (see tools/sil)
-    python tools/ota/flash.py vcu.ota --interface socketcan --channel vcan_daq
+    uv run tools/ota/flash.py vcu.ota --interface socketcan --channel vcan_daq
 
     # The car, through a CANable/PCAN/etc on the DAQ connector
-    python tools/ota/flash.py vcu.ota --interface socketcan --channel can0
-    python tools/ota/flash.py vcu.ota --interface pcan --channel PCAN_USBBUS1 --bitrate 1000000
+    uv run tools/ota/flash.py vcu.ota --interface socketcan --channel can0
+    uv run tools/ota/flash.py vcu.ota --interface pcan --channel PCAN_USBBUS1 --bitrate 1000000
 
 The image must come from tools/ota/image.py. The VCU refuses unless the car
 is parked (tractive system off).
@@ -95,8 +95,21 @@ def progress(done: int, total: int, started: float) -> None:
     print(f"\r  [{bar:<{width}}] {frac:6.1%} {rate:6.1f} KiB/s", end="", flush=True)
 
 
+def apply_time(image_size: int) -> float:
+    """Worst case seconds from ECUReset until the new firmware answers.
+
+    FlasherX's flash_move erases and rewrites the firmware 4 KB sector by
+    sector, 4 bytes per program, then erases the staged copy. At the W25Q64JV
+    datasheet max (tSE 400 ms; 4-byte program ~86 us) that's ~25 s for a
+    110 KB image, ~4 s typical. Plus a few seconds to boot.
+    """
+    sectors = -(-image_size // 4096)
+    return 2 * sectors * 0.400 + (image_size // 4) * 86e-6 + 5.0
+
+
 def flash(client: Client, image: bytes, *, reset: bool = True,
-          reboot_timeout: float = 10.0, quiet: bool = False) -> None:
+          reboot_timeout: float | None = None, quiet: bool = False) -> None:
+    """reboot_timeout defaults to apply_time() for the image"""
     say = (lambda *a, **k: None) if quiet else print
     header = ota_image.verify(image)
 
@@ -141,6 +154,8 @@ def flash(client: Client, image: bytes, *, reset: bool = True,
     client.ecu_reset(1)
     say("  applying and rebooting...")
 
+    if reboot_timeout is None:
+        reboot_timeout = apply_time(len(image))
     deadline = time.monotonic() + reboot_timeout
     while time.monotonic() < deadline:
         time.sleep(0.5)
@@ -178,7 +193,7 @@ def main(argv: list[str] | None = None) -> int:
                  bitrate=args.bitrate) as bus, connect(bus, args.timeout_scale) as client:
         try:
             flash(client, image, reset=not args.no_reset,
-                  reboot_timeout=10.0 * args.timeout_scale)
+                  reboot_timeout=apply_time(len(image)) * args.timeout_scale)
         except (FlashError, NegativeResponseException, TimeoutException) as e:
             print(f"\nflash failed: {e}", file=sys.stderr)
             return 1

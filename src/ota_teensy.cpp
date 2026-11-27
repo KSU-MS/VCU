@@ -62,9 +62,11 @@ void TeensyStagingFlash::read(uint32_t offset, uint8_t *out, size_t len) const {
 bool TeensyBoard::safe_to_program() { return vcu.safe_to_program(); }
 
 void TeensyBoard::apply_and_reboot(uint32_t staging_offset, uint32_t size) {
-  // Point of no return. flash_move runs from RAM with interrupts off, erases
-  // and rewrites the firmware sector by sector, then reboots. Losing power
-  // in the next second or so leaves a board that needs a USB reflash.
+  // Point of no return. flash_move runs from RAM, erases and rewrites the
+  // firmware sector by sector, then reboots. Losing power in the next few
+  // seconds (up to ~25 s at the flash's datasheet max, see docs/ota.md)
+  // leaves a board that needs a USB reflash. The core's flash routines
+  // re-enable interrupts after each operation, so ISRs must not touch flash.
   __disable_irq();
   flash_move(FLASH_BASE_ADDR, STAGING_ADDR + staging_offset, size);
 }
