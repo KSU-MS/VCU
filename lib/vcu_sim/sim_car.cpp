@@ -5,6 +5,10 @@
 
 namespace sim {
 
+// The Car is the rwd_emrax car so far (a Cascadia); the hub cars' come
+// with their VCU side (docs/vehicles.md)
+#if VEHICLE_HAS_CASCADIA
+
 //
 //// Tester
 
@@ -143,6 +147,8 @@ const char *Car::flash(const std::vector<uint8_t> &image) {
   return nullptr;
 }
 
+#endif // VEHICLE_HAS_CASCADIA
+
 const uint8_t DEV_SIGNING_SEED[32] = {
     0xe2, 0x8e, 0x3e, 0xf6, 0x00, 0x5f, 0xfa, 0xce, 0x36, 0xdb, 0xcb,
     0x4d, 0x5e, 0xc9, 0xdb, 0xf8, 0x36, 0x03, 0xa0, 0x25, 0x86, 0x06,
@@ -182,6 +188,8 @@ std::vector<uint8_t> make_image(const std::vector<uint8_t> &firmware,
                       sizeof(digest));
   return out;
 }
+
+#if VEHICLE_HAS_CASCADIA
 
 void Car::send(Bus &b, uint32_t id) {
   can_message msg;
@@ -353,5 +361,7 @@ int Car::last_discharge_limit() {
   decode_can_0x202_BMS_Max_Discharge_Current(&rx, &limit);
   return limit;
 }
+
+#endif // VEHICLE_HAS_CASCADIA
 
 } // namespace sim

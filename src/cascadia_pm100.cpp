@@ -1,6 +1,8 @@
 #include "cascadia_pm100.hpp"
 #include "parameters.hpp"
 
+#if VEHICLE_HAS_CASCADIA
+
 CascadiaPM100::CascadiaPM100(bool spin_direction, canMan *can, canMan *daq,
                              can_obj_car_h_t *dbc,
                              float over_power_decay_factor)
@@ -120,3 +122,5 @@ void CascadiaPM100::command_speed(int16_t speed_request) {
   can->send_controller_message(out_msg);
   daq->send_controller_message(out_msg);
 }
+
+#endif // VEHICLE_HAS_CASCADIA

@@ -6,8 +6,8 @@
 // The node IDs are vehicles.json's: AMK uses 1, 2, 5, 6, since node n's
 // Actual Values 2 sits at n + 2 and would collide.
 //
-// Only rwd_emrax builds today: the others need their inverters (DTI HV500,
-// AMK KW26) written first.
+// rwd_emrax builds; 4wd_dti builds natively (tests) while its VCU side is
+// written; the others need their inverters first.
 #include <stddef.h>
 #include <stdint.h>
 
@@ -92,12 +92,16 @@ constexpr Vehicle ALL[] = {
     make("4wd_amk", FOUR_WD_AMK_DRIVES),
 };
 
-// The one this build is for
+// The one this build is for, and which inverter code it needs
 #if defined(VEHICLE_RWD_EMRAX)
 static constexpr const Vehicle &THIS = ALL[0];
+#define VEHICLE_HAS_CASCADIA 1
+#elif defined(VEHICLE_4WD_DTI)
+static constexpr const Vehicle &THIS = ALL[3];
+#define VEHICLE_HAS_DTI 1
 #elif defined(VEHICLE_AWD_EMRAX_DTI) || defined(VEHICLE_AWD_EMRAX_AMK) ||      \
-    defined(VEHICLE_4WD_DTI) || defined(VEHICLE_4WD_AMK)
-#error "only rwd_emrax builds so far: its hub inverters aren't written yet (docs/vehicles.md)"
+    defined(VEHICLE_4WD_AMK)
+#error "only rwd_emrax and 4wd_dti build so far: this car's inverters aren't written yet (docs/vehicles.md)"
 #else
 #error "no vehicle chosen: platformio.ini sets -D VEHICLE_<NAME>"
 #endif

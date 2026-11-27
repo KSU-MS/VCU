@@ -6,6 +6,7 @@
 
 #include <accumulator.hpp>
 #include <cascadia_pm100.hpp>
+#include <vehicle.hpp>
 #include <ota.hpp>
 #include <parameters.hpp>
 #include <pedal_handeler.hpp>
@@ -16,6 +17,7 @@
 
 namespace sim {
 
+#if VEHICLE_HAS_CASCADIA
 // Constructed before the canMan members so the buses are clean by the time
 // canMan's constructor "initializes" them
 struct ResetFirst {
@@ -204,6 +206,8 @@ private:
   bool tester_wait_frame(size_t *cursor, can_message *out, uint32_t timeout_ms);
   void tester_inject(const uint8_t *bytes, size_t len);
 };
+
+#endif // VEHICLE_HAS_CASCADIA
 
 // The development signing key, keys/ota-dev.key. Its public half is what
 // the native builds trust (scripts/ota_key.py), like the bench firmware.

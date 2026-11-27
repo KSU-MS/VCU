@@ -5,6 +5,10 @@
 #include <car.h>
 
 #include "inverter.hpp"
+#include "vehicle.hpp"
+
+// Only cars with a Cascadia have its frames in their DBC
+#if VEHICLE_HAS_CASCADIA
 
 class CascadiaPM100 : public Inverter {
 public:
@@ -31,3 +35,5 @@ private:
   canMan *daq;
   can_obj_car_h_t *dbc;
 };
+
+#endif // VEHICLE_HAS_CASCADIA
