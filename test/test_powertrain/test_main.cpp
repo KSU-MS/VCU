@@ -3,6 +3,7 @@
 #include <sim_test_main.hpp>
 
 #include <algorithm>
+#include <string>
 #include <cmath>
 #include <cstring>
 #include <limits>
@@ -163,9 +164,10 @@ void no_violation(const std::vector<double> &watts) {
 }
 } // namespace
 
-TEST_CASE("[EV.3.3.1][EV.3.4.1] measured power stays under 80 kW, whatever the drivetrain loses (x6: 70-99% efficient)") {
+TEST_CASE("[EV.3.3.1][EV.3.4.1] measured power stays under 80 kW, whatever the drivetrain loses") {
+  // One SUBCASE each, named, so each shows up on its own in the report
   for (double efficiency : {0.70, 0.80, 0.85, 0.90, 0.95, 0.99}) {
-    CAPTURE(efficiency);
+   SUBCASE(("drivetrain " + std::to_string(int(efficiency * 100)) + "% efficient").c_str()) {
     Car car;
     car.drive_to_rtd();
     PowerTrace p = flat_out(car, efficiency, 6000, 5000);
@@ -173,6 +175,7 @@ TEST_CASE("[EV.3.3.1][EV.3.4.1] measured power stays under 80 kW, whatever the d
     // and uses the budget: within a few % of the target, not 72 kW
     CHECK(p.settled_kw >= POWER_LIMIT_KW * POWER_LIMIT_TARGET * 0.97);
     CHECK(p.settled_kw <= POWER_LIMIT_KW);
+   }
   }
 }
 

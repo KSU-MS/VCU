@@ -6,6 +6,7 @@
 #include <parameters.hpp>
 #include <pedal_handeler.hpp>
 #include <cstdlib>
+#include <string>
 #include <vector>
 
 namespace {
@@ -391,14 +392,18 @@ std::vector<Fault> apps_faults(uint16_t high_fault) {
 }
 } // namespace
 
-TEST_CASE("[T.4.2.9][T.4.2.10] every way an APPS can fail kills throttle, at any pedal position (x40: 2 sensors x 5 faults x 4 positions)") {
+// One SUBCASE per combination, each named, so each shows up on its own in
+// the test report (doctest's version of pytest's parametrize)
+std::string at_pedal(double pedal) {
+  return " at " + std::to_string(int(pedal * 100)) + "%";
+}
+
+TEST_CASE("[T.4.2.9][T.4.2.10] every way an APPS can fail kills throttle, at any pedal position") {
   for (int sensor : {1, 2}) {
     for (const Fault &f :
          apps_faults(sensor == 1 ? MAX_ACCELERATOR_PEDAL_1 : MAX_ACCELERATOR_PEDAL_2)) {
       for (double pedal : {0.0, 0.08, 0.5, 1.0}) {
-        CAPTURE(sensor);
-        CAPTURE(f.name);
-        CAPTURE(pedal);
+        SUBCASE(("APPS" + std::to_string(sensor) + " " + f.name + at_pedal(pedal)).c_str()) {
         Pedals p = make_pedals();
         press(p, pedal);
         uint16_t a1 = apps1_at(pedal), a2 = apps2_at(pedal);
@@ -409,6 +414,7 @@ TEST_CASE("[T.4.2.9][T.4.2.10] every way an APPS can fail kills throttle, at any
         CHECK(p.get_travel() == 0);
         // and the broken sensor doesn't keep reporting its last good value
         CHECK((sensor == 1 ? p.get_apps1_travel() : p.get_apps2_travel()) == 0);
+        }
       }
     }
   }
@@ -482,7 +488,7 @@ TEST_CASE("[T.4.2.9] an APPS stuck at one reading is caught when the pedal moves
   CHECK(p.get_travel() == 0);
 }
 
-TEST_CASE("[T.4.3.3][T.4.3.4] every way the brake sensor can fail is a fault, and reads no brake (x12: 6 faults x 2 positions)") {
+TEST_CASE("[T.4.3.3][T.4.3.4] every way the brake sensor can fail is a fault, and reads no brake") {
   const Fault faults[] = {
       {"unplugged (pulled down)", 0},
       {"shorted to ground", 0},
@@ -493,8 +499,7 @@ TEST_CASE("[T.4.3.3][T.4.3.4] every way the brake sensor can fail is a fault, an
   };
   for (const Fault &f : faults) {
     for (double brake : {0.0, 0.6}) {
-      CAPTURE(f.name);
-      CAPTURE(brake);
+      SUBCASE((std::string(f.name) + (brake > 0 ? " while braking" : " with the brake off")).c_str()) {
       Pedals p = make_pedals();
       press(p, 0.5, brake);
       update(p, apps1_at(0.5), apps2_at(0.5), f.raw);
@@ -503,6 +508,7 @@ TEST_CASE("[T.4.3.3][T.4.3.4] every way the brake sensor can fail is a fault, an
       // Not the last good reading: that's what lets the car into ready to
       // drive, and what the brake plausibility check looks at
       CHECK(p.get_brake_travel() == 0);
+      }
     }
   }
 }
