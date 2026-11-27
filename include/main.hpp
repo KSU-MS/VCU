@@ -11,7 +11,7 @@ can_obj_car_h_t kms_can;
 
 // Local
 #include "accumulator.hpp"
-#include "inverter.hpp"
+#include "cascadia_pm100.hpp"
 #include "parameters.hpp"
 #include "pedal_handeler.hpp"
 #include "vcu.hpp"
@@ -46,7 +46,7 @@ Pedals pedals(MIN_BRAKE_PEDAL, START_BRAKE_PEDAL, END_BRAKE_PEDAL,
               START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2,
               MAX_ACCELERATOR_PEDAL_2);
 
-Inverter inverter(SPIN_DIR, &inv_can, &daq_can, &kms_can, -0.69314718056);
+CascadiaPM100 inverter(SPIN_DIR, &inv_can, &daq_can, &kms_can, -0.69314718056);
 
 Accumulator accumulator(&kms_can, &acc_can);
 

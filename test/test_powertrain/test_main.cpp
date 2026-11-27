@@ -278,9 +278,9 @@ template <typename T, typename... Args> T *on_junk(void *buf, Args &&...args) {
 
 TEST_CASE("a fresh Inverter doesn't depend on zeroed memory") {
   Car car; // for the buses and dbc
-  alignas(Inverter) unsigned char buf[sizeof(Inverter)];
-  Inverter *inv =
-      on_junk<Inverter>(buf, false, &car.inv_can, &car.daq_can, &car.dbc, -0.69f);
+  alignas(CascadiaPM100) unsigned char buf[sizeof(CascadiaPM100)];
+  Inverter *inv = on_junk<CascadiaPM100>(buf, false, &car.inv_can,
+                                         &car.daq_can, &car.dbc, -0.69f);
 
   CHECK(inv->get_bus_voltage() == 0);
   CHECK(inv->get_bus_current() == 0);

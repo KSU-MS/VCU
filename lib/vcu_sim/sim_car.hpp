@@ -5,7 +5,7 @@
 #include <car.h>
 
 #include <accumulator.hpp>
-#include <inverter.hpp>
+#include <cascadia_pm100.hpp>
 #include <ota.hpp>
 #include <parameters.hpp>
 #include <pedal_handeler.hpp>
@@ -36,7 +36,7 @@ struct Car : ResetFirst {
                 START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2,
                 MAX_ACCELERATOR_PEDAL_2};
 
-  Inverter inverter{SPIN_DIR, &inv_can, &daq_can, &dbc, -0.69314718056};
+  CascadiaPM100 inverter{SPIN_DIR, &inv_can, &daq_can, &dbc, -0.69314718056};
   Accumulator accumulator{&dbc, &acc_can};
   VCU vcu{&pedals, &inverter, &accumulator, &dbc, &acc_can, &inv_can, &daq_can};
 

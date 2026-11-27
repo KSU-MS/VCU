@@ -317,33 +317,22 @@ void VCU::update_inv_can() {
     can_message msg_in = inv_can->get_controller_message();
     daq_can->send_controller_message(msg_in);
 
+    // The inverter's own frames first: it decodes them, we see what changed
+    const uint8_t got = inverter->on_frame(msg_in);
+    if (got & Inverter::MOTOR_SPEED)
+      traction.motor_rpm(inverter->get_motor_rpm(), now_ms);
+    if (got & Inverter::MOTOR_TORQUE)
+      traction.motor_torque(float(inverter->get_motor_torque()));
+    if (got & Inverter::DC_VOLTAGE) {
+      inverter_voltage_heard.heard(now_ms);
+      acc_can->send_controller_message(msg_in); // Forward this for precharge
+    }
+    if (got != Inverter::NOT_MINE)
+      continue;
+
     switch (msg_in.id) {
     case CAN_ID_DASH_BUTTONS:
       update_dash_buttons(msg_in.buf.val, msg_in.length);
-      break;
-
-    case CAN_ID_M165_MOTOR_POSITION_INFO:
-      inverter->update_motor_feedback(msg_in.buf.val, msg_in.length);
-      traction.motor_rpm(inverter->get_motor_rpm(), now_ms);
-      break;
-
-    case CAN_ID_M172_TORQUE_AND_TIMER_INFO: {
-      unpack_message(dbc, CAN_ID_M172_TORQUE_AND_TIMER_INFO, msg_in.buf.val,
-                     msg_in.length, 0);
-      double torque;
-      decode_can_0x0ac_INV_Torque_Feedback(dbc, &torque);
-      traction.motor_torque(float(torque));
-      break;
-    }
-
-    case CAN_ID_M166_CURRENT_INFO:
-      inverter->update_bus_current(msg_in.buf.val, msg_in.length);
-      break;
-
-    case CAN_ID_M167_VOLTAGE_INFO:
-      inverter_voltage_heard.heard(now_ms);
-      inverter->update_bus_voltage(msg_in.buf.val, msg_in.length);
-      acc_can->send_controller_message(msg_in); // Forward this for precharge
       break;
 
     case CAN_ID_VCU_SET_PARAMETER:
