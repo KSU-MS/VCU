@@ -26,7 +26,20 @@
 #define INVERTER_DISCHARGE_LIMIT 600
 
 #define WHEEL_CIRCUMFRANCE_M 1.435608
+// Motor revs per wheel rev. Traction control's slip depends on it, and its
+// gear ratio check (motor rpm against the rear wheel speed nodes) turns TC
+// off if the car doesn't match. kmslap's car model says 3.0: check which
 #define GEAR_RATIO 4.18
+
+//
+//// Traction control (docs/traction-control.md)
+// What it starts as: off until it's been checked on the car
+#define TC_DEFAULT_MODE 0
+// VectorNav speed and motor speed older than this: no slip to control, so
+// it steps aside. Several of their send periods
+#define TC_INPUT_TIMEOUT_MS 200
+// Status frame on the DAQ bus. Not in ksu-ms-dbc yet: tools/can/vcu_local.dbc
+#define CAN_ID_VCU_TRACTION_CONTROL 0x0CC
 
 //
 //// Hardcoded pedal values

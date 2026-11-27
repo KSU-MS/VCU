@@ -19,8 +19,8 @@ enum state {
   TRACTIVE_SYSTEM_ENERGIZED = 2, // TSV is up, but RTD button isn't pressed
   TRACTIVE_SYSTEM_ENABLED = 3,   // Enable everything required to go fast
   READY_TO_DRIVE = 4,            // Try not to hit a curb plz
-  LAUNCH_WAIT = 5,               // Make sure everything is chill for launch
-  LAUNCH = 6,                    // Accelerate, but faster
+  // 5 and 6 were LAUNCH_WAIT and LAUNCH, stubs that never ran. A launch is
+  // now traction control from a standstill (traction_control.hpp)
   // Something's wrong (IMD or BMS tripped, the ACU or inverter gone quiet)
   // and there may still be high voltage: no torque, no ready to drive, and
   // fault_code() says why. Until it clears or the voltage is gone.
@@ -44,8 +44,8 @@ enum parameter {
   SPEED_MODE = 2,          // Boolean
   SPEED_LIMIT = 3,         // In some speed unit?
   INV_DISCHARGE_LIMIT = 4, // Need to find unit for this
-  LAUNCH_MODE = 5,         // Look at traction_control.hpp for mode defs
-  TRACTION_MODE = 6,       // Look at traction_control.hpp for mode defs
+  LAUNCH_MODE = 5,         // Retired: launches are TRACTION_MODE's job
+  TRACTION_MODE = 6,       // TractionControl::mode: 0 off, 1 slip, 2 grip map
 };
 
 // When a message that safety decisions rest on was last heard
@@ -83,8 +83,8 @@ private:
   bool bspd_brake_high = false;
   bool bspd_current_high = false;
 
-  bool launch_state = false;
-  uint8_t launch_mode = 0;
+  bool tc_button_was_down = false;
+  double tc_torque_nm = 0; // what traction control lets through this pass
 
   Periodic timer_1s = Periodic(1000);    // Used for VCU status message
   Periodic timer_10hz = Periodic(100);   // Used for inverter ping
@@ -101,7 +101,7 @@ public:
   Pedals *pedals;
   Inverter *inverter;
   Accumulator *accumulator;
-  TractionController *tc = nullptr;
+  TractionControl traction;
 
   can_obj_car_h_t *dbc;
   canMan *acc_can;
@@ -122,7 +122,6 @@ public:
   inline state get_current_state() { return this->current_state; }
   inline uint16_t get_bool_code() { return this->bool_code; }
   inline uint16_t get_error_code() { return this->error_code; }
-  inline bool get_launch_state() { return this->launch_state; }
   inline bool get_buzzer_state() { return this->buzzer_active; }
   inline bool get_bspd_ok_hs() { return this->bspd_ok_hs; }
   inline bool get_rtd_fella() { return this->RTD_button_pressed; }
@@ -148,6 +147,9 @@ public:
 
   void update_acc_can();
   void update_inv_can();
+  // Frames traction control needs that could come on any bus (VectorNav,
+  // wheel speed nodes)
+  void update_vehicle_sensors(const can_message &msg);
   void update_daq_can(uint32_t now);
 
   // OTA is optional, the VCU runs the same without it
@@ -167,7 +169,7 @@ public:
   void send_pedal_travel_message();
   void send_brake_pressure_message(uint16_t raw_brake);
   void send_firmware_status_message();
-  void send_launch_control_status_message();
+  void send_traction_control_message();
 
   void send_power_tracking_message();
 };

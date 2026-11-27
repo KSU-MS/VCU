@@ -50,6 +50,7 @@ public:
   inline uint8_t get_torque_limit() { return uint8_t(torque_limit_nm); }
   inline bool get_inverter_enable() { return inverter_enable; }
   inline double get_bus_voltage() { return bus_voltage; }
+  inline int16_t get_motor_rpm() { return motor_rpm; }
   inline double get_bus_current() { return bus_current; }
   inline uint32_t get_motor_distance_M() { return distance_M; }
   uint16_t get_instant_current_limit(float voltage) {

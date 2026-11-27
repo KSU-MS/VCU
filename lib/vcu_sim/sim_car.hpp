@@ -136,6 +136,12 @@ struct Car : ResetFirst {
   void inverter_motor_rpm(int16_t rpm);
   void inverter_bus_current(double amps);
   void dash_rtd_button(bool pressed);
+  void dash_tc_button(bool pressed);
+  void inverter_torque_feedback(double nm);
+  // On the DAQ bus, where the logger and the wheel speed nodes are; the VCU
+  // takes them from any bus
+  void vectornav(double north, double east, double accel_forward);
+  void wheel_rpm(uint16_t fl, uint16_t fr, uint16_t rl, uint16_t rr);
   void set_parameter(uint8_t target, uint32_t value);
 
   // Everything the rest of the car needs to see for the VCU to let TS go live

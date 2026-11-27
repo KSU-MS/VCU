@@ -115,8 +115,6 @@ const char *state_name(state s) {
   case TRACTIVE_SYSTEM_ENERGIZED: return "TRACTIVE_SYSTEM_ENERGIZED";
   case TRACTIVE_SYSTEM_ENABLED: return "TRACTIVE_SYSTEM_ENABLED";
   case READY_TO_DRIVE: return "READY_TO_DRIVE";
-  case LAUNCH_WAIT: return "LAUNCH_WAIT";
-  case LAUNCH: return "LAUNCH";
   }
   return "?";
 }

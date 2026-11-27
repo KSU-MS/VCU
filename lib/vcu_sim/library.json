@@ -2,5 +2,6 @@
   "name": "vcu_sim",
   "version": "0.1.0",
   "description": "Host-side stand-ins for the Teensy: simulated clock, GPIO and the three FlexCAN buses",
-  "platforms": "native"
+  "platforms": "native",
+  "dependencies": [{"name": "vcu_control"}]
 }

@@ -251,6 +251,38 @@ void Car::dash_rtd_button(bool pressed) {
   send(inv(), CAN_ID_DASH_BUTTONS);
 }
 
+void Car::dash_tc_button(bool pressed) {
+  encode_can_0x0eb_dash_button6status(&other_boards, pressed);
+  send(inv(), CAN_ID_DASH_BUTTONS);
+}
+
+void Car::inverter_torque_feedback(double nm) {
+  encode_can_0x0ac_INV_Torque_Feedback(&other_boards, nm);
+  send(inv(), CAN_ID_M172_TORQUE_AND_TIMER_INFO);
+}
+
+void Car::vectornav(double north, double east, double accel_forward) {
+  encode_can_0x1f7_vn_v_n(&other_boards, north);
+  encode_can_0x1f7_vn_v_e(&other_boards, east);
+  encode_can_0x1f7_vn_v_d(&other_boards, 0);
+  send(daq(), CAN_ID_VECTORNAV_VELOCITY);
+  encode_can_0x1f8_vn_accel_x(&other_boards, accel_forward);
+  encode_can_0x1f8_vn_accel_y(&other_boards, 0);
+  encode_can_0x1f8_vn_accel_z(&other_boards, 0);
+  send(daq(), CAN_ID_VECTORNAV_ACCELERATION);
+}
+
+void Car::wheel_rpm(uint16_t fl, uint16_t fr, uint16_t rl, uint16_t rr) {
+  encode_can_0x38e_wheel_rpm(&other_boards, fl);
+  send(daq(), CAN_ID_AN1_FL_WHEELSPEED);
+  encode_can_0x38f_wheel_rpm(&other_boards, fr);
+  send(daq(), CAN_ID_AN1_FR_WHEELSPEED);
+  encode_can_0x390_wheel_rpm(&other_boards, rl);
+  send(daq(), CAN_ID_AN1_RL_WHEELSPEED);
+  encode_can_0x391_wheel_rpm(&other_boards, rr);
+  send(daq(), CAN_ID_AN1_RR_WHEELSPEED);
+}
+
 void Car::set_parameter(uint8_t target, uint32_t value) {
   encode_can_0x0c9_vcu_target_parameter(&other_boards, target);
   encode_can_0x0c9_vcu_parameter_value(&other_boards, value);

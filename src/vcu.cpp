@@ -188,43 +188,6 @@ bool VCU::set_state(state target_state) {
     return true;
     break;
 
-  case LAUNCH_WAIT:
-    if (target_state == READY_TO_DRIVE && ts_safe()) {
-
-      // TODO: Figure out what needs to get turned off
-      this->current_state = READY_TO_DRIVE;
-      return true;
-    } else if (target_state == LAUNCH && ts_safe()) {
-
-      // TODO: Get some pre-lim logic goin
-      this->current_state = LAUNCH;
-      return true;
-    } else {
-      inverter->set_inverter_enable(false);
-      inverter->set_torque_limit(0);
-
-      buzzer_active = false;
-
-      this->current_state = TRACTIVE_SYSTEM_DISABLED;
-      return false;
-    }
-    break;
-
-  case LAUNCH:
-    if (target_state == READY_TO_DRIVE && ts_safe() && !launch_state) {
-      this->current_state = READY_TO_DRIVE;
-      return true;
-    } else {
-      inverter->set_inverter_enable(false);
-      inverter->set_torque_limit(0);
-
-      buzzer_active = false;
-
-      this->current_state = TRACTIVE_SYSTEM_DISABLED;
-      return false;
-    }
-    break;
-
   default:
     inverter->set_inverter_enable(false);
     inverter->set_torque_limit(0);
@@ -262,6 +225,13 @@ void VCU::update_dash_buttons(uint64_t msg, uint8_t length) {
   decode_can_0x0eb_dash_button5status(dbc, &button_val);
 
   RTD_button_pressed = button_val;
+
+  // Traction control on/off, on the press
+  uint8_t tc_button;
+  decode_can_0x0eb_dash_button6status(dbc, &tc_button);
+  if (tc_button && !tc_button_was_down)
+    traction.toggle();
+  tc_button_was_down = tc_button;
 }
 
 void VCU::set_parameter(uint64_t msg, uint8_t length) {
@@ -293,12 +263,8 @@ void VCU::set_parameter(uint64_t msg, uint8_t length) {
     // inverter->set_current_limits(INVERTER_CHARGE_LIMIT, parameter_value);
     break;
 
-  case LAUNCH_MODE:
-    // Not real yet
-    break;
-
   case TRACTION_MODE:
-    // Not real yet
+    traction.select(uint8_t(parameter_value));
     break;
 
   default:
@@ -339,6 +305,7 @@ void VCU::update_acc_can() {
       break;
 
     default:
+      update_vehicle_sensors(msg_in);
       break;
     }
   }
@@ -357,7 +324,17 @@ void VCU::update_inv_can() {
 
     case CAN_ID_M165_MOTOR_POSITION_INFO:
       inverter->update_motor_feedback(msg_in.buf.val, msg_in.length);
+      traction.motor_rpm(inverter->get_motor_rpm(), now_ms);
       break;
+
+    case CAN_ID_M172_TORQUE_AND_TIMER_INFO: {
+      unpack_message(dbc, CAN_ID_M172_TORQUE_AND_TIMER_INFO, msg_in.buf.val,
+                     msg_in.length, 0);
+      double torque;
+      decode_can_0x0ac_INV_Torque_Feedback(dbc, &torque);
+      traction.motor_torque(float(torque));
+      break;
+    }
 
     case CAN_ID_M166_CURRENT_INFO:
       inverter->update_bus_current(msg_in.buf.val, msg_in.length);
@@ -374,6 +351,7 @@ void VCU::update_inv_can() {
       break;
 
     default:
+      update_vehicle_sensors(msg_in);
       break;
     }
   }
@@ -388,6 +366,46 @@ void VCU::update_daq_can(uint32_t now) {
 
     if (updater && ota::Service::wants(msg_in))
       updater->on_frame(msg_in, now);
+    else
+      update_vehicle_sensors(msg_in);
+  }
+}
+
+void VCU::update_vehicle_sensors(const can_message &msg) {
+  switch (msg.id) {
+  case CAN_ID_VECTORNAV_VELOCITY: {
+    unpack_message(dbc, msg.id, msg.buf.val, msg.length, 0);
+    double north, east;
+    decode_can_0x1f7_vn_v_n(dbc, &north);
+    decode_can_0x1f7_vn_v_e(dbc, &east);
+    traction.vectornav_velocity(float(north), float(east), now_ms);
+    break;
+  }
+  case CAN_ID_VECTORNAV_ACCELERATION: {
+    unpack_message(dbc, msg.id, msg.buf.val, msg.length, 0);
+    double forward;
+    decode_can_0x1f8_vn_accel_x(dbc, &forward);
+    traction.vectornav_accel(float(forward));
+    break;
+  }
+  case CAN_ID_AN1_FL_WHEELSPEED:
+  case CAN_ID_AN1_FR_WHEELSPEED:
+  case CAN_ID_AN1_RL_WHEELSPEED:
+  case CAN_ID_AN1_RR_WHEELSPEED: {
+    unpack_message(dbc, msg.id, msg.buf.val, msg.length, 0);
+    uint16_t rpm = 0;
+    // The four share a layout; each has its own decoder
+    switch (msg.id) {
+    case CAN_ID_AN1_FL_WHEELSPEED: decode_can_0x38e_wheel_rpm(dbc, &rpm); break;
+    case CAN_ID_AN1_FR_WHEELSPEED: decode_can_0x38f_wheel_rpm(dbc, &rpm); break;
+    case CAN_ID_AN1_RL_WHEELSPEED: decode_can_0x390_wheel_rpm(dbc, &rpm); break;
+    default: decode_can_0x391_wheel_rpm(dbc, &rpm); break;
+    }
+    traction.wheel_rpm(int(msg.id - CAN_ID_AN1_FL_WHEELSPEED), float(rpm));
+    break;
+  }
+  default:
+    break;
   }
 }
 
@@ -505,17 +523,26 @@ void VCU::send_power_tracking_message() {
   daq_can->send_controller_message(out_msg);
 }
 
-// void VCU::send_launch_control_status_message() {
-//   encode_can_0x0cb_vcu_launchcontrol_elapsed_time(dbc, 0);
-//   encode_can_0x0cb_vcu_launchcontrol_outputtorqueco(dbc, 0);
-//   encode_can_0x0cb_vcu_launchcontrol_state(dbc, launch_state);
-//   encode_can_0x0cb_vcu_launchcontrol_type(dbc, launch_mode);
-//
-//   can_message out_msg;
-//   out_msg.id = CAN_ID_VCU_LAUNCHCONTROL_DIAGDATA;
-//   out_msg.length =
-//       pack_message(dbc, CAN_ID_VCU_LAUNCHCONTROL_DIAGDATA, &out_msg.buf.val);
-//
-//   inv_can->send_controller_message(out_msg);
-//   daq_can->send_controller_message(out_msg);
-// }
+void VCU::send_traction_control_message() {
+  // Not in ksu-ms-dbc yet, see tools/can/vcu_local.dbc
+  auto clamp = [](double v, double lo, double hi) {
+    return v < lo ? lo : (v > hi ? hi : v);
+  };
+  const int16_t slip = int16_t(clamp(traction.slip() * 1000, -32768, 32767));
+  const uint16_t speed = uint16_t(clamp(traction.speed() * 100, 0, 65535));
+
+  can_message out_msg;
+  out_msg.id = CAN_ID_VCU_TRACTION_CONTROL;
+  out_msg.length = 8;
+  uint8_t *d = out_msg.buf.byte;
+  d[0] = uint8_t(traction.selected() | traction.active() << 2);
+  d[1] = traction.reasons();
+  d[2] = uint8_t(slip);
+  d[3] = uint8_t(uint16_t(slip) >> 8);
+  d[4] = uint8_t(speed);
+  d[5] = uint8_t(speed >> 8);
+  d[6] = uint8_t(clamp(traction.scale() * 100, 0, 255));
+  d[7] = uint8_t(clamp(traction.grip() * 50, 0, 255));
+
+  daq_can->send_controller_message(out_msg);
+}

@@ -24,6 +24,8 @@ void VCU::begin() {
 
   // Up: from here the loop runs, so the watchdog goes from the bootloader's
   // boot window to the 1 s it has to be fed in
+  traction.select(TC_DEFAULT_MODE);
+
   hal::watchdog_start();
 }
 
@@ -38,6 +40,16 @@ void VCU::tick(uint32_t now) {
   if (updater)
     updater->poll(now);
 
+  // Traction control runs all the time, so its estimates (speed, accel
+  // bias while parked) are ready when the driver is. Only ready to drive
+  // has a torque request for it to work on
+  const double driver_nm =
+      current_state == READY_TO_DRIVE
+          ? pedals->get_torque_request(pedals->get_travel(),
+                                       inverter->get_torque_limit())
+          : 0.0;
+  tc_torque_nm = traction.step(now, driver_nm);
+
   if (timer_1s.check(now)) {
     send_firmware_status_message();
     send_status_message();
@@ -50,6 +62,7 @@ void VCU::tick(uint32_t now) {
     send_steering_raw_message(pedals->get_steering_raw());
 
     send_power_tracking_message();
+    send_traction_control_message();
 
     hal::log("\n\rraw_apps1: ");
     hal::log(pedals->get_apps1_raw());
@@ -174,10 +187,8 @@ void VCU::tick(uint32_t now) {
   case READY_TO_DRIVE:
     if (ts_safe()) {
       inverter->regulate_power(now);
-      if (timer_200hz.check(now)) {
-        inverter->command_torque(pedals->get_torque_request(
-            pedals->get_travel(), inverter->get_torque_limit()));
-      }
+      if (timer_200hz.check(now))
+        inverter->command_torque(tc_torque_nm);
 
       if (timer_10hz_2.check(now)) {
         inverter->set_current_limits(
@@ -206,28 +217,6 @@ void VCU::tick(uint32_t now) {
     }
     break;
 
-  case LAUNCH_WAIT:
-    if (set_state(LAUNCH)) {
-      // TODO: I think this should just be wating for some confirmation from the
-      // driver or something idk go figure it out nerd
-
-    } else {
-      hal::log("Aborting launch, ERROR: ");
-      hal::log(long(get_error_code()));
-      hal::logln("");
-      set_state(READY_TO_DRIVE);
-    }
-    break;
-
-  case LAUNCH:
-    if (get_launch_state()) {
-      // TODO: Get the launch logic goin
-
-    } else {
-      hal::log("Exiting launch");
-      set_state(READY_TO_DRIVE);
-    }
-    break;
   }
 
   // The loop got all the way round: tell the watchdog. If anything above
