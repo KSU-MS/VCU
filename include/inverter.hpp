@@ -23,6 +23,7 @@ public:
     DC_CURRENT = 1 << 1,
     DC_VOLTAGE = 1 << 2,
     MOTOR_TORQUE = 1 << 3,
+    STATUS = 1 << 4, // anything else of its own: it's alive
   };
   // A frame from the inverter's bus: decode it if it's this inverter's
   virtual uint8_t on_frame(const can_message &msg) = 0;
