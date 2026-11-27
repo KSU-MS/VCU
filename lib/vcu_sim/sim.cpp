@@ -8,6 +8,10 @@ std::map<uint8_t, bool> pin_levels;
 std::map<uint8_t, bool> pin_outputs;
 std::string log_buffer;
 bool echo_log = false;
+bool watchdog_running = false;
+uint32_t watchdog_fed_at = 0;
+size_t watchdog_fed_count = 0;
+bool watchdog_reset = false;
 sim::Bus buses[3];
 
 void init_bus(sim::Bus &b, int baud) {
@@ -44,6 +48,11 @@ void advance(uint32_t ms) { clock_ms += ms; }
 bool pin(uint8_t p) { return pin_levels[p]; }
 bool pin_is_output(uint8_t p) { return pin_outputs[p]; }
 
+bool watchdog_started() { return watchdog_running; }
+uint32_t last_watchdog_feed() { return watchdog_fed_at; }
+size_t watchdog_feeds() { return watchdog_fed_count; }
+void set_reset_by_watchdog(bool was) { watchdog_reset = was; }
+
 const std::string &log_output() { return log_buffer; }
 void set_echo_log(bool echo) { echo_log = echo; }
 
@@ -52,6 +61,10 @@ void reset() {
   pin_levels.clear();
   pin_outputs.clear();
   log_buffer.clear();
+  watchdog_running = false;
+  watchdog_fed_at = 0;
+  watchdog_fed_count = 0;
+  watchdog_reset = false;
   for (auto &b : buses)
     b = Bus{};
 }
@@ -66,6 +79,13 @@ uint32_t millis() { return clock_ms; }
 
 void pin_mode(uint8_t pin, pin_dir dir) { pin_outputs[pin] = dir == PIN_OUTPUT; }
 void digital_write(uint8_t pin, bool level) { pin_levels[pin] = level; }
+
+void watchdog_start() { watchdog_running = true; }
+void watchdog_feed() {
+  watchdog_fed_at = clock_ms;
+  watchdog_fed_count++;
+}
+bool reset_by_watchdog() { return watchdog_reset; }
 
 void log(const char *msg) {
   log_buffer += msg;

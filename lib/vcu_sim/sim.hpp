@@ -46,6 +46,13 @@ const std::string &log_output();
 // Mirror hal::log to stdout (off by default to keep test output readable)
 void set_echo_log(bool echo);
 
+// The watchdog: whether watchdog_start() has shortened it to the running
+// timeout, when it was last fed, and what reset_by_watchdog() says
+bool watchdog_started();
+uint32_t last_watchdog_feed();
+size_t watchdog_feeds();
+void set_reset_by_watchdog(bool was);
+
 // Wipe clock, pins, buses and log back to power-on state
 void reset();
 

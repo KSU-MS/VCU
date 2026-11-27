@@ -23,6 +23,31 @@ bool in_slot(uint8_t slot, uint32_t addr) {
   return addr >= start && addr < start + boot::SLOT_FIRMWARE_MAX;
 }
 
+// The RTWDOG (WDOG3), i.MX RT1060 RM chapter 58, clocked from the 32.768 kHz
+// crystal. Armed here for the boot window, 4 s: the firmware's startup takes
+// over a second before its loop runs (Teensy's USB start-up delay, then
+// Serial.begin() waiting up to 2 s for a terminal). CS[UPDATE] = 1 lets the
+// firmware reconfigure it once, which it does when it's up: 1 s and locked
+// (hal::watchdog_start). Firmware that never gets that far is reset after
+// 4 s, and an update on trial that does rolls back.
+void arm_watchdog() {
+  volatile uint32_t &CS = *reinterpret_cast<volatile uint32_t *>(0x400BC000);
+  volatile uint32_t &CNT = *reinterpret_cast<volatile uint32_t *>(0x400BC004);
+  volatile uint32_t &TOVAL = *reinterpret_cast<volatile uint32_t *>(0x400BC008);
+  constexpr uint32_t CS_UPDATE = 1u << 5, CS_EN = 1u << 7,
+                     CS_CLK_LPO = 1u << 8, CS_RCS = 1u << 10,
+                     CS_ULK = 1u << 11, CS_PRES = 1u << 12,
+                     CS_CMD32EN = 1u << 13;
+
+  CNT = 0xD928C520; // unlock (whatever the boot ROM left it as)
+  while (!(CS & CS_ULK))
+    ;
+  TOVAL = 4 * 128; // 4 s of LPO clock / 256
+  CS = CS_UPDATE | CS_EN | CS_CLK_LPO | CS_PRES | CS_CMD32EN;
+  while (!(CS & CS_RCS))
+    ;
+}
+
 [[noreturn]] void start(uint32_t entry) {
   // As close to reset as we can leave it: interrupts back on (nothing has an
   // interrupt enabled), and the firmware's ResetHandler sets its own stack,
@@ -61,5 +86,6 @@ int main() {
   const uint32_t entry = entry_point(d.slot);
   if (!in_slot(d.slot, entry & ~1u))
     nothing_to_boot();
+  arm_watchdog();
   start(entry);
 }

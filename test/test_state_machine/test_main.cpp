@@ -3,6 +3,7 @@
 #include <sim_test_main.hpp>
 
 #include <cmath>
+#include <algorithm>
 #include <sim_car.hpp>
 
 using sim::Car;
@@ -631,6 +632,52 @@ TEST_CASE("never heard from the ACU: the tractive system can't energize") {
   car.inverter_bus_voltage(450);
   car.run_for(2000);
   CHECK_FALSE(car.ever_reached(TRACTIVE_SYSTEM_ENERGIZED));
+}
+
+//
+//// The watchdog (the RTWDOG the bootloader arms: 4 s to boot, then 1 s)
+
+TEST_CASE("the watchdog goes to its running timeout once booted") {
+  sim::reset();
+  CHECK_FALSE(sim::watchdog_started());
+  Car car; // boots the VCU
+  CHECK(sim::watchdog_started());
+  CHECK(sim::watchdog_feeds() == 0); // the loop hasn't run yet
+}
+
+TEST_CASE("every pass of the loop feeds the watchdog") {
+  Car car;
+  size_t ticks = 0;
+  uint32_t worst_gap = 0;
+  auto run = [&](uint32_t ms) {
+    for (uint32_t i = 0; i < ms; i++) {
+      const uint32_t before = sim::last_watchdog_feed();
+      car.run_for(1);
+      ticks++;
+      worst_gap = std::max(worst_gap, sim::last_watchdog_feed() - before);
+    }
+  };
+  run(100);
+  car.make_ts_healthy();
+  run(100);
+  car.set_brake(0.8);
+  car.dash_rtd_button(true);
+  run(3000); // through the buzzer into ready to drive
+  car.set_throttle(0.5);
+  run(500);
+  car.acu_talking = false; // into the fault state
+  run(1000);
+  CHECK(sim::watchdog_feeds() == ticks);
+  CHECK(worst_gap <= 1);
+}
+
+TEST_CASE("a watchdog reset is reported at boot") {
+  Car car; // (resets the simulator)
+  sim::set_reset_by_watchdog(true);
+  car.vcu.begin(); // boots again, now after a watchdog reset
+  car.run_for(10);
+  CHECK(sim::watchdog_started());
+  CHECK(sim::log_output().find("Reset by the watchdog") != std::string::npos);
 }
 
 //

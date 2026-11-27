@@ -16,6 +16,16 @@ uint32_t millis();
 void pin_mode(uint8_t pin, pin_dir dir);
 void digital_write(uint8_t pin, bool level);
 
+// The RTWDOG the bootloader armed for booting (4 s): watchdog_start()
+// shortens it to 1 s and locks it, once the firmware is up and about to run
+// its loop. From then on feed it or the board resets; VCU::tick() feeds it
+// as its last act.
+void watchdog_start();
+void watchdog_feed();
+// Was the last reset the watchdog? Read (and cleared in hardware) once at
+// boot, the same answer after that.
+bool reset_by_watchdog();
+
 void log(const char *msg);
 void log(long value);
 inline void logln(const char *msg) {

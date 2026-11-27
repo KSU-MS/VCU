@@ -9,6 +9,9 @@
 void VCU::begin() {
   init_state_machine();
 
+  if (hal::reset_by_watchdog())
+    hal::logln("Reset by the watchdog: the firmware hung");
+
   hal::pin_mode(BUZZER, hal::PIN_OUTPUT);
 
   inverter->set_power_limit_kw(POWER_LIMIT_KW);
@@ -18,6 +21,10 @@ void VCU::begin() {
   hal::pin_mode(LOWSIDE2, hal::PIN_OUTPUT);
   hal::digital_write(LOWSIDE1, false);
   hal::digital_write(LOWSIDE2, false);
+
+  // Up: from here the loop runs, so the watchdog goes from the bootloader's
+  // boot window to the 1 s it has to be fed in
+  hal::watchdog_start();
 }
 
 void VCU::tick(uint32_t now) {
@@ -222,4 +229,8 @@ void VCU::tick(uint32_t now) {
     }
     break;
   }
+
+  // The loop got all the way round: tell the watchdog. If anything above
+  // hangs, this stops and the RTWDOG resets the board (bootloader/main.cpp)
+  hal::watchdog_feed();
 }
