@@ -66,7 +66,7 @@ TEST_CASE("torque is zero unless enabled with a sane request") {
   }
 }
 
-TEST_CASE("power limit caps torque by motor speed, either direction") {
+TEST_CASE("[EV.3.3.1] power limit caps torque by motor speed, either direction") {
   Car car;
   enable(car);
 
@@ -81,6 +81,38 @@ TEST_CASE("power limit caps torque by motor speed, either direction") {
   const double expected = POWER_LIMIT_KW * 1000.0 * 0.90 / omega;
   CHECK(commanded_torque(car, MAX_TORQUE_LIMIT_NM) ==
         doctest::Approx(expected).epsilon(0.01));
+}
+
+TEST_CASE("[EV.3.3.1] shaft power at the limit leaves 10% for drivetrain losses") {
+  // The limit is open loop, on motor speed: the Energy Meter's 80 kW is
+  // electrical, so the shaft gets 80 kW x 0.90 and the inverter and motor
+  // must lose no more than 10% (docs/requirements.md: partial)
+  Car car;
+  enable(car);
+  for (int16_t rpm : {500, 1000, 2000, 3500, 5000, 7500, 10000, -5000}) {
+    CAPTURE(rpm);
+    car.inverter_motor_rpm(rpm);
+    car.run_for(5);
+    const double omega = std::abs(rpm) * 2 * M_PI / 60;
+    const double shaft_kw = commanded_torque(car, MAX_TORQUE_LIMIT_NM) * omega / 1000;
+    CHECK(shaft_kw <= POWER_LIMIT_KW * 0.90 + 0.01);
+  }
+  CHECK(POWER_LIMIT_KW <= 80);
+}
+
+TEST_CASE("[EV.3.3.3] never asks for regen, at any speed") {
+  // No regen at all, so none between 0 and 5 km/h either
+  Car car;
+  enable(car);
+  for (int16_t rpm : {0, 10, 50, 100, 300, 1000, 5000}) {
+    car.inverter_motor_rpm(rpm);
+    car.run_for(5);
+    for (double request : {-240.0, -1.0, -1e-9, 0.0}) {
+      CAPTURE(rpm);
+      CAPTURE(request);
+      CHECK(commanded_torque(car, request) == 0);
+    }
+  }
 }
 
 //

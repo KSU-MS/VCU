@@ -1,21 +1,11 @@
 // Pedals on their own: travel mapping, sensor faults and the plausibility
-// checks from the FSAE rules:
-//
-//   T.4.2.4   APPS more than 10 points of travel apart is an implausibility
-//   T.4.2.5   an implausibility lasting more than 100 ms must cut motor power
-//   T.4.2.10  an APPS open or shorted (signal out of range) is a failure,
-//             treated as an implausibility
-//   T.4.3.4   a BSE open or shorted is a failure
-//   EV.4.7.1  brakes actuated and APPS over 25% travel: cut motor power
-//   EV.4.7.2  ...until the APPS is under 5%, whatever the brake does
-//
-// Numbering from the 2024/2025 FSAE rules; CHECK IT AGAINST THE CURRENT
-// RULEBOOK, these move between years. The limits themselves are constants
-// in pedal_handeler.hpp, so a change is one line plus these tests.
+// checks. Tests cite the rule they check in their name, e.g. [EV.4.7.2]:
+// the requirements are in docs/requirements.md (FSAE Rules 2027).
 #include <sim_test_main.hpp>
 
 #include <parameters.hpp>
 #include <pedal_handeler.hpp>
+#include <cstdlib>
 #include <vector>
 
 namespace {
@@ -88,7 +78,30 @@ TEST_CASE("travel maps linearly across each sensor's calibrated range") {
   CHECK(p.get_brake_travel() == doctest::Approx(0.25).epsilon(0.01));
 }
 
-TEST_CASE("travel clamps to 0..1 outside the calibrated range") {
+TEST_CASE("[T.4.2.3] the two APPS have different transfer functions, well apart") {
+  // Different offsets and gradients
+  CHECK(START_ACCELERATOR_PEDAL_1 != START_ACCELERATOR_PEDAL_2);
+  CHECK(END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1 !=
+        END_ACCELERATOR_PEDAL_2 - START_ACCELERATOR_PEDAL_2);
+
+  // Above 10% travel, the two outputs at least 10% apart. Read as 10% of
+  // the ADC's full scale, since both share it.
+  for (int i = 10; i <= 100; i++) {
+    const double t = i / 100.0;
+    CAPTURE(t);
+    CHECK(std::abs(int(apps1_at(t)) - int(apps2_at(t))) >= 0.10 * 2047);
+  }
+
+  // An open circuit, pulled down to 0 counts, is out of range: a failure,
+  // and no throttle
+  CHECK(0 < MIN_APPS_PEDAL);
+  Pedals p = make_pedals();
+  update(p, 0, apps2_at(0), brake_at(0));
+  CHECK(p.get_travel() == 0);
+  CHECK(p.get_apps_fault_ok_low());
+}
+
+TEST_CASE("[T.4.2.10] travel clamps to 0..1 outside the calibrated range, short of a fault") {
   Pedals p = make_pedals();
 
   // Below start but above the open-circuit threshold
@@ -114,7 +127,7 @@ TEST_CASE("torque request scales travel by the limit") {
   CHECK(p.get_torque_request(1, 240) == doctest::Approx(240));
 }
 
-TEST_CASE("an APPS reading below the open-circuit threshold kills throttle") {
+TEST_CASE("[T.4.2.10] an APPS reading below the open-circuit threshold kills throttle") {
   Pedals p = make_pedals();
   press(p, 0.5);
   REQUIRE(p.get_travel() > 0.4);
@@ -130,7 +143,7 @@ TEST_CASE("an APPS reading below the open-circuit threshold kills throttle") {
   CHECK(p.get_travel() == 0);
 }
 
-TEST_CASE("an out-of-range BSE reading kills throttle (T.4.3.4)") {
+TEST_CASE("[T.4.3.3][T.4.3.4] an out-of-range BSE reading kills throttle") {
   Pedals p = make_pedals();
 
   SUBCASE("shorted low") {
@@ -154,7 +167,7 @@ TEST_CASE("BSE fault clears as soon as the reading is back in range") {
   CHECK(p.get_travel() > 0.4);
 }
 
-TEST_CASE("APPS sensors that disagree kill throttle and latch until release") {
+TEST_CASE("[T.4.2.4][T.4.2.5] APPS sensors that disagree kill throttle and latch until release") {
   Pedals p = make_pedals();
 
   // 50% apart, for longer than T.4.2.5's 100 ms
@@ -186,7 +199,7 @@ void apart(Pedals &p, double travel, double points, uint32_t ms = 1) {
 }
 } // namespace
 
-TEST_CASE("the 10 point line") {
+TEST_CASE("[T.4.2.4] the 10 point line") {
   Pedals p = make_pedals();
   apart(p, 0.6, 0.09, 200);
   CHECK_FALSE(p.get_apps_fault_ok_low());
@@ -197,7 +210,7 @@ TEST_CASE("the 10 point line") {
   CHECK(p.get_travel() == 0); // the moment they're too far apart
 }
 
-TEST_CASE("a disagreement shorter than 100 ms cuts throttle only while it lasts") {
+TEST_CASE("[T.4.2.5] a disagreement shorter than 100 ms cuts throttle only while it lasts") {
   // A glitch, or the two sensors' filters catching up after a stab of
   // throttle: no latched fault, no need to lift off
   Pedals p = make_pedals();
@@ -210,7 +223,7 @@ TEST_CASE("a disagreement shorter than 100 ms cuts throttle only while it lasts"
   CHECK(p.get_travel() > 0.4);
 }
 
-TEST_CASE("a disagreement over 100 ms latches until the pedal is released") {
+TEST_CASE("[T.4.2.5] a disagreement over 100 ms latches until the pedal is released") {
   Pedals p = make_pedals();
   // Each update is 1 ms: the first disagreeing reading is t0, 100 ms later
   // is still within the rule, the reading after that isn't
@@ -229,7 +242,7 @@ TEST_CASE("a disagreement over 100 ms latches until the pedal is released") {
   CHECK(p.get_travel() > 0.4);
 }
 
-TEST_CASE("disagreements that come and go don't add up") {
+TEST_CASE("[T.4.2.5] disagreements that come and go don't add up") {
   // Each one is timed from its own start
   Pedals p = make_pedals();
   for (int i = 0; i < 10; i++) {
@@ -240,7 +253,7 @@ TEST_CASE("disagreements that come and go don't add up") {
   CHECK(p.get_travel() > 0.4);
 }
 
-TEST_CASE("a sensor drifting out of calibration is caught as it crosses 10 points") {
+TEST_CASE("[T.4.2.4][T.4.2.9] a sensor drifting out of calibration is caught as it crosses 10 points") {
   Pedals p = make_pedals();
   bool cut = false;
   for (int step = 0; step <= 30 && !cut; step++) {
@@ -252,7 +265,7 @@ TEST_CASE("a sensor drifting out of calibration is caught as it crosses 10 point
   CHECK(cut);
 }
 
-TEST_CASE("brake + throttle together kills throttle and latches until lift") {
+TEST_CASE("[EV.4.7.1][EV.4.7.2] brake + throttle together kills throttle and latches until lift") {
   Pedals p = make_pedals();
 
   press(p, 0.5, 0.5);
@@ -274,7 +287,7 @@ TEST_CASE("brake + throttle together kills throttle and latches until lift") {
 //// Brake plausibility (EV.4.7): brakes actuated and APPS over 25% cuts power
 //// until the APPS is under 5%, whatever the brake does.
 
-TEST_CASE("a foot resting on the brake, short of where it bites, is fine") {
+TEST_CASE("[EV.4.7.1] a foot resting on the brake, short of where it bites, is fine") {
   Pedals p = make_pedals();
   press(p, 0.5, Pedals::BRAKE_ACTUATED_TRAVEL - 0.02);
   CHECK_FALSE(p.get_apps_bse_fault_ok_low());
@@ -285,7 +298,7 @@ TEST_CASE("a foot resting on the brake, short of where it bites, is fine") {
   CHECK(p.get_travel() == 0);
 }
 
-TEST_CASE("the 25% line (EV.4.7.1)") {
+TEST_CASE("[EV.4.7.1] the 25% line") {
   Pedals p = make_pedals();
   press(p, 0.24, 0.5);
   CHECK_FALSE(p.get_apps_bse_fault_ok_low());
@@ -296,7 +309,7 @@ TEST_CASE("the 25% line (EV.4.7.1)") {
   CHECK(p.get_travel() == 0);
 }
 
-TEST_CASE("held until the APPS is under 5%, whatever the brake does (EV.4.7.2)") {
+TEST_CASE("[EV.4.7.2] held until the APPS is under 5%, whatever the brake does") {
   Pedals p = make_pedals();
   press(p, 0.5, 0.5);
   REQUIRE(p.get_apps_bse_fault_ok_low());
@@ -313,7 +326,7 @@ TEST_CASE("held until the APPS is under 5%, whatever the brake does (EV.4.7.2)")
   CHECK(p.get_travel() > 0.4);
 }
 
-TEST_CASE("either pedal first") {
+TEST_CASE("[EV.4.7.1] either pedal first") {
   Pedals p = make_pedals();
   SUBCASE("on the throttle, then the brake") {
     press(p, 0.5);
@@ -327,7 +340,7 @@ TEST_CASE("either pedal first") {
   CHECK(p.get_travel() == 0);
 }
 
-TEST_CASE("either APPS over 25% trips it") {
+TEST_CASE("[EV.4.7.1] either APPS over 25% trips it") {
   // Within the 10 points they're allowed to differ, the higher one counts
   Pedals p = make_pedals();
   SUBCASE("APPS1 higher") {
@@ -378,7 +391,7 @@ std::vector<Fault> apps_faults(uint16_t high_fault) {
 }
 } // namespace
 
-TEST_CASE("every way an APPS can fail kills throttle, at any pedal position") {
+TEST_CASE("[T.4.2.9][T.4.2.10] every way an APPS can fail kills throttle, at any pedal position") {
   for (int sensor : {1, 2}) {
     for (const Fault &f :
          apps_faults(sensor == 1 ? MAX_ACCELERATOR_PEDAL_1 : MAX_ACCELERATOR_PEDAL_2)) {
@@ -401,7 +414,7 @@ TEST_CASE("every way an APPS can fail kills throttle, at any pedal position") {
   }
 }
 
-TEST_CASE("an APPS unplugged at light throttle can't drive the car once released") {
+TEST_CASE("[T.4.2.9] an APPS unplugged at light throttle can't drive the car once released") {
   // The old code kept a broken sensor's last travel, and the "pedals
   // released" check then cleared the fault with it: APPS1 unplugged at 8%,
   // foot off, and the torque request was the stale 8% with no fault shown
@@ -435,7 +448,7 @@ TEST_CASE("an APPS fault clears once the sensor is back and the pedal released")
   CHECK(p.get_travel() > 0.4);
 }
 
-TEST_CASE("both APPS failing the same way is still a fault") {
+TEST_CASE("[T.4.2.9][T.4.2.10] both APPS failing the same way is still a fault") {
   Pedals p = make_pedals();
   SUBCASE("both unplugged") { update(p, 0, 0, brake_at(0)); }
   SUBCASE("both shorted to the supply") {
@@ -447,7 +460,7 @@ TEST_CASE("both APPS failing the same way is still a fault") {
   CHECK(p.get_travel() == 0);
 }
 
-TEST_CASE("APPS1 and APPS2 shorted together never make torque") {
+TEST_CASE("[T.4.2.3][T.4.2.9] APPS1 and APPS2 shorted together never make torque") {
   // Both inputs read the same voltage. The two sensors have different
   // transfer functions, so whatever that voltage is, they either disagree,
   // read out of range, or both read 0 travel.
@@ -459,7 +472,7 @@ TEST_CASE("APPS1 and APPS2 shorted together never make torque") {
   }
 }
 
-TEST_CASE("an APPS stuck at one reading is caught when the pedal moves") {
+TEST_CASE("[T.4.2.9] an APPS stuck at one reading is caught when the pedal moves") {
   // Frozen ADC channel, or a sensor whose linkage has come off
   Pedals p = make_pedals();
   press(p, 0.1);
@@ -469,7 +482,7 @@ TEST_CASE("an APPS stuck at one reading is caught when the pedal moves") {
   CHECK(p.get_travel() == 0);
 }
 
-TEST_CASE("every way the brake sensor can fail is a fault, and reads no brake") {
+TEST_CASE("[T.4.3.3][T.4.3.4] every way the brake sensor can fail is a fault, and reads no brake") {
   const Fault faults[] = {
       {"unplugged (pulled down)", 0},
       {"shorted to ground", 0},
@@ -494,7 +507,7 @@ TEST_CASE("every way the brake sensor can fail is a fault, and reads no brake") 
   }
 }
 
-TEST_CASE("a hard brake press isn't mistaken for a short") {
+TEST_CASE("[T.4.3.4] a hard brake press isn't mistaken for a short") {
   Pedals p = make_pedals();
   press(p, 0, 1.0);
   CHECK_FALSE(p.get_bse_fault_ok_low());

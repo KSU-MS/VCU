@@ -14,6 +14,7 @@ tools/run_e2e.sh renode      # the real ARM firmware on an emulated Teensy, upda
 ```
 
 - **Tests**: `test/` drives `VCU::tick()` through a fake car (`lib/vcu_sim`): pedals, state machine, torque/power limits, OTA. Tests named `KNOWN ISSUE` print a warning instead of failing; they mark behaviour that looks wrong but needs a decision.
+- **Requirements**: the FSAE 2027 rules the firmware must meet are in [docs/requirements.md](docs/requirements.md); tests cite them in their names (`[EV.4.7.2] ...`) and CI fails if one has no test. `uv run tools/requirements/reqtrace.py` shows which tests cover what.
 - **Firmware update over CAN** (UDS on the DAQ bus, only while parked): signed images, A/B slots with a bootloader that rolls back an update nobody confirmed. [docs/ota.md](docs/ota.md), [bootloader/](bootloader/README.md), [keys/](keys/README.md).
 - **Renode** (emulated Teensy 4.1, flash with the W25Q64's datasheet timing): [renode/README.md](renode/README.md).
 - **CI** runs on every PR: the tests, the firmware build, and both OTA end-to-end tests (SIL and Renode).

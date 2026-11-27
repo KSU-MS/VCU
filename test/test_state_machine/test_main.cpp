@@ -67,7 +67,7 @@ TEST_CASE("stays disabled while any TS gate is missing") {
   CHECK_FALSE(car.ever_reached(TRACTIVE_SYSTEM_ENERGIZED));
 }
 
-TEST_CASE("needs both the RTD button and the brake to go ready to drive") {
+TEST_CASE("[EV.10.6.2] needs both the RTD button and the brake to go ready to drive") {
   Car car;
   car.run_for(10);
   car.make_ts_healthy();
@@ -97,7 +97,18 @@ TEST_CASE("needs both the RTD button and the brake to go ready to drive") {
   }
 }
 
-TEST_CASE("sounds the buzzer for ~2 s before ready to drive") {
+TEST_CASE("[EV.10.6.2] no ready to drive without the tractive system active") {
+  // Brake held and the button pressed, but TS never came up
+  Car car;
+  car.run_for(10);
+  car.set_brake(0.8);
+  car.dash_rtd_button(true);
+  car.run_for(3000);
+  CHECK(car.vcu.get_current_state() == TRACTIVE_SYSTEM_DISABLED);
+  CHECK_FALSE(car.ever_reached(READY_TO_DRIVE));
+}
+
+TEST_CASE("[EV.10.7.2] sounds the buzzer for 1-3 s before ready to drive") {
   Car car;
   car.run_for(10);
   car.make_ts_healthy();
@@ -110,9 +121,55 @@ TEST_CASE("sounds the buzzer for ~2 s before ready to drive") {
   car.tick();
   CHECK(sim::pin(BUZZER));
 
-  REQUIRE(car.run_until(READY_TO_DRIVE, 5000));
-  CHECK(sim::now() - buzzer_start >= 2000);
+  // Continuously, every loop, until ready to drive
+  bool gap = false;
+  while (car.vcu.get_current_state() != READY_TO_DRIVE && sim::now() - buzzer_start < 5000) {
+    car.run_for(1);
+    if (car.vcu.get_current_state() != READY_TO_DRIVE && !sim::pin(BUZZER))
+      gap = true;
+  }
+  REQUIRE(car.vcu.get_current_state() == READY_TO_DRIVE);
+  CHECK_FALSE(gap);
+  CHECK(sim::now() - buzzer_start >= 1000); // the rule
+  CHECK(sim::now() - buzzer_start <= 3000);
+  CHECK(sim::now() - buzzer_start >= 2000); // RTD_BUZZER_DURATION_MS
   CHECK(sim::now() - buzzer_start <= 2500);
+  CHECK_FALSE(sim::pin(BUZZER));
+}
+
+TEST_CASE("[EV.10.7.3] the buzzer only ever sounds on the way into ready to drive") {
+  // A whole session: power up, TS on, a TS fault and recovery, ready to
+  // drive, driving, pedal faults, TS dropping out while driving
+  Car car;
+  uint32_t buzzing_outside_rtd_ms = 0;
+  auto run = [&](uint32_t ms) {
+    for (uint32_t i = 0; i < ms; i++) {
+      car.run_for(1);
+      if (sim::pin(BUZZER) && car.vcu.get_current_state() != TRACTIVE_SYSTEM_ENABLED)
+        buzzing_outside_rtd_ms++;
+    }
+  };
+  run(100);
+  car.make_ts_healthy();
+  run(100);
+  car.acu_status(false, true); // IMD trips
+  run(100);
+  car.make_ts_healthy();
+  run(100);
+  car.set_brake(0.8);
+  car.dash_rtd_button(true);
+  run(3000);
+  REQUIRE(car.vcu.get_current_state() == READY_TO_DRIVE);
+  car.dash_rtd_button(false);
+  car.set_brake(0);
+  car.set_throttle(0.5);
+  run(500);
+  car.apps2_raw = 0;
+  run(200);
+  car.set_throttle(0);
+  car.acu_status(true, false); // BMS trips while live
+  run(500);
+  CHECK(buzzing_outside_rtd_ms == 0);
   CHECK_FALSE(sim::pin(BUZZER));
 }
 
@@ -175,7 +232,7 @@ TEST_CASE("ready to drive enables the inverter with the full torque limit") {
   CHECK(cmd.torque_nm == doctest::Approx(0)); // pedal released
 }
 
-TEST_CASE("throttle maps to torque once ready to drive") {
+TEST_CASE("[EV.10.6.1] throttle maps to torque once ready to drive") {
   Car car;
   car.drive_to_rtd();
   car.set_throttle(0.5);
@@ -187,7 +244,7 @@ TEST_CASE("throttle maps to torque once ready to drive") {
         doctest::Approx(0.5 * MAX_TORQUE_LIMIT_NM).epsilon(0.02));
 }
 
-TEST_CASE("an APPS unplugged at light throttle sends no torque once released") {
+TEST_CASE("[T.4.2.9][T.4.2.5] an APPS unplugged at light throttle sends no torque once released") {
   Car car;
   car.drive_to_rtd();
   car.set_throttle(0.08);
@@ -204,7 +261,7 @@ TEST_CASE("an APPS unplugged at light throttle sends no torque once released") {
   CHECK(car.pedals.get_apps_fault_ok_low());
 }
 
-TEST_CASE("a broken brake sensor doesn't count as the brake for ready to drive") {
+TEST_CASE("[T.4.3.3][EV.10.6.2] a broken brake sensor doesn't count as the brake for ready to drive") {
   // The brake is pressed, then its sensor shorts: the last good reading
   // mustn't be what lets the car go live
   Car car;
@@ -221,7 +278,7 @@ TEST_CASE("a broken brake sensor doesn't count as the brake for ready to drive")
   CHECK_FALSE(car.ever_reached(READY_TO_DRIVE));
 }
 
-TEST_CASE("torque is power limited at speed") {
+TEST_CASE("[EV.3.3.1] torque is power limited at speed") {
   Car car;
   car.drive_to_rtd();
 
@@ -240,7 +297,7 @@ TEST_CASE("torque is power limited at speed") {
   CHECK(cmd.torque_nm == doctest::Approx(expected).epsilon(0.02));
 }
 
-TEST_CASE("throttle does nothing before ready to drive") {
+TEST_CASE("[EV.10.6.1] throttle does nothing before ready to drive") {
   Car car;
   car.run_for(10);
   car.make_ts_healthy();
@@ -260,7 +317,7 @@ TEST_CASE("throttle does nothing before ready to drive") {
   }
 }
 
-TEST_CASE("a pedal fault zeroes torque but stays ready to drive") {
+TEST_CASE("[T.4.2.5][T.4.3.3][EV.4.7.2] a pedal fault zeroes torque but stays ready to drive") {
   Car car;
   car.drive_to_rtd();
   car.set_throttle(0.5);
