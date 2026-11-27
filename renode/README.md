@@ -116,7 +116,8 @@ so nothing should read it, but nothing checks that either).
 | `imxrt_adc.py` | ADC1 for `analogRead()` | Renode's `IMXRT_ADC` crashes on channels > 7 (see below) |
 | `imxrt_analog.py` | CCM_ANALOG PLLs that remember writes and report lock | the stock flipflop stub can't satisfy `usb_pll_start` |
 | `test_ota_e2e.py` | the A -> B update test (pytest, via `tools/run_e2e.sh renode`) | |
-| `test_pedals_hil.py`, `board.py`, `fakecar.py` | the pedal rules through the real firmware | see above |
+| `test_pedals_hil.py`, `board.py`, `fakecar.py`, `bench.py` | the pedal rules through the real firmware | see above |
+| `test_pi_supervisor_hil.py`, `fakepi.py` | the Pi's torque ceiling through the real firmware: limited while it's in control, back to the driver when it goes quiet or sends a bad frame | `docs/pi-supervisor.md`. The fake Pi answers each status frame from the VCU rather than sending by the host's clock: host frames are slow in Renode (Speed) |
 | `harness.py` | runs Renode with its monitor on a TCP port | tests change inputs while it runs |
 
 One shortcut: `configure_cache` is skipped. Renode's MPU resolves the
