@@ -14,6 +14,9 @@ dependencies = [
     "olefile>=0.47",     # tools/schematic reads Altium files
     "cryptography>=42",
     "cantools>=39",
+    "mcap>=1.6.0",       # tools/replay reads kmslap's logs
+    "mcap-protobuf-support>=0.6.0",  # ...whose messages are protobuf
+    "numpy>=2.4.6",      # tools/replay
 ]
 
 [dependency-groups]

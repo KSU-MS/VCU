@@ -40,8 +40,9 @@
           # toolchains run on NixOS
           packages = [ pkgs.platformio pkgs.renode ] ++ tools;
 
-          # ...but that FHS env doesn't include libzstd
-          LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.zstd ];
+          # ...but that FHS env doesn't include libzstd; and the Python
+          # wheels with C++ in them (numpy, for tools/replay) need libstdc++
+          LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.zstd pkgs.stdenv.cc.cc.lib ];
 
           shellHook = ''
             echo "VCU dev shell: pio run | pio test -e native | uv run pytest | candump" >&2

@@ -82,14 +82,63 @@ The VCU drives a `Drivetrain` of inverters (`include/drivetrain.hpp`).
   motor's speed, so on a 4wd car it steps aside. Per-wheel slip control is
   later.
 
+- **The motors' torque curve** (`motors::max_torque_nm`, kmslap's
+  `HubMotor.max_torque`): peak torque up to peak power (35 kW on the F-MOT),
+  then constant power, and none at top speed. Each drive's capability is
+  the smaller of its torque limit and its curve at the speed its inverter
+  reports, so full pedal asks for what the motors can give there, as in
+  kmslap, and a motor at top speed gets nothing (its axle-mate and the
+  other axle take its share). `rwd_emrax` has no curve: the Cascadia's path
+  is unchanged.
+
+## Checked against kmslap: the replay
+
+`sil/replay_main.cpp` (`env:replay_4wd_dti`) runs the 4wd_dti VCU through a
+drive log on simulated time, as fast as it goes. `tools/replay/replay.py`
+makes the log from a `kmslap mcap --drivetrain 4wd_dti` file:
+- what the rest of the car did (pedals, each inverter's voltage and speed,
+  VectorNav, wheel speeds) on a 10 ms grid;
+- kmslap's own hub commands (`vcu_motor_torque_commands`) beside it.
+
+It runs the VCU and reports how the two compare:
+
+    kmslap mcap michigan2026 --drivetrain 4wd_dti   # python-data-analysis
+    pio run -e replay_4wd_dti
+    uv run tools/replay/replay.py ../python-data-analysis/out/mcap/michigan2026_4wd_dti.mcap
+
+The inverters' DC currents are the one input that has to answer the VCU:
+its 80 kW loop closes on them. The log's currents answer kmslap's torques,
+so by default the replay makes them from the VCU's own torques (at 90 %
+efficiency). With the log's currents (`--logged-dc`) the loop sees power
+it can't reduce and winds its torque down to the floor.
+
+`tools/replay/test_replay.py` runs 31 s of that log
+(`tools/replay/data/`) in CI and checks:
+- ready to drive throughout, no faults;
+- no torque with the brake on, no regen;
+- every motor within its curve;
+- EV.3.4.1 across all four;
+- the front axle's share within 5 points of kmslap's.
+
+**What the comparison shows** (michigan2026, the whole log):
+- The front axle's share is close: VCU 44 %, kmslap 48 %.
+- The torque curve brought the VCU nearer kmslap: the RMS difference in
+  total motor torque while driving went from 13.4 to 12.2 N·m.
+- kmslap's log comes from its QP mode, which the VCU doesn't have. It
+  vectors torque (outside wheels up to ~28 kW, inside ones regenerating)
+  and holds wheels back near their grip limit, so per motor the two differ
+  by ~10 N·m RMS. The VCU gives more torque at launch and out of slow
+  corners, where the QP is grip limited.
+- About 18 % of the log is kmslap regenerating; the VCU gives nothing there.
+- **The 80 kW share is fixed at 20 kW a hub.** kmslap puts 25–28 kW
+  through the loaded hubs; the VCU can't. A share that follows the split
+  would let it.
+
 ## Still to do (from the hub motors handoff)
 
-1. **`4wd_dti` against kmslap:** replay a `kmslap mcap --drivetrain
-   4wd_dti` log into a 4wd_dti SIL and compare the VCU's hub commands with
-   kmslap's.
-   - Each motor's limit is its peak torque here; kmslap uses its torque
-     curve against speed.
-   - The DTI's broadcast rate should be 100 Hz, like the sim's.
+1. **The 80 kW share following the torque split**, not a fixed 20 kW a
+   hub (above). And `kmslap mcap --torque-mode load`, for a log in the
+   VCU's own split.
 2. **The Pi's per-motor torques** (`pi_motor_torque_command`, 0x11), on the
    same checks as `pi_torque_command`.
 3. **AMK KW26:** the enable handshake, torque by saturating the speed loop,

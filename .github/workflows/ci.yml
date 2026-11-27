@@ -44,9 +44,12 @@ jobs:
           nix develop -c pio test -e native --junit-output-path reports/native.xml
           nix develop -c pio test -e native_4wd_dti --junit-output-path reports/native_4wd_dti.xml
 
-      # The e2e tests in there skip without vcan; they run below
+      # The e2e tests in there skip without vcan; they run below. The
+      # replay (tools/replay) needs its program built
       - name: Host tool tests
-        run: nix develop -c uv run pytest -q --junitxml=reports/python.xml
+        run: |
+          nix develop -c pio run -e replay_4wd_dti
+          nix develop -c uv run pytest -q --junitxml=reports/python.xml
 
       # Which tests cover which FSAE rule (docs/requirements.md), on the
       # run's summary page
