@@ -1,6 +1,8 @@
 # Pi as the controls brain, VCU as safety authority (proposal)
 
-Not implemented yet. Direction for moving controllers (traction, launch,
+Not implemented yet. (Traction control now runs on the VCU itself,
+`docs/traction-control.md`; the Pi's ceiling would apply after it.)
+Direction for moving controllers (traction, launch,
 power management, ...) off the Teensy onto the car's Raspberry Pi, which
 today only does DAQ (`ksu_daq`), while keeping the car drivable and safe
 if the Pi dies.
