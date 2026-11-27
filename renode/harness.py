@@ -70,10 +70,11 @@ class Monitor:
 class Renode:
     """Renode running the USB bundle on the emulated VCU, CAN on vcan"""
 
-    def __init__(self, log: Path, monitor_port: int = 3456, extra: str = ""):
+    def __init__(self, log: Path, pacing: str, monitor_port: int = 3456, extra: str = ""):
+        """`pacing`: conftest.py's renode_pacing fixture"""
         self.log = log
         script = (f"$bundle=@{BUILD_A / 'firmware.hex'}; $elf=@{BUILD_A / 'firmware.elf'}; "
-                  f"include @{ROOT}/renode/vcan.resc; {extra} "
+                  f"include @{ROOT}/renode/vcan.resc; {pacing}; {extra} "
                   'logLevel 3; start')
         with open(log, "w") as out:
             self.proc = subprocess.Popen(

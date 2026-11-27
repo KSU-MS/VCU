@@ -27,6 +27,22 @@ def have_vcan() -> bool:
 needs_vcan = pytest.mark.skipif(not have_vcan(), reason="no vcan buses, use tools/run_e2e.sh")
 
 
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "faster_than_realtime: the Renode test may run the emulation ahead of the "
+        "host clock (much faster). Only for tests whose host side has no timing of "
+        "its own, like periodic frames from a fake board; the default is real time.")
+
+
+@pytest.fixture(scope="module")
+def renode_pacing(request) -> str:
+    """Renode monitor command for the module's emulation speed: real time,
+    unless the module is marked faster_than_realtime"""
+    fast = request.node.get_closest_marker("faster_than_realtime") is not None
+    return f"emulation SetAdvanceImmediately {'true' if fast else 'false'}"
+
+
 def pytest_addoption(parser):
     parser.addoption("--flash-timing", choices=("typ", "max"), default="typ",
                      help="Renode tests: W25Q64 datasheet typical or max erase/program times")

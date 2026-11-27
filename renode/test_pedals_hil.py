@@ -22,7 +22,7 @@ import pytest
 
 import board
 from conftest import needs_vcan
-from fakecar import READY_TO_DRIVE, FakeCar
+from fakecar import READY_TO_DRIVE, TRACTIVE_SYSTEM_FAULT, FakeCar
 from harness import BUILD_A, Renode
 
 pytestmark = [
@@ -86,8 +86,9 @@ class Bench:
         return self.car.commands_since(start)[:n]
 
     def torque(self) -> float:
-        """Settled torque command"""
-        return self.wait_commands(10)[-1].torque_nm
+        """Settled torque command: 200 ms on, so nothing from before the
+        last input change is still on its way"""
+        return self.wait_commands(40)[-1].torque_nm
 
     def commands_until_zero(self, within: int) -> int | None:
         """How many commands until one asks for no torque (None: not within)"""
@@ -97,24 +98,30 @@ class Bench:
         return None
 
 
+def drive_to_rtd(b: Bench):
+    """The driver's start-up: TS up, brake held, RTD button"""
+    car = b.car
+    car.ts_healthy = True
+    b.pedals(brake=0.6)
+    car.rtd_button = True
+    if not car.wait_state(READY_TO_DRIVE, 4 * WALL_TIMEOUT):
+        b.renode.fail(f"never reached ready to drive (status {car.status})")
+    car.rtd_button = False
+    b.pedals()
+    b.wait_commands(20)
+
+
+# Real time (not marked faster_than_realtime), like a bench: the fake boards
+# on the host send every 100 ms of wall time, and the VCU times out a board
+# that goes quiet for SAFETY_DATA_TIMEOUT_MS of its time. Running ahead of
+# the host clock would make them look quiet.
 @pytest.fixture(scope="module")
-def bench(tmp_path_factory):
-    renode = Renode(tmp_path_factory.mktemp("renode") / "renode.log")
+def bench(tmp_path_factory, renode_pacing):
+    renode = Renode(tmp_path_factory.mktemp("renode") / "renode.log", renode_pacing)
     car = FakeCar()
     try:
         b = Bench(renode, car)
-        # The driver's start-up: TS up, brake held, RTD button
-        car.ts_healthy = True
-        b.pedals(brake=0.6)
-        deadline = time.monotonic() + 4 * WALL_TIMEOUT
-        car.rtd_button = True
-        while car.status.get("vcu_statemachine_state") != READY_TO_DRIVE:
-            if time.monotonic() > deadline:
-                renode.fail(f"never reached ready to drive (status {car.status})")
-            time.sleep(0.2)
-        car.rtd_button = False
-        b.pedals()
-        b.wait_commands(20)
+        drive_to_rtd(b)
         yield b
     finally:
         car.close()
@@ -231,3 +238,23 @@ def test_brake_with_light_throttle(bench):
     bench.wait_commands(10)
 
 
+
+
+#
+# The other boards going quiet (no rule: SAFETY_DATA_TIMEOUT_MS)
+
+@pytest.mark.parametrize("board_name", ["acu", "inverter"])
+def test_a_silent_board_stops_the_torque(bench, board_name):
+    """The ACU or inverter going quiet: the fault state, no more torque"""
+    bench.pedals(throttle=0.5)
+    assert bench.torque() > 100
+    setattr(bench.car, f"{board_name}_talking", False)
+    try:
+        if not bench.car.wait_state(TRACTIVE_SYSTEM_FAULT, WALL_TIMEOUT):
+            bench.renode.fail(f"no fault state with a silent {board_name}: {bench.car.status}")
+        # From here it only pings the inverter: nothing asked, disabled
+        assert all(c.torque_nm == 0 and not c.enable for c in bench.wait_commands(3))
+    finally:
+        setattr(bench.car, f"{board_name}_talking", True)
+        bench.pedals()
+    drive_to_rtd(bench)

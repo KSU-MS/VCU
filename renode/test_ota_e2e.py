@@ -40,6 +40,8 @@ BUILD_A = ROOT / ".pio/build/teensy41"
 TIMEOUT_SCALE = 10
 
 pytestmark = [
+    # Everything on the host side is a request and a timeout
+    pytest.mark.faster_than_realtime,
     needs_vcan,
     pytest.mark.skipif(shutil.which("renode") is None, reason="needs renode (nix develop)"),
     pytest.mark.skipif(not (BUILD_A / "vcu-a.ota").exists(),
@@ -109,13 +111,13 @@ class Renode:
 
 
 @pytest.fixture
-def renode(request, tmp_path, build_b):
+def renode(request, tmp_path, build_b, renode_pacing):
     """Renode running the USB bundle, bridged to the vcan buses"""
     worst_case = request.config.getoption("--flash-timing") == "max"
     _, b_elf = build_b
     log = tmp_path / "renode.log"
     script = (f"$bundle=@{BUILD_A / 'firmware.hex'}; $elf=@{BUILD_A / 'firmware.elf'}; "
-              f"include @{ROOT}/renode/vcan.resc; "
+              f"include @{ROOT}/renode/vcan.resc; {renode_pacing}; "
               # teensy41.resc skips slot A's configure_cache; B's is elsewhere
               f'cpu AddHook {symbol(b_elf, "configure_cache"):#x} "cpu.PC = cpu.LR"; '
               f"sysbus.flexspi1 WorstCaseTiming {str(worst_case).lower()}; "
