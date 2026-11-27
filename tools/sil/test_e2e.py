@@ -1,39 +1,24 @@
 """End to end: the SIL VCU on vcan, flashed by tools/ota/flash.py.
 
 Needs vcan_acc/vcan_inv/vcan_daq to exist and the SIL binary to be built.
-tools/sil/run_e2e.sh sets all that up (without root, in a network
-namespace); these are skipped otherwise.
+tools/run_e2e.sh sets all that up (without root, in a network namespace);
+these are skipped otherwise.
 """
 import random
-import socket
 import subprocess
-import sys
 import time
-from pathlib import Path
 
 import can
 import pytest
 
-ROOT = Path(__file__).resolve().parents[2]
+import flash as ota_flash
+import image as ota_image
+from conftest import ROOT, needs_vcan
+
 SIL = ROOT / ".pio/build/sil/program"
-sys.path.insert(0, str(ROOT / "tools/ota"))
-import flash as ota_flash  # noqa: E402
-import image as ota_image  # noqa: E402
-
-BUSES = ("vcan_acc", "vcan_inv", "vcan_daq")
-
-
-def have_vcan() -> bool:
-    # Not /sys/class/net, which shows the host's interfaces from inside the
-    # network namespace run_e2e.sh uses
-    try:
-        return all(socket.if_nametoindex(b) for b in BUSES)
-    except OSError:
-        return False
-
 
 pytestmark = [
-    pytest.mark.skipif(not have_vcan(), reason="no vcan buses, use tools/sil/run_e2e.sh"),
+    needs_vcan,
     pytest.mark.skipif(not SIL.exists(), reason="build it with: pio run -e sil"),
 ]
 
