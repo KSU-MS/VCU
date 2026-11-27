@@ -29,9 +29,21 @@ uint16_t brake_at(double travel) {
                   travel * (END_BRAKE_PEDAL - START_BRAKE_PEDAL));
 }
 
+// The pedals are read every loop; each update here is 1 ms later
+uint32_t clock_ms = 0;
+void update(Pedals &p, uint16_t apps1, uint16_t apps2, uint16_t brake) {
+  p.update_travel(apps1, apps2, brake, clock_ms++);
+}
+
+// The same reading every millisecond for `ms`
+void hold(Pedals &p, uint16_t apps1, uint16_t apps2, uint16_t brake, uint32_t ms) {
+  for (uint32_t i = 0; i < ms; i++)
+    update(p, apps1, apps2, brake);
+}
+
 // Push both APPS to the same travel with the brake at `brake`
 void press(Pedals &p, double throttle, double brake = 0) {
-  p.update_travel(apps1_at(throttle), apps2_at(throttle), brake_at(brake));
+  update(p, apps1_at(throttle), apps2_at(throttle), brake_at(brake));
 }
 
 bool any_fault(Pedals &p) {
@@ -68,14 +80,14 @@ TEST_CASE("travel clamps to 0..1 outside the calibrated range") {
   Pedals p = make_pedals();
 
   // Below start but above the open-circuit threshold
-  p.update_travel(START_ACCELERATOR_PEDAL_1 - 50, START_ACCELERATOR_PEDAL_2 - 50,
+  update(p, START_ACCELERATOR_PEDAL_1 - 50, START_ACCELERATOR_PEDAL_2 - 50,
                   START_BRAKE_PEDAL - 50);
   CHECK(p.get_apps1_travel() == 0);
   CHECK(p.get_apps2_travel() == 0);
   CHECK(p.get_brake_travel() == 0);
 
   // Past full press, but short of the fault thresholds
-  p.update_travel((END_ACCELERATOR_PEDAL_1 + MAX_ACCELERATOR_PEDAL_1) / 2,
+  update(p, (END_ACCELERATOR_PEDAL_1 + MAX_ACCELERATOR_PEDAL_1) / 2,
                   (END_ACCELERATOR_PEDAL_2 + MAX_ACCELERATOR_PEDAL_2) / 2,
                   START_BRAKE_PEDAL);
   CHECK_FALSE(p.get_apps_fault_ok_low());
@@ -96,10 +108,10 @@ TEST_CASE("an APPS reading below the open-circuit threshold kills throttle") {
   REQUIRE(p.get_travel() > 0.4);
 
   SUBCASE("APPS1 open") {
-    p.update_travel(MIN_APPS_PEDAL - 1, apps2_at(0.5), brake_at(0));
+    update(p, MIN_APPS_PEDAL - 1, apps2_at(0.5), brake_at(0));
   }
   SUBCASE("APPS2 open") {
-    p.update_travel(apps1_at(0.5), MIN_APPS_PEDAL - 1, brake_at(0));
+    update(p, apps1_at(0.5), MIN_APPS_PEDAL - 1, brake_at(0));
   }
 
   CHECK(p.get_apps_fault_ok_low());
@@ -110,10 +122,10 @@ TEST_CASE("an out-of-range BSE reading kills throttle (T.4.3.4)") {
   Pedals p = make_pedals();
 
   SUBCASE("shorted low") {
-    p.update_travel(apps1_at(0.5), apps2_at(0.5), MIN_BRAKE_PEDAL - 1);
+    update(p, apps1_at(0.5), apps2_at(0.5), MIN_BRAKE_PEDAL - 1);
   }
   SUBCASE("shorted high") {
-    p.update_travel(apps1_at(0.5), apps2_at(0.5), MAX_BRAKE_PEDAL + 1);
+    update(p, apps1_at(0.5), apps2_at(0.5), MAX_BRAKE_PEDAL + 1);
   }
 
   CHECK(p.get_bse_fault_ok_low());
@@ -122,7 +134,7 @@ TEST_CASE("an out-of-range BSE reading kills throttle (T.4.3.4)") {
 
 TEST_CASE("BSE fault clears as soon as the reading is back in range") {
   Pedals p = make_pedals();
-  p.update_travel(apps1_at(0), apps2_at(0), MAX_BRAKE_PEDAL + 1);
+  update(p, apps1_at(0), apps2_at(0), MAX_BRAKE_PEDAL + 1);
   REQUIRE(p.get_bse_fault_ok_low());
 
   press(p, 0.5);
@@ -133,8 +145,8 @@ TEST_CASE("BSE fault clears as soon as the reading is back in range") {
 TEST_CASE("APPS sensors that disagree kill throttle and latch until release") {
   Pedals p = make_pedals();
 
-  // 50% apart is implausible under any tolerance
-  p.update_travel(apps1_at(0.8), apps2_at(0.3), brake_at(0));
+  // 50% apart, for longer than T.4.2.5's 100 ms
+  hold(p, apps1_at(0.8), apps2_at(0.3), brake_at(0), 150);
   CHECK(p.get_apps_fault_ok_low());
   CHECK(p.get_travel() == 0);
 
@@ -147,6 +159,85 @@ TEST_CASE("APPS sensors that disagree kill throttle and latch until release") {
   press(p, 0.5);
   CHECK_FALSE(p.get_apps_fault_ok_low());
   CHECK(p.get_travel() > 0.4);
+}
+
+//
+//// APPS plausibility (T.4.2.4, T.4.2.5): more than 10 points apart is an
+//// implausibility; lasting over 100 ms, power must be cut. Here throttle is
+//// cut the moment they disagree, and a disagreement over 100 ms latches
+//// until the pedal is released.
+
+namespace {
+// APPS1 at `travel`, APPS2 `points` of travel lower
+void apart(Pedals &p, double travel, double points, uint32_t ms = 1) {
+  hold(p, apps1_at(travel), apps2_at(travel - points), brake_at(0), ms);
+}
+} // namespace
+
+TEST_CASE("the 10 point line") {
+  Pedals p = make_pedals();
+  apart(p, 0.6, 0.09, 200);
+  CHECK_FALSE(p.get_apps_fault_ok_low());
+  CHECK(p.get_travel() > 0.5);
+
+  apart(p, 0.6, 0.11);
+  CHECK(p.get_apps_fault_ok_low());
+  CHECK(p.get_travel() == 0); // the moment they're too far apart
+}
+
+TEST_CASE("a disagreement shorter than 100 ms cuts throttle only while it lasts") {
+  // A glitch, or the two sensors' filters catching up after a stab of
+  // throttle: no latched fault, no need to lift off
+  Pedals p = make_pedals();
+  press(p, 0.5);
+  apart(p, 0.5, 0.2, 80);
+  CHECK(p.get_travel() == 0);
+
+  press(p, 0.5);
+  CHECK_FALSE(p.get_apps_fault_ok_low());
+  CHECK(p.get_travel() > 0.4);
+}
+
+TEST_CASE("a disagreement over 100 ms latches until the pedal is released") {
+  Pedals p = make_pedals();
+  // Each update is 1 ms: the first disagreeing reading is t0, 100 ms later
+  // is still within the rule, the reading after that isn't
+  apart(p, 0.5, 0.2, 101);
+  press(p, 0.5);
+  CHECK_FALSE(p.get_apps_fault_ok_low()); // exactly 100 ms: not latched
+
+  apart(p, 0.5, 0.2, 102);
+  press(p, 0.5);
+  CHECK(p.get_apps_fault_ok_low());
+  CHECK(p.get_travel() == 0);
+
+  press(p, 0);
+  press(p, 0.5);
+  CHECK_FALSE(p.get_apps_fault_ok_low());
+  CHECK(p.get_travel() > 0.4);
+}
+
+TEST_CASE("disagreements that come and go don't add up") {
+  // Each one is timed from its own start
+  Pedals p = make_pedals();
+  for (int i = 0; i < 10; i++) {
+    apart(p, 0.5, 0.2, 60);
+    press(p, 0.5);
+  }
+  CHECK_FALSE(p.get_apps_fault_ok_low());
+  CHECK(p.get_travel() > 0.4);
+}
+
+TEST_CASE("a sensor drifting out of calibration is caught as it crosses 10 points") {
+  Pedals p = make_pedals();
+  bool cut = false;
+  for (int step = 0; step <= 30 && !cut; step++) {
+    double drift = step * 0.01;
+    hold(p, apps1_at(0.5), apps2_at(0.5 - drift), brake_at(0), 20);
+    cut = p.get_travel() == 0;
+    CHECK(cut == (drift > 0.10 + 1e-9));
+  }
+  CHECK(cut);
 }
 
 TEST_CASE("brake + throttle together kills throttle and latches until lift") {
@@ -214,7 +305,7 @@ TEST_CASE("every way an APPS can fail kills throttle, at any pedal position") {
         press(p, pedal);
         uint16_t a1 = apps1_at(pedal), a2 = apps2_at(pedal);
         (sensor == 1 ? a1 : a2) = f.raw;
-        p.update_travel(a1, a2, brake_at(0));
+        update(p, a1, a2, brake_at(0));
 
         CHECK(p.get_apps_fault_ok_low());
         CHECK(p.get_travel() == 0);
@@ -231,13 +322,13 @@ TEST_CASE("an APPS unplugged at light throttle can't drive the car once released
   // foot off, and the torque request was the stale 8% with no fault shown
   Pedals p = make_pedals();
   press(p, 0.08);
-  p.update_travel(0, apps2_at(0.08), brake_at(0)); // APPS1 unplugged
-  p.update_travel(0, apps2_at(0), brake_at(0));    // foot off
+  update(p, 0, apps2_at(0.08), brake_at(0)); // APPS1 unplugged
+  update(p, 0, apps2_at(0), brake_at(0));    // foot off
   CHECK(p.get_apps_fault_ok_low());
   CHECK(p.get_travel() == 0);
 
   for (double pedal : {0.0, 0.3, 1.0}) {
-    p.update_travel(0, apps2_at(pedal), brake_at(0));
+    update(p, 0, apps2_at(pedal), brake_at(0));
     CHECK(p.get_apps_fault_ok_low());
     CHECK(p.get_travel() == 0);
   }
@@ -245,7 +336,7 @@ TEST_CASE("an APPS unplugged at light throttle can't drive the car once released
 
 TEST_CASE("an APPS fault clears once the sensor is back and the pedal released") {
   Pedals p = make_pedals();
-  p.update_travel(apps1_at(0.5), ADS_FULL_SCALE, brake_at(0));
+  update(p, apps1_at(0.5), ADS_FULL_SCALE, brake_at(0));
   REQUIRE(p.get_apps_fault_ok_low());
 
   // Sensor back, but still on the pedal
@@ -261,11 +352,11 @@ TEST_CASE("an APPS fault clears once the sensor is back and the pedal released")
 
 TEST_CASE("both APPS failing the same way is still a fault") {
   Pedals p = make_pedals();
-  SUBCASE("both unplugged") { p.update_travel(0, 0, brake_at(0)); }
+  SUBCASE("both unplugged") { update(p, 0, 0, brake_at(0)); }
   SUBCASE("both shorted to the supply") {
     // They'd agree perfectly at 100% travel if only the clamped travel was
     // looked at
-    p.update_travel(ADS_FULL_SCALE, ADS_FULL_SCALE, brake_at(0));
+    update(p, ADS_FULL_SCALE, ADS_FULL_SCALE, brake_at(0));
   }
   CHECK(p.get_apps_fault_ok_low());
   CHECK(p.get_travel() == 0);
@@ -278,7 +369,7 @@ TEST_CASE("APPS1 and APPS2 shorted together never make torque") {
   for (uint32_t raw = 0; raw <= ADS_FULL_SCALE; raw++) {
     CAPTURE(raw);
     Pedals p = make_pedals();
-    p.update_travel(uint16_t(raw), uint16_t(raw), brake_at(0));
+    update(p, uint16_t(raw), uint16_t(raw), brake_at(0));
     CHECK(p.get_travel() == 0);
   }
 }
@@ -288,7 +379,7 @@ TEST_CASE("an APPS stuck at one reading is caught when the pedal moves") {
   Pedals p = make_pedals();
   press(p, 0.1);
   const uint16_t stuck = apps1_at(0.1);
-  p.update_travel(stuck, apps2_at(1.0), brake_at(0));
+  update(p, stuck, apps2_at(1.0), brake_at(0));
   CHECK(p.get_apps_fault_ok_low());
   CHECK(p.get_travel() == 0);
 }
@@ -308,7 +399,7 @@ TEST_CASE("every way the brake sensor can fail is a fault, and reads no brake") 
       CAPTURE(brake);
       Pedals p = make_pedals();
       press(p, 0.5, brake);
-      p.update_travel(apps1_at(0.5), apps2_at(0.5), f.raw);
+      update(p, apps1_at(0.5), apps2_at(0.5), f.raw);
       CHECK(p.get_bse_fault_ok_low());
       CHECK(p.get_travel() == 0);
       // Not the last good reading: that's what lets the car into ready to
@@ -330,13 +421,6 @@ TEST_CASE("a hard brake press isn't mistaken for a short") {
 //// for whoever owns the pedal code (maybe they were loosened on purpose for
 //// noisy sensors), so they WARN rather than fail. Check them against the
 //// current rulebook before changing anything.
-
-TEST_CASE("KNOWN ISSUE: APPS disagreement over 10 points should fault "
-          "(T.4.2.4, code uses 0.3)") {
-  Pedals p = make_pedals();
-  p.update_travel(apps1_at(0.5), apps2_at(0.25), brake_at(0));
-  WARN(p.get_apps_fault_ok_low());
-}
 
 TEST_CASE("KNOWN ISSUE: brake + >25% throttle should fault "
           "(EV.4.7.1, code uses 0.3)") {

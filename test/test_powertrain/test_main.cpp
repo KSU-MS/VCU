@@ -176,7 +176,7 @@ TEST_CASE("a fresh Pedals doesn't depend on zeroed memory") {
   CHECK_FALSE(p->get_apps_bse_fault_ok_low());
 
   // An open APPS1 on the very first reading mustn't use a junk APPS1 travel
-  p->update_travel(MIN_APPS_PEDAL - 1, START_ACCELERATOR_PEDAL_2, START_BRAKE_PEDAL);
+  p->update_travel(MIN_APPS_PEDAL - 1, START_ACCELERATOR_PEDAL_2, START_BRAKE_PEDAL, 0);
   CHECK(p->get_travel() == 0);
   CHECK(p->get_apps1_travel() == 0);
   p->~Pedals();

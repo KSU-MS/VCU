@@ -74,7 +74,7 @@ struct Car : ResetFirst {
 
   // One pass of loop(), same order as main.cpp
   void tick() {
-    pedals.update_travel(apps1_raw, apps2_raw, brake_raw);
+    pedals.update_travel(apps1_raw, apps2_raw, brake_raw, sim::now());
     pedals.update_steering(steering_raw);
     vcu.update_bspd(0, 0, 0);
     vcu.tick(sim::now());

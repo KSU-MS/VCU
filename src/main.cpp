@@ -18,7 +18,8 @@ void loop() {
   apps2.update();
   bse.update();
   steering_angle.update();
-  vcu.pedals->update_travel(apps1.value.in, apps2.value.in, bse.value.in);
+  vcu.pedals->update_travel(apps1.value.in, apps2.value.in, bse.value.in,
+                            millis());
   vcu.pedals->update_steering(steering_angle.value.in);
 
   vsense_bspd.update();

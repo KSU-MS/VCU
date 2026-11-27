@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <stdint.h>
 
 class Pedals {
@@ -31,8 +32,18 @@ private:
 
   // EV.4.7
   bool bse_fault = false;      // BSE is reading too high or too low
-  bool apps_fault = false;     // Not reading within 10% of each other
+  bool apps_fault = false;     // Latched: an APPS broken, or implausible >100 ms
   bool apps_bse_fault = false; // Screenshot (too much brake and gas (before BSPD))
+
+  // The two APPS disagreeing right now, and since when
+  bool apps_disagree = false;
+  uint32_t disagree_since = 0;
+
+public:
+  // T.4.2.4: more than 10 points of travel apart is an implausibility.
+  // T.4.2.5: if it lasts more than 100 ms, power to the motor must be cut.
+  static constexpr double APPS_IMPLAUSIBLE_TRAVEL = 0.10;
+  static constexpr uint32_t APPS_IMPLAUSIBLE_MS = 100;
 
 public:
   // Each sensor: a fault below `low_fault` or above `high_fault` (open or
@@ -65,7 +76,7 @@ public:
 
   // TODO: Make the release and apps_bse values confgiurable
   void update_travel(uint16_t raw_apps1, uint16_t raw_apps2,
-                     uint16_t raw_brake) {
+                     uint16_t raw_brake, uint32_t now_ms) {
     this->raw_apps1 = raw_apps1;
     this->raw_apps2 = raw_apps2;
     this->raw_brake = raw_brake;
@@ -92,25 +103,26 @@ public:
     if (!apps1_ok || !apps2_ok)
       apps_fault = true;
 
-    // T.4.2.4
-    // Check that there is no apps related faults
-    if (apps_fault == false && bse_fault == false && apps_bse_fault == false) {
+    // T.4.2.4, T.4.2.5: the APPS disagreeing cuts throttle for as long as
+    // it lasts (stricter than the rule, so a glitch costs a dropout, not a
+    // fault); lasting more than 100 ms latches it until the pedal's released
+    const bool disagreed = apps_disagree;
+    apps_disagree = std::fabs(apps1_travel - apps2_travel) > APPS_IMPLAUSIBLE_TRAVEL;
+    if (apps_disagree && !disagreed)
+      disagree_since = now_ms;
+    if (apps_disagree && now_ms - disagree_since > APPS_IMPLAUSIBLE_MS)
+      apps_fault = true;
 
-      // Check that the pedals are reading within 10%
-      if ((fabs(apps1_travel - apps2_travel) < 0.3)) {
-        travel = apps1_travel;
+    if (apps_fault || apps_disagree || bse_fault || apps_bse_fault) {
+      travel = 0;
+    } else {
+      travel = apps1_travel;
 
-        // Check that the driver isn't using both pedals at once
-        if ((travel > 0.3) && (brake_travel > 0.3)) {
-          apps_bse_fault = true;
-          travel = 0;
-        }
-      } else {
-        apps_fault = true;
+      // Check that the driver isn't using both pedals at once
+      if ((travel > 0.3) && (brake_travel > 0.3)) {
+        apps_bse_fault = true;
         travel = 0;
       }
-    } else {
-      travel = 0;
     }
   }
   static double clamp01(double x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
@@ -120,7 +132,8 @@ public:
   }
 
   inline bool get_bse_fault_ok_low() { return bse_fault; }
-  inline bool get_apps_fault_ok_low() { return apps_fault; }
+  // Throttle is cut for either; only the latched one needs a pedal release
+  inline bool get_apps_fault_ok_low() { return apps_fault || apps_disagree; }
   inline bool get_apps_bse_fault_ok_low() { return apps_bse_fault; }
 
   inline uint16_t get_apps1_raw() { return raw_apps1; }
