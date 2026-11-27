@@ -44,7 +44,7 @@
           LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.zstd ];
 
           shellHook = ''
-            echo "VCU dev shell: pio run | pio test -e native | uv run pytest | candump"
+            echo "VCU dev shell: pio run | pio test -e native | uv run pytest | candump" >&2
           '';
         } // uvEnv);
 

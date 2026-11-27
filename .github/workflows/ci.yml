@@ -16,6 +16,9 @@ concurrency:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write # the test report
 
     steps:
       - uses: actions/checkout@v4
@@ -34,12 +37,20 @@ jobs:
           key: ${{ runner.os }}-pio-${{ hashFiles('platformio.ini', 'flake.lock') }}
           restore-keys: ${{ runner.os }}-pio-
 
+      # Each test step writes JUnit XML into reports/, published at the end
       - name: Software-in-the-loop tests
-        run: nix develop -c pio test -e native
+        run: nix develop -c pio test -e native --junit-output-path reports/native.xml
 
       # The e2e tests in there skip without vcan; they run below
       - name: Host tool tests
-        run: nix develop -c uv run pytest -q
+        run: nix develop -c uv run pytest -q --junitxml=reports/python.xml
+
+      # Which tests cover which FSAE rule (docs/requirements.md), on the
+      # run's summary page
+      - name: Requirements coverage
+        run: |
+          echo "## FSAE 2027 requirements coverage" >> "$GITHUB_STEP_SUMMARY"
+          nix develop -c uv run tools/requirements/reqtrace.py >> "$GITHUB_STEP_SUMMARY"
 
       # Both A/B slots (signed with the dev key) and the bootloader, which
       # slot A's build bundles into firmware.hex for a USB flash
@@ -69,7 +80,23 @@ jobs:
           sudo tools/sil/setup_vcan.sh
 
       - name: End-to-end OTA over vcan
-        run: nix develop -c tools/run_e2e.sh tools/sil
+        run: nix develop -c tools/run_e2e.sh tools/sil --junitxml=reports/sil.xml
+
+      - name: Test report
+        if: always()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: reports/*.xml
+          check_name: Test report (unit, SIL)
+          include_passed: true
+          detailed_summary: true
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ github.sha }}
+          path: reports/
 
   # The real ARM firmware on an emulated Teensy 4.1 (renode/), updated A -> B
   # over CAN with the W25Q64's datasheet timing. Slower than the SIL e2e, so
@@ -77,6 +104,9 @@ jobs:
   renode-ota:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      checks: write # the test report
 
     steps:
       - uses: actions/checkout@v4
@@ -102,8 +132,24 @@ jobs:
             sudo modprobe vcan
           fi
 
-      - name: OTA update in Renode
-        run: nix develop -c tools/run_e2e.sh renode
+      - name: OTA update and pedal bench in Renode
+        run: nix develop -c tools/run_e2e.sh renode --junitxml=reports/renode.xml
+
+      - name: Test report
+        if: always()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: reports/*.xml
+          check_name: Test report (Renode)
+          include_passed: true
+          detailed_summary: true
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: renode-test-reports-${{ github.sha }}
+          path: reports/
 
   # Publish the dev container (flake.nix packages.devcontainer) for people
   # without Nix. Only from main, so branches don't overwrite :latest.

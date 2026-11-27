@@ -15,3 +15,6 @@ result
 # OTA signing keys, except the public dev key
 keys/*.key
 !keys/ota-dev.key
+
+# JUnit test reports (CI publishes them)
+reports/
