@@ -56,11 +56,17 @@ def firmware(size=120 * 1024, seed=1) -> bytes:
     return random.Random(seed).randbytes(size)
 
 
+def build(fw: bytes, version: int, **kw) -> bytes:
+    # The SIL runs the logic of a whole-flash build, signed with the dev key
+    return ota_image.build(fw, version, load_address=0x60000000,
+                           key=ota_image.load_private_key(ota_image.DEV_KEY), **kw)
+
+
 def test_flash_and_reboot_into_new_version(daq):
     sil = Sil("--version", "aaaa0001")
     try:
         sil.wait_for("TRACTIVE_SYSTEM_DISABLED")
-        img = ota_image.build(firmware(), 0xBBBB0002)
+        img = build(firmware(), 0xBBBB0002)
         with ota_flash.connect(daq) as client:
             assert ota_flash.read_version(client) == 0xAAAA0001
             started = time.monotonic()
@@ -79,7 +85,7 @@ def test_refuses_while_tractive_system_is_live(daq):
         sil.wait_for("TRACTIVE_SYSTEM_ENERGIZED")
         with ota_flash.connect(daq) as client:
             with pytest.raises(ota_flash.FlashError, match="isn't parked"):
-                ota_flash.flash(client, ota_image.build(firmware(4096), 2), quiet=True)
+                ota_flash.flash(client, build(firmware(4096), 2), quiet=True)
     finally:
         sil.stop()
 
@@ -87,7 +93,7 @@ def test_refuses_while_tractive_system_is_live(daq):
 def test_rejects_image_for_another_board(daq):
     sil = Sil("--version", "aaaa0001")
     try:
-        img = ota_image.build(firmware(8192), 3, target="teensy41-dash")
+        img = build(firmware(8192), 3, target="teensy41-dash")
         with ota_flash.connect(daq) as client:
             with pytest.raises(ota_flash.FlashError, match="different board"):
                 ota_flash.flash(client, img, quiet=True)

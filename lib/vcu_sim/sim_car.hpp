@@ -180,9 +180,16 @@ private:
   void tester_inject(const uint8_t *bytes, size_t len);
 };
 
-// An OTA image in the same format tools/ota/image.py makes
+// The development signing key, keys/ota-dev.key. Its public half is what
+// the native builds trust (scripts/ota_key.py), like the bench firmware.
+extern const uint8_t DEV_SIGNING_SEED[32];
+
+// An OTA image in the same format tools/ota/image.py makes, signed with
+// `seed` (the dev key unless a test wants a stranger's)
 std::vector<uint8_t> make_image(const std::vector<uint8_t> &firmware,
                                 uint32_t version,
-                                const char *target = ota::IMAGE_TARGET);
+                                const char *target = ota::IMAGE_TARGET,
+                                uint32_t load_address = 0x60000000,
+                                const uint8_t *seed = DEV_SIGNING_SEED);
 
 } // namespace sim

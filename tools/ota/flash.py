@@ -39,11 +39,13 @@ DID_SOFTWARE_VERSION = 0xF189
 ROUTINE_CHECK_IMAGE = 0xFF01
 PROGRAMMING_SESSION = 0x02
 
-# lib/ota/ota_image.hpp ImageError, in order
+# lib/vcu_boot/ota_image.hpp ImageError, in order
 IMAGE_ERRORS = [
     "ok", "too short", "bad magic", "unsupported header version",
     "header crc mismatch", "image is for a different board",
     "size doesn't match header", "image too big", "image crc mismatch",
+    "image is linked for a different address",
+    "bad signature (not signed with the key this VCU trusts)",
 ]
 
 

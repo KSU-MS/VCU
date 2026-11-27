@@ -1,0 +1,7 @@
+{
+  "name": "vcu_boot",
+  "version": "0.1.0",
+  "description": "What the bootloader and the OTA code share: the signed image format and its checks. Hardware-free, builds for the Teensy, the bootloader and native tests",
+  "platforms": "*",
+  "dependencies": [{"name": "monocypher"}]
+}

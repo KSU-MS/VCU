@@ -1,5 +1,6 @@
 #include "sim_car.hpp"
 #include <algorithm>
+#include <monocypher-ed25519.h>
 #include <string.h>
 
 namespace sim {
@@ -142,8 +143,14 @@ const char *Car::flash(const std::vector<uint8_t> &image) {
   return nullptr;
 }
 
+const uint8_t DEV_SIGNING_SEED[32] = {
+    0xe2, 0x8e, 0x3e, 0xf6, 0x00, 0x5f, 0xfa, 0xce, 0x36, 0xdb, 0xcb,
+    0x4d, 0x5e, 0xc9, 0xdb, 0xf8, 0x36, 0x03, 0xa0, 0x25, 0x86, 0x06,
+    0x38, 0x1c, 0x3d, 0x7c, 0xcd, 0x9e, 0x25, 0xc5, 0x7b, 0xe6};
+
 std::vector<uint8_t> make_image(const std::vector<uint8_t> &firmware,
-                                uint32_t version, const char *target) {
+                                uint32_t version, const char *target,
+                                uint32_t load_address, const uint8_t *seed) {
   ota::ImageHeader h{};
   memcpy(h.magic, ota::IMAGE_MAGIC, 4);
   h.header_version = ota::IMAGE_HEADER_VERSION;
@@ -152,12 +159,27 @@ std::vector<uint8_t> make_image(const std::vector<uint8_t> &firmware,
   h.image_crc32 = ota::crc32(firmware.data(), firmware.size());
   h.fw_version = version;
   strncpy(h.target, target, ota::IMAGE_TARGET_LEN);
+  h.load_address = load_address;
   h.header_crc32 = ota::crc32(reinterpret_cast<const uint8_t *>(&h),
                               offsetof(ota::ImageHeader, header_crc32));
 
-  std::vector<uint8_t> out(reinterpret_cast<const uint8_t *>(&h),
-                           reinterpret_cast<const uint8_t *>(&h) + sizeof(h));
+  std::vector<uint8_t> out(ota::IMAGE_FIRMWARE_OFFSET, 0xFF);
+  memcpy(out.data(), &h, sizeof(h));
   out.insert(out.end(), firmware.begin(), firmware.end());
+
+  // Ed25519 over SHA-512(header || firmware)
+  uint8_t digest[64];
+  crypto_sha512_ctx sha;
+  crypto_sha512_init(&sha);
+  crypto_sha512_update(&sha, out.data(), sizeof(h));
+  crypto_sha512_update(&sha, firmware.data(), firmware.size());
+  crypto_sha512_final(&sha, digest);
+
+  uint8_t seed_copy[32], secret[64], pub[32]; // key_pair wipes the seed
+  memcpy(seed_copy, seed, sizeof(seed_copy));
+  crypto_ed25519_key_pair(secret, pub, seed_copy);
+  crypto_ed25519_sign(out.data() + ota::IMAGE_SIGNATURE_OFFSET, secret, digest,
+                      sizeof(digest));
   return out;
 }
 

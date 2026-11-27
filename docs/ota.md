@@ -21,7 +21,13 @@ Proof of concept, not yet run on a real Teensy. What has been checked:
   (it used to poll 4 standard-ID mailboxes once per loop, which a burst
   overran; see `lib/ksu-fw-common/README.md`).
 - Image = 64 byte header (magic, size, CRC32, git version, target board,
-  header CRC) + raw flash image from `firmware.hex`. `tools/ota/image.py`.
+  load address, header CRC), an Ed25519 signature over SHA-512(header +
+  firmware), padding to 4 KB, then the firmware from `firmware.hex`.
+  `tools/ota/image.py` builds and signs; `lib/vcu_boot/ota_image.hpp`.
+- The VCU only applies an image whose signature verifies against the public
+  key built into it (`scripts/ota_key.py`), checked on what's actually in
+  flash. The default is the dev key, whose private half is in the repo; the
+  car needs its own (`keys/README.md`).
 - Staged in a 1 MB flash area at +4 MB, read back and CRC checked, then
   FlasherX's RAM-resident `flash_move` copies it over the firmware and reboots.
 - Only allowed in STARTUP/TS_DISABLED with the inverter off; the VCU holds
@@ -49,8 +55,9 @@ tools/run_e2e.sh renode      # real ARM firmware in Renode, A -> B, no root
   that ran code or read constants from flash then would see a half-written
   image. The VCU's ISRs (systick, USB) run from RAM, but it's worth knowing
   before adding interrupt-driven CAN.
-- No authentication: anyone on the DAQ bus can flash a parked car. Signing
-  images (e.g. ed25519) is the next step.
+- Signed images stop someone on the DAQ bus from flashing their own
+  firmware, but not from re-flashing an older image we signed (no
+  anti-rollback counter), and only if the car's key isn't the dev key.
 - `flash_move` erases everything above the new image, including EEPROM
   emulation (the VCU doesn't use it today).
 - Throughput: about 120 KiB/s in the SIL, where the bus is virtual and

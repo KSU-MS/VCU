@@ -37,7 +37,8 @@ void Board::apply_and_reboot(uint32_t staging_offset, uint32_t size) {
   firmware.assign(staging.bytes.begin() + staging_offset,
                   staging.bytes.begin() + staging_offset + size);
 
-  // The new firmware would report its own version once it boots
+  // The new firmware would report its own version once it boots. The
+  // header is still in the sector before the firmware.
   ota::ImageHeader h;
   memcpy(&h, staging.bytes.data(), sizeof(h));
   version = h.fw_version;

@@ -177,7 +177,7 @@ size_t UdsServer::request_download(const uint8_t *req, size_t len,
     return negative(resp, req[0], nrc::REQUEST_OUT_OF_RANGE);
 
   const uint32_t size = read_be32(req + 7);
-  if (size < IMAGE_HEADER_SIZE || size > staging.size())
+  if (size < IMAGE_FIRMWARE_OFFSET || size > staging.size())
     return negative(resp, req[0], nrc::UPLOAD_DOWNLOAD_NOT_ACCEPTED);
 
   // Starting again is always allowed, it throws away whatever was staged
@@ -252,23 +252,21 @@ size_t UdsServer::transfer_exit(const uint8_t *req, size_t len, uint8_t *resp) {
   return 1;
 }
 
-ImageError UdsServer::verify_staged() {
-  uint8_t head[IMAGE_HEADER_SIZE];
-  staging.read(0, head, sizeof(head));
-
-  ImageError err = parse_header(head, received, staging.size(), &header);
-  if (err != ImageError::OK)
-    return err;
-
-  // CRC what's actually in flash, not what we meant to write
-  uint32_t crc = 0;
-  uint8_t chunk[256];
-  for (uint32_t off = IMAGE_HEADER_SIZE; off < received; off += sizeof(chunk)) {
-    size_t n = received - off < sizeof(chunk) ? received - off : sizeof(chunk);
-    staging.read(off, chunk, n);
-    crc = crc32(chunk, n, crc);
+namespace {
+struct StagedImage : ImageReader {
+  const StagingFlash &flash;
+  explicit StagedImage(const StagingFlash &flash) : flash(flash) {}
+  void read(uint32_t offset, uint8_t *out, size_t len) const override {
+    flash.read(offset, out, len);
   }
-  return crc == header.image_crc32 ? ImageError::OK : ImageError::BAD_IMAGE_CRC;
+};
+} // namespace
+
+ImageError UdsServer::verify_staged() {
+  // Check what's actually in flash, not what we meant to write
+  return verify_image(StagedImage(staging), received,
+                      staging.size() - IMAGE_FIRMWARE_OFFSET,
+                      platform.image_load_address(), IMAGE_PUBLIC_KEY, &header);
 }
 
 size_t UdsServer::routine_control(const uint8_t *req, size_t len,
@@ -326,7 +324,7 @@ void UdsServer::do_pending_reset() {
   if (r == PendingReset::APPLY && verified && platform.safe_to_program()) {
     verified = false;
     session = Session::DEFAULT;
-    platform.apply_and_reboot(IMAGE_HEADER_SIZE, header.image_size);
+    platform.apply_and_reboot(IMAGE_FIRMWARE_OFFSET, header.image_size);
   } else if (r != PendingReset::NONE) {
     end_session();
     platform.reboot();

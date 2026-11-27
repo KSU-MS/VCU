@@ -21,6 +21,8 @@ public:
   void apply_and_reboot(uint32_t staging_offset, uint32_t size) override;
   void reboot() override;
   uint32_t running_version() override;
+  // Built as a whole-flash image, so it can only be replaced by one
+  uint32_t image_load_address() override { return 0x60000000; }
 
 private:
   VCU &vcu;

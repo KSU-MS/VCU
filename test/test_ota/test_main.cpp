@@ -7,8 +7,11 @@
 // fail back to the old firmware still being there.
 #include <sim_test_main.hpp>
 
+#include <algorithm>
+#include <monocypher-ed25519.h>
 #include <random>
 #include <sim_car.hpp>
+#include <string.h>
 
 using sim::Car;
 using Bytes = std::vector<uint8_t>;
@@ -21,6 +24,21 @@ Bytes random_firmware(size_t size, uint32_t seed = 1) {
   for (auto &b : out)
     b = uint8_t(rng());
   return out;
+}
+
+struct BufferImage : ota::ImageReader {
+  const Bytes &bytes;
+  explicit BufferImage(const Bytes &bytes) : bytes(bytes) {}
+  void read(uint32_t offset, uint8_t *out, size_t len) const override {
+    memcpy(out, bytes.data() + offset, len);
+  }
+};
+
+// The full check the VCU does on a staged image, against the built-in key
+ota::ImageError verify(const Bytes &img, uint32_t load_address,
+                       ota::ImageHeader *h) {
+  return ota::verify_image(BufferImage(img), img.size(), 1 << 20, load_address,
+                           ota::IMAGE_PUBLIC_KEY, h);
 }
 
 // The car as it'll usually be on the bench: GLV on, TS off
@@ -63,26 +81,91 @@ TEST_CASE("crc32 matches the standard check value") {
   CHECK(ota::crc32(reinterpret_cast<const uint8_t *>(s), 9) == 0xCBF43926);
 }
 
-TEST_CASE("image header matches what tools/ota/image.py builds") {
-  // Same golden bytes as tools/ota/test_image.py
+TEST_CASE("image matches what tools/ota/image.py builds") {
+  // Same golden bytes as tools/ota/test_image.py. Ed25519 is deterministic,
+  // so the signature (dev key) is fixed too.
   Bytes fw;
   for (int i = 0; i < 4; i++)
     for (int b = 0; b < 256; b++)
       fw.push_back(uint8_t(b));
-  const Bytes golden = {
-      0x4b, 0x56, 0x43, 0x55, 0x01, 0x00, 0x40, 0x00, 0x00, 0x04, 0x00,
+  const Bytes golden_header = {
+      0x4b, 0x56, 0x43, 0x55, 0x02, 0x00, 0x40, 0x00, 0x00, 0x04, 0x00,
       0x00, 0x26, 0x4c, 0x0b, 0xb7, 0xef, 0xbe, 0xad, 0xde, 0x74, 0x65,
       0x65, 0x6e, 0x73, 0x79, 0x34, 0x31, 0x2d, 0x76, 0x63, 0x75, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x02, 0x60,
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0xec, 0xb3, 0xbb};
+      0x00, 0x00, 0x00, 0x00, 0x00, 0xee, 0xdf, 0x7f, 0xf8};
+  const Bytes golden_signature = {
+      0xea, 0x17, 0x12, 0x65, 0xb8, 0xc2, 0x8a, 0xc9, 0xc1, 0xb7, 0x22,
+      0x6d, 0x97, 0x9f, 0x0c, 0x00, 0x53, 0xed, 0xaa, 0x12, 0xaa, 0x68,
+      0xed, 0x58, 0xb8, 0xdb, 0x1d, 0x4b, 0x52, 0x1f, 0x6c, 0xd1, 0xba,
+      0x2b, 0x3e, 0xf9, 0x9e, 0x28, 0xc4, 0x7c, 0x97, 0xe4, 0x59, 0x8a,
+      0x29, 0x4d, 0xf8, 0x77, 0x76, 0xf7, 0xd3, 0x69, 0x2a, 0x51, 0xe4,
+      0x6f, 0xd6, 0xf4, 0x1c, 0xbf, 0xfd, 0xa5, 0xe7, 0x08};
 
-  Bytes img = sim::make_image(fw, 0xDEADBEEF);
-  CHECK(Bytes(img.begin(), img.begin() + 64) == golden);
+  Bytes img = sim::make_image(fw, 0xDEADBEEF, ota::IMAGE_TARGET, 0x60021000);
+  CHECK(Bytes(img.begin(), img.begin() + 64) == golden_header);
+  CHECK(Bytes(img.begin() + 64, img.begin() + 128) == golden_signature);
 
   ota::ImageHeader h;
-  CHECK(ota::parse_header(golden.data(), 64 + fw.size(), 1 << 20, &h) ==
-        ota::ImageError::OK);
+  CHECK(verify(img, 0x60021000, &h) == ota::ImageError::OK);
+  CHECK(h.load_address == 0x60021000);
+}
+
+TEST_CASE("the dev signing key is the one native builds trust") {
+  uint8_t seed[32], secret[64], pub[32];
+  memcpy(seed, sim::DEV_SIGNING_SEED, sizeof(seed));
+  crypto_ed25519_key_pair(secret, pub, seed);
+  CHECK(memcmp(pub, ota::IMAGE_PUBLIC_KEY, 32) == 0);
+}
+
+TEST_CASE("signature check") {
+  Bytes fw = random_firmware(5000);
+  ota::ImageHeader h;
+
+  SUBCASE("signed with our key") {
+    CHECK(verify(sim::make_image(fw, 1), 0x60000000, &h) == ota::ImageError::OK);
+  }
+  SUBCASE("signed with someone else's key") {
+    uint8_t stranger[32];
+    for (int i = 0; i < 32; i++)
+      stranger[i] = uint8_t(i * 7 + 3);
+    Bytes img = sim::make_image(fw, 1, ota::IMAGE_TARGET, 0x60000000, stranger);
+    CHECK(verify(img, 0x60000000, &h) == ota::ImageError::BAD_SIGNATURE);
+  }
+  SUBCASE("firmware changed after signing, CRC fixed up") {
+    Bytes img = sim::make_image(fw, 1);
+    img[ota::IMAGE_FIRMWARE_OFFSET + 100] ^= 0x01;
+    ota::ImageHeader fixed;
+    memcpy(&fixed, img.data(), sizeof(fixed));
+    fixed.image_crc32 = ota::crc32(img.data() + ota::IMAGE_FIRMWARE_OFFSET,
+                                   fw.size());
+    fixed.header_crc32 = ota::crc32(reinterpret_cast<uint8_t *>(&fixed),
+                                    offsetof(ota::ImageHeader, header_crc32));
+    memcpy(img.data(), &fixed, sizeof(fixed));
+    CHECK(verify(img, 0x60000000, &h) == ota::ImageError::BAD_SIGNATURE);
+  }
+  SUBCASE("signature bytes damaged") {
+    Bytes img = sim::make_image(fw, 1);
+    img[ota::IMAGE_SIGNATURE_OFFSET + 5] ^= 0x80;
+    CHECK(verify(img, 0x60000000, &h) == ota::ImageError::BAD_SIGNATURE);
+  }
+  SUBCASE("linked for somewhere else") {
+    Bytes img = sim::make_image(fw, 1, ota::IMAGE_TARGET, 0x60201000);
+    CHECK(verify(img, 0x60021000, &h) == ota::ImageError::WRONG_LOAD_ADDRESS);
+  }
+  SUBCASE("load address rewritten in the header, CRC fixed up") {
+    // The header is signed too, so a valid image for one slot can't be
+    // relabelled for the other
+    Bytes img = sim::make_image(fw, 1, ota::IMAGE_TARGET, 0x60201000);
+    ota::ImageHeader fixed;
+    memcpy(&fixed, img.data(), sizeof(fixed));
+    fixed.load_address = 0x60021000;
+    fixed.header_crc32 = ota::crc32(reinterpret_cast<uint8_t *>(&fixed),
+                                    offsetof(ota::ImageHeader, header_crc32));
+    memcpy(img.data(), &fixed, sizeof(fixed));
+    CHECK(verify(img, 0x60021000, &h) == ota::ImageError::BAD_SIGNATURE);
+  }
 }
 
 TEST_CASE("image header validation") {
@@ -98,6 +181,8 @@ TEST_CASE("image header validation") {
   }
   SUBCASE("truncated") {
     CHECK(ota::parse_header(img.data(), 40, 1 << 20, &h) ==
+          ota::ImageError::TOO_SHORT);
+    CHECK(verify(Bytes(img.begin(), img.begin() + 2000), 0x60000000, &h) ==
           ota::ImageError::TOO_SHORT);
   }
   SUBCASE("not an image") {
@@ -168,8 +253,12 @@ TEST_CASE("a resent block is acked again but not written twice") {
   CHECK(positive(car.uds(transfer_data(1, img, 0, 1024)), 0x36));
   CHECK(car.updater.server().bytes_received() == 1024);
 
-  CHECK(positive(car.uds(transfer_data(2, img, 1024, 1024)), 0x36));
-  CHECK(positive(car.uds(transfer_data(3, img, 2048, img.size() - 2048)), 0x36));
+  // and the rest as normal
+  uint8_t counter = 2;
+  for (size_t off = 1024; off < img.size(); off += 1024, counter++) {
+    size_t n = std::min<size_t>(1024, img.size() - off);
+    CHECK(positive(car.uds(transfer_data(counter, img, off, n)), 0x36));
+  }
   CHECK(positive(car.uds({0x37}), 0x37));
   Bytes r = car.uds({0x31, 0x01, 0xFF, 0x01});
   REQUIRE(r.size() == 5);
@@ -326,11 +415,14 @@ TEST_CASE("rejects out of order blocks") {
 TEST_CASE("rejects more data than was requested") {
   Car car;
   park(car);
-  Bytes img = sim::make_image(random_firmware(500), 6);
+  Bytes img = sim::make_image(random_firmware(500), 6); // 4096 + 500 bytes
   start_download(car, img);
+  for (uint8_t block = 1; block <= 4; block++)
+    REQUIRE(positive(car.uds(transfer_data(block, img, (block - 1) * 1024, 1024)), 0x36));
+  // 500 bytes left, the tester sends a full block
   Bytes big = img;
-  big.resize(1024, 0);
-  CHECK(nrc_of(car.uds(transfer_data(1, big, 0, 1024))) ==
+  big.resize(5 * 1024, 0);
+  CHECK(nrc_of(car.uds(transfer_data(5, big, 4096, 1024))) ==
         ota::nrc::TRANSFER_DATA_SUSPENDED);
 }
 

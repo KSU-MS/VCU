@@ -11,3 +11,7 @@ __pycache__/
 .pytest_cache/
 result
 .venv/
+
+# OTA signing keys, except the public dev key
+keys/*.key
+!keys/ota-dev.key

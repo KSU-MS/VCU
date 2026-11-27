@@ -7,7 +7,7 @@
 //   34 00 44 a4 s4   RequestDownload of s bytes (address ignored)
 //   36 nn data       TransferData block nn (1, 2, ... 0xFF, 0, 1, ...)
 //   37               RequestTransferExit
-//   31 01 FF01       RoutineControl: check the staged image (crc etc)
+//   31 01 FF01       RoutineControl: check the staged image (signature etc)
 //   11 01            ECUReset: apply the staged image if verified, reboot
 //
 // Anything else gets the matching negative response.

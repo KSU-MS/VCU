@@ -44,12 +44,14 @@ public:
   void apply_and_reboot(uint32_t staging_offset, uint32_t size) override;
   void reboot() override { reboots++; }
   uint32_t running_version() override { return version; }
+  uint32_t image_load_address() override { return load_address; }
 
   NorFlash &staging;
 
   // What's in program flash, and the version it reports
   std::vector<uint8_t> firmware;
   uint32_t version = 0x11111111;
+  uint32_t load_address = 0x60000000;
 
   size_t reboots = 0;
   size_t applies = 0;

@@ -43,6 +43,10 @@ public:
 
   // Version of the firmware that's running now, for ReadDataByIdentifier
   virtual uint32_t running_version() = 0;
+
+  // Where a downloaded image's firmware must be linked to run. Images
+  // linked anywhere else are refused (WRONG_LOAD_ADDRESS).
+  virtual uint32_t image_load_address() = 0;
 };
 
 } // namespace ota

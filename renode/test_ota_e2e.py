@@ -51,8 +51,9 @@ def image_b(tmp_path_factory) -> bytes:
         shutil.copytree(ROOT / ".pio/libdeps", tree / ".pio/libdeps")
         run("pio", "run", "-s", "-e", "teensy41", cwd=tree)
         version, _ = ota_image.git_version(tree)
-        firmware = ota_image.read_intel_hex(tree / ".pio/build/teensy41/firmware.hex")
-        return ota_image.build(firmware, version)
+        load_address, firmware = ota_image.read_intel_hex(tree / ".pio/build/teensy41/firmware.hex")
+        return ota_image.build(firmware, version, load_address=load_address,
+                               key=ota_image.load_private_key(ota_image.DEV_KEY))
     finally:
         run("git", "worktree", "remove", "--force", str(tree))
 
