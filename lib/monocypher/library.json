@@ -1,0 +1,7 @@
+{
+  "name": "monocypher",
+  "version": "4.0.2",
+  "license": "BSD-2-Clause OR CC0-1.0",
+  "frameworks": "*",
+  "platforms": "*"
+}
