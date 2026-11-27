@@ -1,5 +1,6 @@
 #pragma once
 // Simulated flash and board for the OTA code.
+#include <boot.hpp>
 #include <functional>
 #include <ota_platform.hpp>
 #include <vector>
@@ -9,7 +10,10 @@ namespace sim {
 // NOR flash: erase sets a sector to 0xFF, program can only clear bits. A
 // program over bits that weren't erased silently corrupts them, exactly like
 // the real chip; `unerased_writes` counts how often that happened.
-class NorFlash : public ota::StagingFlash {
+//
+// Serves as a staging area (ota::StagingFlash) or as the whole chip
+// (boot::Flash); the methods are the same.
+class NorFlash : public ota::StagingFlash, public boot::Flash {
 public:
   explicit NorFlash(size_t size, size_t sector = 4096)
       : bytes(size, 0xFF), sector(sector) {}
@@ -28,9 +32,13 @@ public:
   size_t unerased_writes = 0;
 
   // Fault injection: fail every program/erase once this many bytes have
-  // been programmed (simulates the flash dying mid-download)
+  // been programmed (power lost mid-write: bytes before it landed, the rest
+  // didn't)
   size_t fail_after_bytes = SIZE_MAX;
   size_t bytes_programmed = 0;
+
+  // Power lost during the next erase: the sector is left half erased
+  bool interrupt_next_erase = false;
 };
 
 // The "board": whatever firmware it's running, and what happened to it

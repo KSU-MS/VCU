@@ -9,6 +9,11 @@ bool NorFlash::erase_sector(uint32_t offset) {
     return false;
   if (bytes_programmed >= fail_after_bytes)
     return false;
+  if (interrupt_next_erase) {
+    interrupt_next_erase = false;
+    memset(bytes.data() + offset, 0xFF, sector / 2);
+    return false;
+  }
   memset(bytes.data() + offset, 0xFF, sector);
   erases++;
   return true;
