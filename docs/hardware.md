@@ -17,7 +17,7 @@ uv run trace.py nets.json A10_Buff    # follow a net out to the J1 harness
 |---|---|---|
 | **Pump low-side outputs** | `LOWSide1` = Teensy **6** -> Q16 -> J1.13, `LOWSide2` = **7** -> Q15 -> J1.25. Pin 5 is unconnected | `LOWSIDE1 5`, `LOWSIDE2 6`: one pump output does nothing, the other drives the wrong one. Rev4 leftover? |
 | **Brake sensor** | J1.21 `BSE` -> filter -> ADS1018 **AIN2** (never read). J1.10 is a generic input -> Teensy **A10** | `adc bse(avr, A10)`: reads J1.10. Fine if the transducer is wired to J1.10, otherwise brake reads nothing |
-| **BSE short-to-supply fault** | A10 front end: 4K7 + 2K0 series, 12K0 to GND (gain 0.642), BAV199 clamp. 5 V reads ~995 counts, a GLV short clamps at ~1023 | `MAX_BRAKE_PEDAL 1025` can never be reached, so T.4.3.4 short-high never trips. Needs a threshold between real full-press and ~995 (KNOWN ISSUE test in `test_pedals`) |
+| **BSE short-to-supply fault** | A10 front end: 4K7 + 2K0 series, 12K0 to GND (gain 0.642), BAV199 clamp. 5 V reads ~995 counts, a GLV short clamps at ~1023 | Was `MAX_BRAKE_PEDAL 1025`, which can never be reached, so T.4.3.4 short-high never tripped. Now 960, between full press (922) and ~995: check full press on the car stays under it |
 | **APPS names** | ADS AIN0 = `APPS_2` (J1.11), AIN1 = `APPS_1` (J1.12) | Channel 0 called APPS1, 1 called APPS2. Calibration was tuned on the car so it works; just swapped names |
 
 ## Pin map (Teensy U14)
