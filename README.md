@@ -20,7 +20,7 @@ tools/run_e2e.sh renode      # the real ARM firmware on an emulated Teensy, upda
 - **Renode** (emulated Teensy 4.1, flash with the W25Q64's datasheet timing): [renode/README.md](renode/README.md).
 - **CI** runs on every PR: the tests, the firmware build, and both OTA end-to-end tests (SIL and Renode).
 - **Schematic vs firmware** (pump pins, brake sensor input): [docs/hardware.md](docs/hardware.md).
-- **Proposal: Raspberry Pi as the controller, VCU as the safety authority**: [docs/pi-supervisor.md](docs/pi-supervisor.md).
+- **Raspberry Pi as the controller, VCU as the safety authority**: the VCU side is done (the Pi's torque ceiling, checked, with fallback and handover); nothing on the Pi yet. [docs/pi-supervisor.md](docs/pi-supervisor.md).
 
 ## Main Branch
 This should be stable code that you can push to the car at any point, if it doesn't work go yell at @Chance
