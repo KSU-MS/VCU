@@ -58,6 +58,11 @@ public:
   // For the boot status DID: running slot, active slot, trial slot (0xFF for
   // none), trial boots so far
   virtual void boot_status(uint8_t out[4]) = 0;
+
+  // Why the board last reset, for the reset cause DID: RESET_CAUSE_*
+  virtual uint8_t reset_cause() { return RESET_CAUSE_OTHER; }
+  static constexpr uint8_t RESET_CAUSE_OTHER = 0;
+  static constexpr uint8_t RESET_CAUSE_WATCHDOG = 1;
 };
 
 } // namespace ota

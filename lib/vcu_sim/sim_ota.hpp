@@ -52,6 +52,8 @@ public:
   std::function<bool()> safe = [] { return true; };
 
   bool safe_to_program() override { return safe(); }
+  uint8_t reset_cause() override { return last_reset_cause; }
+  uint8_t last_reset_cause = RESET_CAUSE_OTHER;
   void activate_and_reboot() override;
   void reboot() override;
 

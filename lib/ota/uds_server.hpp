@@ -7,6 +7,7 @@
 //   22 F101          ... OTA status (session, download state, last error)
 //   22 F102          ... boot status (running/active/trial slot, attempts)
 //   22 F103          ... the load address an update must be linked for
+//   22 F104          ... why it last reset (1: the watchdog)
 //   34 00 44 a4 s4   RequestDownload of s bytes (address ignored)
 //   36 nn data       TransferData block nn (1, 2, ... 0xFF, 0, 1, ...)
 //   37               RequestTransferExit
@@ -54,6 +55,7 @@ constexpr uint16_t DID_SOFTWARE_VERSION = 0xF189;
 constexpr uint16_t DID_OTA_STATUS = 0xF101;
 constexpr uint16_t DID_BOOT_STATUS = 0xF102;
 constexpr uint16_t DID_DOWNLOAD_ADDRESS = 0xF103;
+constexpr uint16_t DID_RESET_CAUSE = 0xF104;
 constexpr uint16_t ROUTINE_CHECK_IMAGE = 0xFF01;
 constexpr uint16_t ROUTINE_CONFIRM = 0xFF02;
 

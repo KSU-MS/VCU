@@ -168,6 +168,9 @@ size_t UdsServer::read_did(const uint8_t *req, size_t len, uint8_t *resp) {
   case DID_DOWNLOAD_ADDRESS:
     write_be32(resp + 3, platform.image_load_address());
     return 7;
+  case DID_RESET_CAUSE:
+    resp[3] = platform.reset_cause();
+    return 4;
   default:
     return negative(resp, req[0], nrc::REQUEST_OUT_OF_RANGE);
   }

@@ -45,6 +45,8 @@ RESPONSE_ID = 0x7E8
 DID_SOFTWARE_VERSION = 0xF189
 DID_BOOT_STATUS = 0xF102
 DID_DOWNLOAD_ADDRESS = 0xF103
+DID_RESET_CAUSE = 0xF104
+RESET_CAUSE_WATCHDOG = 1
 ROUTINE_CHECK_IMAGE = 0xFF01
 ROUTINE_CONFIRM = 0xFF02
 NO_SLOT = 0xFF
@@ -88,6 +90,7 @@ def connect(bus: can.BusABC, timeout_scale: float = 1.0) -> Client:
             DID_SOFTWARE_VERSION: ">I",
             DID_BOOT_STATUS: "BBBB",
             DID_DOWNLOAD_ADDRESS: ">I",
+            DID_RESET_CAUSE: "B",
         },
         # Flash erases make some TransferData responses slow, don't trust the
         # 50 ms P2 the VCU advertises
@@ -124,6 +127,13 @@ def download_address(client: Client) -> int:
     (addr,) = client.read_data_by_identifier(DID_DOWNLOAD_ADDRESS).service_data.values[
         DID_DOWNLOAD_ADDRESS]
     return addr
+
+
+def reset_by_watchdog(client: Client) -> bool:
+    """Did the watchdog reset the VCU last (its firmware hung)?"""
+    (cause,) = client.read_data_by_identifier(DID_RESET_CAUSE).service_data.values[
+        DID_RESET_CAUSE]
+    return cause == RESET_CAUSE_WATCHDOG
 
 
 def pick_image(images: list[bytes], load_address: int) -> bytes:

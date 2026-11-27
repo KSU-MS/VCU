@@ -5,6 +5,7 @@
 // check on the bench.
 #if defined(__IMXRT1062__)
 #include "ota_teensy.hpp"
+#include "hal.hpp"
 #include "parameters.hpp"
 #include <Arduino.h>
 #include <string.h>
@@ -55,5 +56,9 @@ TeensyBoard::TeensyBoard(TeensyFlash &flash, VCU &vcu)
 bool TeensyBoard::safe_to_program() { return vcu.safe_to_program(); }
 
 void TeensyBoard::reboot() { SCB_AIRCR = 0x05FA0004; }
+
+uint8_t TeensyBoard::reset_cause() {
+  return hal::reset_by_watchdog() ? RESET_CAUSE_WATCHDOG : RESET_CAUSE_OTHER;
+}
 
 #endif

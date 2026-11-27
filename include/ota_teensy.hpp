@@ -24,6 +24,7 @@ public:
 
   bool safe_to_program() override;
   void reboot() override;
+  uint8_t reset_cause() override;
 
 private:
   VCU &vcu;

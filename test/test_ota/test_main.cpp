@@ -658,3 +658,23 @@ TEST_CASE("the update never touches the running slot") {
                         boot::SLOT_SIZE);
   CHECK(before == after);
 }
+
+TEST_CASE("the reset cause DID says when the watchdog reset the board") {
+  Car car;
+  park(car);
+  CHECK(car.uds({0x22, 0xF1, 0x04}) == Bytes{0x62, 0xF1, 0x04, 0x00});
+  car.board.last_reset_cause = ota::Platform::RESET_CAUSE_WATCHDOG;
+  CHECK(car.uds({0x22, 0xF1, 0x04}) == Bytes{0x62, 0xF1, 0x04, 0x01});
+}
+
+TEST_CASE("the watchdog is fed all through a firmware download") {
+  // Flash erases and the signature check run in the loop too
+  Car car;
+  park(car);
+  const size_t feeds_before = sim::watchdog_feeds();
+  const uint32_t started = sim::now();
+  REQUIRE(car.flash(sim::make_image(random_firmware(100 * 1024, 5), 2)) == nullptr);
+  // car.flash() runs the loop 1 ms at a time while it waits for answers:
+  // a feed for every one of them
+  CHECK(sim::watchdog_feeds() - feeds_before == sim::now() - started);
+}
