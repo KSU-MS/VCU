@@ -56,7 +56,7 @@ TEST_CASE("a full queue drops the newest frame and counts it") {
   CHECK(q.push(frame(7)));
 }
 
-TEST_CASE("slots are reused as the queue goes round") {
+TEST_CASE("slots are reused as the queue goes round (x1000)") {
   // The indices are free-running uint32_t and only reduced mod N on use.
   // Because N is a power of two (asserted) it divides 2^32, so head - tail
   // and h % N stay right when they wrap too (~6 days of a busy 1 Mbit/s bus).

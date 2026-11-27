@@ -163,7 +163,7 @@ void no_violation(const std::vector<double> &watts) {
 }
 } // namespace
 
-TEST_CASE("[EV.3.3.1][EV.3.4.1] measured power stays under 80 kW, whatever the drivetrain loses") {
+TEST_CASE("[EV.3.3.1][EV.3.4.1] measured power stays under 80 kW, whatever the drivetrain loses (x6: 70-99% efficient)") {
   for (double efficiency : {0.70, 0.80, 0.85, 0.90, 0.95, 0.99}) {
     CAPTURE(efficiency);
     Car car;
@@ -176,7 +176,7 @@ TEST_CASE("[EV.3.3.1][EV.3.4.1] measured power stays under 80 kW, whatever the d
   }
 }
 
-TEST_CASE("[EV.3.3.1][EV.3.4.1] coming onto the power limit from below") {
+TEST_CASE("[EV.3.3.1][EV.3.4.1] coming onto the power limit from below (x15: 1000-8000 rpm)") {
   // Accelerating through the speed where 240 Nm reaches 80 kW: torque
   // limited, then power limited, with the trim having crept up meanwhile
   Car car;
@@ -199,7 +199,7 @@ TEST_CASE("[EV.3.3.1] measured power going stale falls back to the open-loop cap
   CHECK(p.settled_kw * 0.99 <= POWER_LIMIT_KW * 0.90 + 0.1); // shaft power
 }
 
-TEST_CASE("[EV.3.3.3] never asks for regen, at any speed") {
+TEST_CASE("[EV.3.3.3] never asks for regen, at any speed (x28: 7 speeds x 4 requests)") {
   // No regen at all, so none between 0 and 5 km/h either
   Car car;
   enable(car);

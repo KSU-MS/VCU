@@ -97,7 +97,7 @@ TEST_CASE("a written state reads back after a reset") {
   CHECK(s.current().sequence == 2);
 }
 
-TEST_CASE("the journal moves between its two sectors as they fill") {
+TEST_CASE("the journal moves between its two sectors as they fill (x320 writes)") {
   sim::NorFlash f(FLASH_SIZE);
   BootState s(f);
   s.load();
@@ -112,8 +112,9 @@ TEST_CASE("the journal moves between its two sectors as they fill") {
   CHECK(f.erases == 2); // switched sector twice
 }
 
-TEST_CASE("losing power at any byte of a record keeps the old state") {
-  for (size_t k = 0; k <= sizeof(BootRecord); k++) {
+TEST_CASE("losing power at any byte of a record keeps the old state (x33: each byte, and none)") {
+  size_t cuts = 0;
+  for (size_t k = 0; k <= sizeof(BootRecord); k++, cuts++) {
     CAPTURE(k);
     sim::NorFlash f(FLASH_SIZE);
     BootState s(f);
@@ -141,6 +142,7 @@ TEST_CASE("losing power at any byte of a record keeps the old state") {
     REQUIRE(again.load());
     CHECK(again.current().active == SLOT_B);
   }
+  CHECK(cuts == 33); // what the name says
 }
 
 TEST_CASE("losing power while switching sectors keeps the old state") {
@@ -384,11 +386,12 @@ TEST_CASE("a confirmed slot that goes bad falls back to the other") {
   CHECK(s.current().active == SLOT_A);
 }
 
-TEST_CASE("losing power anywhere while the update is written keeps slot A") {
+TEST_CASE("losing power anywhere while the update is written keeps slot A (x17: every 997th byte)") {
   // Every 997th byte of the image, through erase and program
   Board b;
   Bytes img = image_for(SLOT_B, 0xB2, 12000);
-  for (size_t cut = 0; cut < img.size(); cut += 997) {
+  size_t cuts = 0;
+  for (size_t cut = 0; cut < img.size(); cut += 997, cuts++) {
     CAPTURE(cut);
     b.flash.fail_after_bytes = b.flash.bytes_programmed + cut;
     for (uint32_t off = 0; off < img.size(); off += SECTOR_SIZE)
@@ -400,14 +403,16 @@ TEST_CASE("losing power anywhere while the update is written keeps slot A") {
     CHECK(r.slot == SLOT_A);
     CHECK_FALSE(r.trial);
   }
+  CHECK(cuts == 17); // what the name says
 }
 
 // Power cut at each byte of the boot-state record being written. One test
 // per moment rather than SUBCASEs in the loop: doctest re-runs a test case
 // from the top for each subcase, which in a loop is hard to reason about.
 
-TEST_CASE("losing power while the trial is recorded is safe") {
-  for (size_t k = 0; k < sizeof(BootRecord); k++) {
+TEST_CASE("losing power while the trial is recorded is safe (x32: each byte)") {
+  size_t cuts = 0;
+  for (size_t k = 0; k < sizeof(BootRecord); k++, cuts++) {
     CAPTURE(k);
     Board b;
     write_slot(b.flash, SLOT_B, image_for(SLOT_B, 0xB2));
@@ -419,10 +424,12 @@ TEST_CASE("losing power while the trial is recorded is safe") {
     // Never recorded, so A as before
     CHECK(boot_once(b.flash).slot == SLOT_A);
   }
+  CHECK(cuts == 32); // what the name says
 }
 
-TEST_CASE("losing power while confirming is safe") {
-  for (size_t k = 0; k < sizeof(BootRecord); k++) {
+TEST_CASE("losing power while confirming is safe (x32: each byte)") {
+  size_t cuts = 0;
+  for (size_t k = 0; k < sizeof(BootRecord); k++, cuts++) {
     CAPTURE(k);
     Board b;
     write_slot(b.flash, SLOT_B, image_for(SLOT_B, 0xB2));
@@ -441,10 +448,12 @@ TEST_CASE("losing power while confirming is safe") {
     // works. The tester sees the old version and can try again.
     CHECK(boot_once(b.flash).slot == SLOT_A);
   }
+  CHECK(cuts == 32); // what the name says
 }
 
-TEST_CASE("losing power while the bootloader counts the trial boot is safe") {
-  for (size_t k = 0; k < sizeof(BootRecord); k++) {
+TEST_CASE("losing power while the bootloader counts the trial boot is safe (x32: each byte)") {
+  size_t cuts = 0;
+  for (size_t k = 0; k < sizeof(BootRecord); k++, cuts++) {
     CAPTURE(k);
     Board b;
     write_slot(b.flash, SLOT_B, image_for(SLOT_B, 0xB2));
@@ -464,6 +473,7 @@ TEST_CASE("losing power while the bootloader counts the trial boot is safe") {
     CHECK(r.trial);
     CHECK(boot_once(b.flash).slot == SLOT_A);
   }
+  CHECK(cuts == 32); // what the name says
 }
 
 TEST_CASE("a trial can't start from the slot it would replace") {

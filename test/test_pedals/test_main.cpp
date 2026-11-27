@@ -78,7 +78,7 @@ TEST_CASE("travel maps linearly across each sensor's calibrated range") {
   CHECK(p.get_brake_travel() == doctest::Approx(0.25).epsilon(0.01));
 }
 
-TEST_CASE("[T.4.2.3] the two APPS have different transfer functions, well apart") {
+TEST_CASE("[T.4.2.3] the two APPS have different transfer functions, well apart (x91: 10-100% travel)") {
   // Different offsets and gradients
   CHECK(START_ACCELERATOR_PEDAL_1 != START_ACCELERATOR_PEDAL_2);
   CHECK(END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1 !=
@@ -242,7 +242,7 @@ TEST_CASE("[T.4.2.5] a disagreement over 100 ms latches until the pedal is relea
   CHECK(p.get_travel() > 0.4);
 }
 
-TEST_CASE("[T.4.2.5] disagreements that come and go don't add up") {
+TEST_CASE("[T.4.2.5] disagreements that come and go don't add up (x10)") {
   // Each one is timed from its own start
   Pedals p = make_pedals();
   for (int i = 0; i < 10; i++) {
@@ -391,7 +391,7 @@ std::vector<Fault> apps_faults(uint16_t high_fault) {
 }
 } // namespace
 
-TEST_CASE("[T.4.2.9][T.4.2.10] every way an APPS can fail kills throttle, at any pedal position") {
+TEST_CASE("[T.4.2.9][T.4.2.10] every way an APPS can fail kills throttle, at any pedal position (x40: 2 sensors x 5 faults x 4 positions)") {
   for (int sensor : {1, 2}) {
     for (const Fault &f :
          apps_faults(sensor == 1 ? MAX_ACCELERATOR_PEDAL_1 : MAX_ACCELERATOR_PEDAL_2)) {
@@ -460,7 +460,7 @@ TEST_CASE("[T.4.2.9][T.4.2.10] both APPS failing the same way is still a fault")
   CHECK(p.get_travel() == 0);
 }
 
-TEST_CASE("[T.4.2.3][T.4.2.9] APPS1 and APPS2 shorted together never make torque") {
+TEST_CASE("[T.4.2.3][T.4.2.9] APPS1 and APPS2 shorted together never make torque (x2048: every ADC value)") {
   // Both inputs read the same voltage. The two sensors have different
   // transfer functions, so whatever that voltage is, they either disagree,
   // read out of range, or both read 0 travel.
@@ -482,7 +482,7 @@ TEST_CASE("[T.4.2.9] an APPS stuck at one reading is caught when the pedal moves
   CHECK(p.get_travel() == 0);
 }
 
-TEST_CASE("[T.4.3.3][T.4.3.4] every way the brake sensor can fail is a fault, and reads no brake") {
+TEST_CASE("[T.4.3.3][T.4.3.4] every way the brake sensor can fail is a fault, and reads no brake (x12: 6 faults x 2 positions)") {
   const Fault faults[] = {
       {"unplugged (pulled down)", 0},
       {"shorted to ground", 0},
