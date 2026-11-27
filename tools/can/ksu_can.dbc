@@ -395,6 +395,21 @@ BO_ 16 pi_torque_command: 8 pi
  SG_ pi_engage : 16|1@1+ (1,0) [0|1] "bool" Vector__XXX
  SG_ pi_torque_ceiling : 0|16@1+ (0.1,0) [0.0|6553.5] "Newton-meters" Vector__XXX
 
+BO_ 17 pi_motor_torque_command: 8 pi
+ SG_ pi_motor_checksum : 56|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ pi_motor_counter : 52|4@1+ (1,0) [0|15] "" Vector__XXX
+ SG_ pi_motor_engage : 48|1@1+ (1,0) [0|1] "bool" Vector__XXX
+ SG_ pi_motor_torque_rr : 36|12@1- (0.02,0) [-40.96|40.94] "Newton-meters" Vector__XXX
+ SG_ pi_motor_torque_rl : 24|12@1- (0.02,0) [-40.96|40.94] "Newton-meters" Vector__XXX
+ SG_ pi_motor_torque_fr : 12|12@1- (0.02,0) [-40.96|40.94] "Newton-meters" Vector__XXX
+ SG_ pi_motor_torque_fl : 0|12@1- (0.02,0) [-40.96|40.94] "Newton-meters" Vector__XXX
+
+BO_ 206 vcu_motor_torque_commands: 8 vcu
+ SG_ vcu_motor_torque_rr : 48|16@1- (0.01,0) [-327.68|327.67] "Newton-meters" Vector__XXX
+ SG_ vcu_motor_torque_rl : 32|16@1- (0.01,0) [-327.68|327.67] "Newton-meters" Vector__XXX
+ SG_ vcu_motor_torque_fr : 16|16@1- (0.01,0) [-327.68|327.67] "Newton-meters" Vector__XXX
+ SG_ vcu_motor_torque_fl : 0|16@1- (0.01,0) [-327.68|327.67] "Newton-meters" Vector__XXX
+
 BO_ 2016 vcu_uds_request: 8 tester
  SG_ vcu_uds_request_data : 0|64@1+ (1,0) [0|18446744073709551615] "" Vector__XXX
 
@@ -861,6 +876,19 @@ CM_ SG_ 16 pi_checksum "CRC-8 SAE J1850 over the ID (2 bytes, little endian) and
 CM_ SG_ 16 pi_counter "Rolling counter, +1 each frame";
 CM_ SG_ 16 pi_engage "The Pi wants control";
 CM_ SG_ 16 pi_torque_ceiling "Most torque the VCU may command";
+CM_ BO_ 17 "Hub motor cars: the Pi's torque for each hub motor (+ drive, - regen), 100 Hz. The VCU holds their sum to the driver's request (FSAE EV.3.1.3) and each to its motor's limits; counter, CRC and engage rules as pi_torque_command (kms-vcu docs/pi-supervisor.md). A motor the car doesn't have must be 0";
+CM_ SG_ 17 pi_motor_checksum "CRC-8 SAE J1850 over the ID (2 bytes, little endian) and bytes 0-6";
+CM_ SG_ 17 pi_motor_counter "Rolling counter, +1 each frame";
+CM_ SG_ 17 pi_motor_engage "The Pi wants control";
+CM_ SG_ 17 pi_motor_torque_rr "Torque at the rr hub motor's shaft (+ drive, - regen)";
+CM_ SG_ 17 pi_motor_torque_rl "Torque at the rl hub motor's shaft (+ drive, - regen)";
+CM_ SG_ 17 pi_motor_torque_fr "Torque at the fr hub motor's shaft (+ drive, - regen)";
+CM_ SG_ 17 pi_motor_torque_fl "Torque at the fl hub motor's shaft (+ drive, - regen)";
+CM_ BO_ 206 "Hub motor cars: the torque the VCU commands each hub motor (+ drive, - regen), 100 Hz";
+CM_ SG_ 206 vcu_motor_torque_rr "Torque commanded to the rr hub motor (+ drive, - regen)";
+CM_ SG_ 206 vcu_motor_torque_rl "Torque commanded to the rl hub motor (+ drive, - regen)";
+CM_ SG_ 206 vcu_motor_torque_fr "Torque commanded to the fr hub motor (+ drive, - regen)";
+CM_ SG_ 206 vcu_motor_torque_fl "Torque commanded to the fl hub motor (+ drive, - regen)";
 CM_ BO_ 2016 "UDS over ISO-TP to the VCU: firmware update (kms-vcu docs/ota.md)";
 CM_ SG_ 2016 vcu_uds_request_data "ISO-TP frame";
 CM_ BO_ 2024 "UDS over ISO-TP from the VCU";

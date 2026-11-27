@@ -4,10 +4,14 @@
 #include "hal.hpp"
 #include "parameters.hpp"
 #include "vcu.hpp"
+#include "vehicle.hpp"
 #include <ota.hpp>
 
 void VCU::begin() {
   init_state_machine();
+
+  hal::log("Vehicle: ");
+  hal::logln(vehicle::THIS.name);
 
   if (hal::reset_by_watchdog())
     hal::logln("Reset by the watchdog: the firmware hung");
