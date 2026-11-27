@@ -177,10 +177,11 @@ TEST_CASE("a resent block is acked again but not written twice") {
   CHECK(car.staging.unerased_writes == 0);
 }
 
-TEST_CASE("flow control keeps bursts within the receive mailboxes") {
+TEST_CASE("flow control keeps bursts within the receive queue") {
   // Renode running the real firmware found that a 1 KB TransferData sent
-  // as one ISO-TP burst overruns FlexCAN_T4's 4 standard-ID mailboxes. The
-  // VCU's flow control has to make the tester pause before that.
+  // as one ISO-TP burst overran FlexCAN_T4's 4 standard-ID mailboxes. Frames
+  // now go through ksu-fw-common's receive queue, and the VCU's flow control
+  // has to make the tester pause well before that fills.
   Car car;
   park(car);
   start_download(car, sim::make_image(random_firmware(2000), 4));
@@ -198,8 +199,8 @@ TEST_CASE("flow control keeps bursts within the receive mailboxes") {
   REQUIRE(fc != nullptr);
   const uint8_t block_size = fc->buf.byte[1];
   CHECK(block_size > 0);
-  CHECK(block_size < car.daq().rx_mailboxes);
-  CHECK(car.daq().rx_dropped == 0);
+  CHECK(block_size <= CAN_RX_QUEUE_SIZE / 2);
+  CHECK(car.daq().rx_dropped() == 0);
 }
 
 TEST_CASE("the car keeps running normally during a download") {

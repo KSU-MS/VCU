@@ -35,62 +35,63 @@ CAN_message_t msg1;
 CAN_message_t msg2;
 CAN_message_t msg3;
 
+// Filled by the mailbox interrupts, see CanRxQueue
+CanRxQueue<CAN_RX_QUEUE_SIZE> rx_queue_1;
+CanRxQueue<CAN_RX_QUEUE_SIZE> rx_queue_2;
+CanRxQueue<CAN_RX_QUEUE_SIZE> rx_queue_3;
+
+static void queue_frame(CanRxQueue<CAN_RX_QUEUE_SIZE> &queue,
+                        const CAN_message_t &msg) {
+  can_message out;
+  out.id = msg.id;
+  out.length = msg.len <= 8 ? msg.len : 8;
+  out.is_extended = msg.flags.extended;
+  memcpy(out.buf.byte, msg.buf, out.length);
+  queue.push(out);
+}
+
+// Interrupt context
+static void flexcan_1_on_receive(const CAN_message_t &msg) {
+  queue_frame(rx_queue_1, msg);
+}
+static void flexcan_2_on_receive(const CAN_message_t &msg) {
+  queue_frame(rx_queue_2, msg);
+}
+static void flexcan_3_on_receive(const CAN_message_t &msg) {
+  queue_frame(rx_queue_3, msg);
+}
+
+// Mailbox interrupts also drain FlexCAN_T4's transmit queue: in polling mode
+// a frame sent while all 8 TX mailboxes were busy was queued and never sent,
+// since only the TX-complete interrupt or events() sends queued frames.
 void init_flexcan_1(int target_baud) {
   flexcan_1.begin();
   flexcan_1.setBaudRate(target_baud);
+  flexcan_1.onReceive(flexcan_1_on_receive);
+  flexcan_1.enableMBInterrupts();
 }
 void init_flexcan_2(int target_baud) {
   flexcan_2.begin();
   flexcan_2.setBaudRate(target_baud);
+  flexcan_2.onReceive(flexcan_2_on_receive);
+  flexcan_2.enableMBInterrupts();
 }
 void init_flexcan_3(int target_baud) {
   flexcan_3.begin();
   flexcan_3.setBaudRate(target_baud);
+  flexcan_3.onReceive(flexcan_3_on_receive);
+  flexcan_3.enableMBInterrupts();
 }
 
 bool flexcan_1_has_new_msg(can_message *message_out) {
-  if (flexcan_1.read(msg1)) {
-    message_out->id = msg1.id;
-    message_out->length = msg1.len;
-    message_out->is_extended = msg1.flags.extended;
-
-    if (msg1.len <= 8)
-      memcpy(message_out->buf.byte, msg1.buf, msg1.len);
-
-    return true;
-  } else {
-    return false;
-  }
+  return rx_queue_1.pop(message_out);
 }
 bool flexcan_2_has_new_msg(can_message *message_out) {
-  if (flexcan_2.read(msg2)) {
-    message_out->id = msg2.id;
-    message_out->length = msg2.len;
-    message_out->is_extended = msg2.flags.extended;
-
-    if (msg2.len <= 8)
-      memcpy(message_out->buf.byte, msg2.buf, msg2.len);
-
-    return true;
-  } else {
-    return false;
-  }
+  return rx_queue_2.pop(message_out);
 }
 bool flexcan_3_has_new_msg(can_message *message_out) {
-  if (flexcan_3.read(msg3)) {
-    message_out->id = msg3.id;
-    message_out->length = msg3.len;
-    message_out->is_extended = msg3.flags.extended;
-
-    if (msg3.len <= 8)
-      memcpy(message_out->buf.byte, msg3.buf, msg3.len);
-
-    return true;
-  } else {
-    return false;
-  }
+  return rx_queue_3.pop(message_out);
 }
-
 void flexcan_1_send_msg(can_message *message_out) {
   msg1.id = message_out->id;
   msg1.len = message_out->length;

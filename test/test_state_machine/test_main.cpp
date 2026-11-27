@@ -358,6 +358,43 @@ TEST_CASE("mirrors ACU and inverter traffic to DAQ and forwards between buses") 
   CHECK(count_sent(car.acc(), CAN_ID_M167_VOLTAGE_INFO) == 1);
 }
 
+TEST_CASE("every frame that arrived since the last loop is handled") {
+  // update_acc_can/update_inv_can used to read one frame per bus per loop,
+  // so a burst of chatter delayed safety data behind it, loop by loop
+  Car car;
+  car.drive_to_rtd();
+  for (int i = 0; i < 50; i++)
+    car.pack_power(450, 0);
+  car.acu_status(false, true); // IMD trips, queued behind the chatter
+  car.run_for(1);
+  CHECK(car.vcu.get_current_state() == TRACTIVE_SYSTEM_DISABLED);
+}
+
+TEST_CASE("a burst of frames between loops isn't lost") {
+  // With FlexCAN_T4 polled, a 5th standard-ID frame within one loop was lost
+  Car car;
+  car.drive_to_rtd();
+  for (int i = 0; i < 200; i++)
+    car.pack_power(450, 0);
+  car.run_for(1);
+  CHECK(car.acc().rx_dropped() == 0);
+  // all 200 forwarded to the DAQ bus
+  CHECK(count_sent(car.daq(), CAN_ID_MSGID_0X6B1) >= 200);
+}
+
+TEST_CASE("a flooded bus drops new frames, not the loop") {
+  // More than the queue holds between two loops: the overflow is counted
+  // and dropped, and the VCU keeps running on what it has
+  Car car;
+  car.drive_to_rtd();
+  for (size_t i = 0; i < CAN_RX_QUEUE_SIZE + 10; i++)
+    car.pack_power(450, 0);
+  CHECK(car.acc().rx_dropped() == 10);
+  car.run_for(2);
+  CHECK(car.acc().rx_waiting() == 0);
+  CHECK(car.vcu.get_current_state() == READY_TO_DRIVE);
+}
+
 //
 //// Known issues: behaviour that looks wrong but needs a call from whoever
 //// owns this code. These WARN instead of failing.
@@ -371,15 +408,4 @@ TEST_CASE("KNOWN ISSUE: should leave ready to drive if the ACU goes silent") {
   WARN(car.vcu.get_current_state() != READY_TO_DRIVE);
 }
 
-TEST_CASE("KNOWN ISSUE: should drain every pending CAN frame each loop") {
-  // update_acc_can/update_inv_can read one frame per bus per loop. If a bus
-  // delivers frames faster than the loop runs, the queue (and the age of the
-  // safety data) grows without bound.
-  Car car;
-  car.drive_to_rtd();
-  for (int i = 0; i < 50; i++)
-    car.pack_power(450, 0);
-  car.acu_status(false, true); // IMD trips, queued behind the chatter
-  car.run_for(5);
-  WARN(car.vcu.get_current_state() == TRACTIVE_SYSTEM_DISABLED);
-}
+

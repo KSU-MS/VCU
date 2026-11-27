@@ -32,8 +32,11 @@ On the way it boots through the Teensy core's `ResetHandler`, the
 firmware's constructors and `setup()`, runs `loop()` with pedals from the
 ADS1018 model and brake/BSPD from the ADC model, and talks CAN to the host.
 
-It found a real-hardware bug the SIL missed: a 1 KB ISO-TP burst overruns
-FlexCAN_T4's 4 standard-ID receive mailboxes (see commit 9081b11).
+It found a real-hardware bug the SIL missed: a 1 KB ISO-TP burst overran
+FlexCAN_T4's 4 standard-ID receive mailboxes (commit 9081b11), which led to
+interrupt-driven receive in ksu-fw-common. Received frames are paced one
+frame time apart, like a real bus (`NXP_FlexCAN_RxIdFix.cs`, FIX 3), so the
+test also checks the receive interrupt keeps up.
 
 The flash behaves like the Teensy 4.1's W25Q64JV: datasheet erase/program
 times (typical, or max with `--flash-timing=max`), the busy bit, write enable,

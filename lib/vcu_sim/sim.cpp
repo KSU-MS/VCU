@@ -15,13 +15,7 @@ void init_bus(sim::Bus &b, int baud) {
   b.initialized = true;
 }
 
-bool read_bus(sim::Bus &b, can_message *out) {
-  if (b.rx.empty())
-    return false;
-  *out = b.rx.front();
-  b.rx.pop_front();
-  return true;
-}
+bool read_bus(sim::Bus &b, can_message *out) { return b.rx->pop(out); }
 } // namespace
 
 namespace sim {

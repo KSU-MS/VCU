@@ -266,8 +266,13 @@ void VCU::set_parameter(uint64_t msg, uint8_t length) {
 
 //
 //// CAN stage
+//
+// Each bus is drained of everything that arrived since the last loop, so the
+// safety data (IMD/BMS/precharge, inverter voltage) is never more than one
+// loop old. Bounded by the queue size so a flooded bus can't stall the loop.
 void VCU::update_acc_can() {
-  if (acc_can->check_controller_message()) {
+  for (size_t i = 0;
+       i < CAN_RX_QUEUE_SIZE && acc_can->check_controller_message(); i++) {
     can_message msg_in = acc_can->get_controller_message();
     daq_can->send_controller_message(msg_in);
 
@@ -296,7 +301,8 @@ void VCU::update_acc_can() {
 }
 
 void VCU::update_inv_can() {
-  if (inv_can->check_controller_message()) {
+  for (size_t i = 0;
+       i < CAN_RX_QUEUE_SIZE && inv_can->check_controller_message(); i++) {
     can_message msg_in = inv_can->get_controller_message();
     daq_can->send_controller_message(msg_in);
 
@@ -329,11 +335,10 @@ void VCU::update_inv_can() {
 }
 
 // The DAQ bus is mostly outbound, the only thing we listen for on it is a
-// tester doing a firmware update. Unlike the other two buses this drains
-// everything waiting (up to a cap), since an update arrives as bursts of
-// ISO-TP frames.
+// tester doing a firmware update.
 void VCU::update_daq_can(uint32_t now) {
-  for (int i = 0; i < 64 && daq_can->check_controller_message(); i++) {
+  for (size_t i = 0;
+       i < CAN_RX_QUEUE_SIZE && daq_can->check_controller_message(); i++) {
     can_message msg_in = daq_can->get_controller_message();
 
     if (updater && ota::Service::wants(msg_in))

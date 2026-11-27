@@ -4,8 +4,8 @@
 // canMan/VCU/Inverter code runs unmodified on top of it.
 #include <can_tools.hpp>
 #include <cstdint>
-#include <deque>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -14,23 +14,16 @@ namespace sim {
 struct Bus {
   int baud = 0;
   bool initialized = false;
-  std::deque<can_message> rx; // frames waiting for the VCU to read
+  // Frames waiting for the VCU to read: the same queue the FlexCAN receive
+  // interrupt fills on the real board, so it overflows the same way
+  std::unique_ptr<CanRxQueue<CAN_RX_QUEUE_SIZE>> rx =
+      std::make_unique<CanRxQueue<CAN_RX_QUEUE_SIZE>>();
   std::vector<can_message> tx; // everything the VCU has sent
 
-  // ksu-fw-common runs FlexCAN_T4 in polling mode with its default layout:
-  // mailboxes 0-3 take standard IDs, 4-7 extended, 8-15 transmit. So only
-  // 4 standard frames can wait between reads; more are lost on the real
-  // board, and here too.
-  size_t rx_mailboxes = 4;
-  size_t rx_dropped = 0;
-
-  void inject(const can_message &msg) {
-    if (rx.size() >= rx_mailboxes) {
-      rx_dropped++;
-      return;
-    }
-    rx.push_back(msg);
-  }
+  // A frame arriving on the bus (what the interrupt does on target)
+  void inject(const can_message &msg) { rx->push(msg); }
+  size_t rx_waiting() const { return rx->size(); }
+  uint32_t rx_dropped() const { return rx->dropped(); }
 
   // Frames sent with a given ID, oldest first
   std::vector<can_message> sent(uint32_t id) const;

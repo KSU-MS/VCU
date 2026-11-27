@@ -16,8 +16,10 @@ Proof of concept, not yet run on a real Teensy. What has been checked:
 - Sequence: `10 02` programming session, `34` RequestDownload, `36`
   TransferData (1 KB blocks), `37` exit, `31 01 FF01` check image, `11 01`
   reset/apply. See `lib/ota/uds_server.hpp`.
-- ISO-TP flow control asks for 3 frames per block: FlexCAN_T4 in polling
-  mode only has 4 standard-ID receive mailboxes, emptied once per loop.
+- ISO-TP flow control asks for 64 frames per block. Frames land in
+  ksu-fw-common's 256-frame receive queue, filled by the FlexCAN interrupt
+  (it used to poll 4 standard-ID mailboxes once per loop, which a burst
+  overran; see `lib/ksu-fw-common/README.md`).
 - Image = 64 byte header (magic, size, CRC32, git version, target board,
   header CRC) + raw flash image from `firmware.hex`. `tools/ota/image.py`.
 - Staged in a 1 MB flash area at +4 MB, read back and CRC checked, then
@@ -51,8 +53,9 @@ tools/run_e2e.sh renode      # real ARM firmware in Renode, A -> B, no root
   images (e.g. ed25519) is the next step.
 - `flash_move` erases everything above the new image, including EEPROM
   emulation (the VCU doesn't use it today).
-- Throughput is paced by the VCU loop (one 3-frame block per loop): about
-  18 KiB/s in the SIL, likely half that on the car.
+- Throughput: about 120 KiB/s in the SIL, where the bus is virtual and
+  instant. On the car the 1 Mbit/s DAQ bus caps it near 60 KiB/s of
+  payload, less whatever else is on the bus, plus flash erase pauses.
 
 ## Bench checklist (needs hardware)
 
