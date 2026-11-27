@@ -13,14 +13,54 @@ pio run -e teensy41
 # boot it, CAN bridged to vcan_acc/inv/daq (tools/sil/setup_vcan.sh)
 renode --console --disable-gui -e "include @renode/vcan.resc; start"
 
-# A/B updates over CAN, confirm and rollback, no root needed (vcan loaded)
+# all of it, no root needed (vcan module loaded)
 tools/run_e2e.sh renode
+tools/run_e2e.sh renode/test_pedals_hil.py   # just the pedal rules
 tools/run_e2e.sh renode --flash-timing=max   # flash datasheet max times
 ```
 
 CI runs it on every PR (the `renode-ota` job).
 
-## Status
+## Speed
+
+The firmware runs about 5x faster than real time. It used to run ~8x
+slower: profiling (sampling the PC from the monitor) showed 98% of the time
+in the ADS1018 driver's `delayMicroseconds(500)` per channel, spinning on
+the DWT cycle counter, one slow peripheral access per iteration. Now a
+tight poll of the cycle counter fast-forwards virtual time 20 us per read
+(`CortexM7_DWT.cs`), the flash's busy bit does the same, and
+`emulation SetAdvanceImmediately true` stops that skipped time being paced
+to the host clock. Delays come out at most 20 us long.
+
+(On the real board that driver blocks ~2 ms of every loop: worth a look.
+It also makes the "200 Hz" torque command ~175 Hz, as `Periodic` reschedules
+from when it fires.)
+
+What's still slow is CAN from the host: each frame handed into the running
+machine costs ~8 ms of wall time inside Renode's time synchronisation,
+whatever the CPU speed, so an OTA transfer runs at ~1 KiB/s and
+`test_ota_e2e.py` takes ~5 minutes. Batching frames into the machine and
+delivering them on time syncs didn't change it; the next step would be
+reading Renode's TimeDomainsManager / HandleTimeDomainEvent path. The
+pedal tests send a handful of frames and take ~25 s.
+
+## The pedal rules on the real firmware
+
+`test_pedals_hil.py` drives the emulated VCU like a bench: the fake rest of
+the car on CAN (`fakecar.py`: ACU, inverter and dash, encoded with
+ksu-ms-dbc's DBC) takes it to Ready to Drive, then the tests set what's at
+the J1 connector, a pedal position or a wiring fault (unplugged, shorted to
+ground, 5 V or GLV), and check the torque commands the firmware sends.
+`board.py` turns that into ADC counts through the board's front end, from
+the schematic: the 100K pull-downs, A10's divider, the ADC ranges. So it
+checks the real drivers and loop, not just the pedal logic.
+
+The tests cite the rules they check (`docs/requirements.md`), and are timed
+in torque commands (every 5 ms in virtual time): each fault must zero the
+torque within 100 ms. Changing the APPS limit back to the old 30 points
+makes `test_apps_disagreement_latches` fail, so they can tell.
+
+## OTA
 
 Works end to end: A/B updates of the real bootloader and firmware over CAN.
 `test_ota_e2e.py` boots the USB bundle (build A in slot A), then with
@@ -33,8 +73,7 @@ Works end to end: A/B updates of the real bootloader and firmware over CAN.
 2. sends build A back into slot A without confirming, then resets: the
    bootloader rolls back to B.
 
-A few minutes; the emulator runs ~6x slower than real time
-(`flash.py --timeout-scale`).
+About 5 minutes, nearly all of it the two transfers (see Speed).
 
 On the way it runs the bootloader (bare metal, from the boot ROM's state),
 then boots through the Teensy core's `ResetHandler` from a slot, the
@@ -69,11 +108,13 @@ so nothing should read it, but nothing checks that either).
 | `vcan.resc` | bridges FlexCAN1/2/3 to `vcan_acc/inv/daq` | same buses as the SIL, so the same tools work |
 | `NXP_FlexCAN_RxIdFix.cs` | Renode's FlexCAN with two receive fixes | see below |
 | `TeensyFlexSPI.cs` | FlexSPI IP commands against flash, as a W25Q64JV: NOR rules, datasheet busy times, write enable | the bootloader's and the Teensy core's flash routines: OTA downloads, boot state |
-| `CortexM7_DWT.cs` | DWT cycle counter from executed instructions | Renode has no DWT; `delayMicroseconds()` spins on it forever |
+| `CortexM7_DWT.cs` | DWT cycle counter from executed instructions, fast-forwarding busy waits | Renode has no DWT; `delayMicroseconds()` spins on it forever |
 | `ADS1018.cs` | the pedal/steering ADC on LPSPI4 | nothing was attached to the SPI bus |
 | `imxrt_adc.py` | ADC1 for `analogRead()` | Renode's `IMXRT_ADC` crashes on channels > 7 (see below) |
 | `imxrt_analog.py` | CCM_ANALOG PLLs that remember writes and report lock | the stock flipflop stub can't satisfy `usb_pll_start` |
 | `test_ota_e2e.py` | the A -> B update test (pytest, via `tools/run_e2e.sh renode`) | |
+| `test_pedals_hil.py`, `board.py`, `fakecar.py` | the pedal rules through the real firmware | see above |
+| `harness.py` | runs Renode with its monitor on a TCP port | tests change inputs while it runs |
 
 One shortcut: `configure_cache` is skipped. Renode's MPU resolves the
 Teensy's overlapping regions differently from the silicon and everything

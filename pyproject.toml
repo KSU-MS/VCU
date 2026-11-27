@@ -13,6 +13,7 @@ dependencies = [
     "udsoncan>=1.23",    # UDS client for tools/ota/flash.py
     "olefile>=0.47",     # tools/schematic reads Altium files
     "cryptography>=42",
+    "cantools>=39",
 ]
 
 [dependency-groups]

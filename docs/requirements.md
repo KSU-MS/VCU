@@ -9,6 +9,10 @@ it by putting its ID in brackets in their name, e.g.
 fails if a requirement here has no test, or a test cites an ID that isn't
 here. `uv run tools/requirements/reqtrace.py` prints which tests cover what.
 
+Most are tested twice: on the pedal logic natively (`test/`), and through
+the real firmware in Renode with faults injected at the connector
+(`renode/test_pedals_hil.py`).
+
 The rule text below is paraphrased; the rulebook is the authority (page
 numbers are the PDF's). When a new rulebook comes out, re-check each one and
 update the IDs: the tests follow.
@@ -26,9 +30,9 @@ other's by at least 10%.
 
 VCU: APPS1 runs 670..1100 counts, APPS2 450..710: different offsets and
 gradients, at least 237 counts (11.6% of the ADC's 2047) apart everywhere
-above 10% travel. Open circuit at 0 counts is out of range (T.4.2.10).
-The pull-down itself is on the board. **met** (calibration), **assumption**
-(board has the pull-downs)
+above 10% travel. The board pulls each APPS input down with 100K (R46, R50,
+from the schematic), so open circuit reads 0 counts: out of range
+(T.4.2.10). **met**
 
 ### T.4.2.4 — Implausibility is more than 10% apart
 p.66. A deviation of more than 10% pedal travel between the sensors, or any
@@ -74,8 +78,9 @@ reads no brake, so it can't help enter Ready to Drive. **met**
 p.67. Same as T.4.2.10, for the BSE.
 
 VCU: `MIN_BRAKE_PEDAL` / `MAX_BRAKE_PEDAL` (960: below the ~995 a short to
-5 V reads through A10's divider). **met**, **assumption** (full brake press
-reads under 960 on the car)
+5 V reads through A10's divider). An open J1.10 reads 0 through the
+divider's 12K to ground. **met**, **assumption** (full brake press reads
+under 960 on the car)
 
 ## Brake / throttle plausibility
 

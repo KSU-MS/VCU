@@ -34,6 +34,10 @@ if [[ -z "${VCU_E2E_IN_NS:-}" ]]; then
   fi
 fi
 
+if [[ -n "${VCU_E2E_IN_NS:-}" ]]; then
+  ip link set lo up # the Renode tests reach its monitor over TCP
+fi
+
 if ! have_buses; then
   for bus in vcan_acc vcan_inv vcan_daq; do
     ip link add dev "$bus" type vcan
