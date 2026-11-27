@@ -36,6 +36,13 @@ machine PyDevFromFile $ORIGIN/imxrt_adc.py 0x400C4000 0x4000 True "adc1_vcu"
 # since fake boards on the host send by the wall clock.
 emulation SetAdvanceImmediately true
 
+# The RTWDOG the bootloader arms, and the SRC bit that says it reset us,
+# in place of the platform's ticker stub and tag (IMXRT_RTWDOG.cs)
+include $ORIGIN/IMXRT_RTWDOG.cs
+sysbus Unregister sysbus.wdog3
+machine LoadPlatformDescriptionFromString "rtwdog: Timers.IMXRT_RTWDOG @ sysbus 0x400BC000"
+machine LoadPlatformDescriptionFromString "src: Miscellaneous.IMXRT_SRC @ sysbus 0x400F8000 { rtwdog: rtwdog }"
+
 # Cortex-M7 DWT cycle counter, which delayMicroseconds()/micros() spin on
 include $ORIGIN/CortexM7_DWT.cs
 # 600 MHz / Renode's default 100 MIPS = 6 cycles per instruction

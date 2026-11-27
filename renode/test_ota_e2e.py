@@ -10,8 +10,9 @@ The test, in one emulator session:
 
   1. A -> B over vcan_daq with tools/ota/flash.py, confirmed: the bootloader
      verified B's signature, booted it as a trial, and it stays.
-  2. B -> A again, not confirmed, then a reset: the bootloader rolls back
-     to B.
+  2. B -> A again, not confirmed, and A's main loop hangs: the watchdog
+     resets the board, and the bootloader rolls back to B, which reports
+     the watchdog reset.
 
 The flash behaves like the W25Q64JV (TeensyFlexSPI.cs); any command the real
 chip would have ignored fails the test.
@@ -34,8 +35,7 @@ from udsoncan.exceptions import TimeoutException
 import flash as ota_flash
 import image as ota_image
 from conftest import ROOT, needs_vcan
-
-BUILD_A = ROOT / ".pio/build/teensy41"
+from harness import BUILD_A, Renode
 # Generous: the emulated VCU's speed relative to the host varies
 TIMEOUT_SCALE = 10
 
@@ -59,6 +59,29 @@ def symbol(elf, name) -> int:
             if s.name == name:
                 return s["st_value"] & ~1  # no Thumb bit: hooks match the PC
     raise KeyError(name)
+
+
+def spin(elf) -> int:
+    """Address of a `b .` (branch to itself) in ITCM: somewhere to hang"""
+    with open(elf, "rb") as f:
+        itcm = ELFFile(f).get_section_by_name(".text.itcm")
+        code, base = itcm.data(), itcm["sh_addr"]
+    for off in range(0, len(code) - 1, 2):
+        if code[off:off + 2] == b"\xfe\xe7":
+            return base + off
+    raise LookupError("no `b .` in .text.itcm")
+
+
+def hang_main_loop(renode):
+    """The next pass of the firmware's loop never returns: VCU::tick jumps
+    to a `b .` instead. Interrupts still run; nothing feeds the watchdog.
+    Once: the hook goes after it fires, since A and B run VCU::tick from the
+    same ITCM address."""
+    elf = BUILD_A / "firmware.elf"
+    tick = symbol(elf, "_ZN3VCU4tickEm")
+    renode.monitor.run(
+        f'cpu AddHook {tick:#x} "from Antmicro.Renode.Peripherals.CPU import RegisterValue; '
+        f'cpu.PC = RegisterValue.Create({spin(elf):#x}, 32); cpu.RemoveHooksAt({tick:#x})"')
 
 
 @pytest.fixture(scope="module")
@@ -102,35 +125,20 @@ def daq():
         yield bus
 
 
-class Renode:
-    def __init__(self, proc, log):
-        self.proc, self.log = proc, log
-
-    def fail(self, why):
-        pytest.fail(f"{why}:\n{self.log.read_text()[-4000:]}")
-
-
 @pytest.fixture
 def renode(request, tmp_path, build_b, renode_pacing):
     """Renode running the USB bundle, bridged to the vcan buses"""
     worst_case = request.config.getoption("--flash-timing") == "max"
     _, b_elf = build_b
     log = tmp_path / "renode.log"
-    script = (f"$bundle=@{BUILD_A / 'firmware.hex'}; $elf=@{BUILD_A / 'firmware.elf'}; "
-              f"include @{ROOT}/renode/vcan.resc; {renode_pacing}; "
-              # teensy41.resc skips slot A's configure_cache; B's is elsewhere
-              f'cpu AddHook {symbol(b_elf, "configure_cache"):#x} "cpu.PC = cpu.LR"; '
-              f"sysbus.flexspi1 WorstCaseTiming {str(worst_case).lower()}; "
-              'logLevel 3; emulation RunFor "00:30:00"; quit')
-    with open(log, "w") as out:
-        proc = subprocess.Popen(
-            ["renode", "--console", "--disable-gui", "--plain", "-e", script],
-            stdout=out, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
+    extra = (# teensy41.resc skips slot A's configure_cache; B's is elsewhere
+             f'cpu AddHook {symbol(b_elf, "configure_cache"):#x} "cpu.PC = cpu.LR"; '
+             f"sysbus.flexspi1 WorstCaseTiming {str(worst_case).lower()};")
+    vm = Renode(log, renode_pacing, monitor_port=3457, extra=extra)
     try:
-        yield Renode(proc, log)
+        yield vm
     finally:
-        proc.kill()
-        proc.wait()
+        vm.stop()
         print(f"\n  renode log: {log}")
 
     ignored = [line for line in log.read_text().splitlines() if "W25Q64 would ignore" in line]
@@ -162,6 +170,7 @@ def test_update_confirm_and_rollback(renode, daq, build_b):
         # The bootloader verified slot A and started it
         wait_for_version(vcu, renode, version_a, timeout=120)
         assert ota_flash.boot_status(vcu) == (0, 0, 0xFF, 0)
+        assert not ota_flash.reset_by_watchdog(vcu)
 
         # 1. A -> B, confirmed
         ota_flash.flash(vcu, images, reboot_timeout=reboot_timeout)
@@ -173,7 +182,9 @@ def test_update_confirm_and_rollback(renode, daq, build_b):
         assert ota_flash.read_version(vcu) == version_a
         assert ota_flash.boot_status(vcu) == (0, 1, 0, 1)
 
-        # ...until a reset, when the bootloader goes back to B
-        vcu.ecu_reset(1)
+        # ...until it hangs: the watchdog resets the board and the
+        # bootloader goes back to B
+        hang_main_loop(renode)
         wait_for_version(vcu, renode, version_b, timeout=reboot_timeout)
         assert ota_flash.boot_status(vcu) == (1, 1, 0xFF, 0)
+        assert ota_flash.reset_by_watchdog(vcu)

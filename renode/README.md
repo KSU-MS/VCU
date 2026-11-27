@@ -70,8 +70,10 @@ Works end to end: A/B updates of the real bootloader and firmware over CAN.
    version, linked for slot B). The VCU writes it into slot B and checks its
    signature, the bootloader verifies it again and boots it as a trial, and
    `flash.py` confirms it.
-2. sends build A back into slot A without confirming, then resets: the
-   bootloader rolls back to B.
+2. sends build A back into slot A without confirming, then makes A's main
+   loop hang (a one-shot hook on `VCU::tick` jumps to a `b .`): the watchdog
+   resets the board, the bootloader rolls back to B, and B reports the
+   watchdog reset (DID 0xF104).
 
 About 5 minutes, nearly all of it the two transfers (see Speed).
 
@@ -110,6 +112,7 @@ so nothing should read it, but nothing checks that either).
 | `TeensyFlexSPI.cs` | FlexSPI IP commands against flash, as a W25Q64JV: NOR rules, datasheet busy times, write enable | the bootloader's and the Teensy core's flash routines: OTA downloads, boot state |
 | `CortexM7_DWT.cs` | DWT cycle counter from executed instructions, fast-forwarding busy waits | Renode has no DWT; `delayMicroseconds()` spins on it forever |
 | `ADS1018.cs` | the pedal/steering ADC on LPSPI4 | nothing was attached to the SPI bus |
+| `IMXRT_RTWDOG.cs` | the RTWDOG (WDOG3): unlock, refresh, write-once config, LPO timeout resets the machine; the SRC's reset cause bit | the 1064 platform has it as a stub that never fires |
 | `imxrt_adc.py` | ADC1 for `analogRead()` | Renode's `IMXRT_ADC` crashes on channels > 7 (see below) |
 | `imxrt_analog.py` | CCM_ANALOG PLLs that remember writes and report lock | the stock flipflop stub can't satisfy `usb_pll_start` |
 | `test_ota_e2e.py` | the A -> B update test (pytest, via `tools/run_e2e.sh renode`) | |
