@@ -187,6 +187,40 @@ TEST_CASE("throttle maps to torque once ready to drive") {
         doctest::Approx(0.5 * MAX_TORQUE_LIMIT_NM).epsilon(0.02));
 }
 
+TEST_CASE("an APPS unplugged at light throttle sends no torque once released") {
+  Car car;
+  car.drive_to_rtd();
+  car.set_throttle(0.08);
+  car.run_for(20);
+  car.apps1_raw = 0; // APPS1 connector falls off
+  car.run_for(20);
+  car.set_throttle(0); // foot off; APPS1 still unplugged
+  car.apps1_raw = 0;
+  car.run_for(50);
+
+  Car::InverterCommand cmd;
+  REQUIRE(car.last_inverter_command(&cmd));
+  CHECK(cmd.torque_nm == 0);
+  CHECK(car.pedals.get_apps_fault_ok_low());
+}
+
+TEST_CASE("a broken brake sensor doesn't count as the brake for ready to drive") {
+  // The brake is pressed, then its sensor shorts: the last good reading
+  // mustn't be what lets the car go live
+  Car car;
+  car.run_for(10);
+  car.make_ts_healthy();
+  car.run_for(10);
+  REQUIRE(car.vcu.get_current_state() == TRACTIVE_SYSTEM_ENERGIZED);
+  car.set_brake(0.8);
+  car.run_for(10);
+  car.brake_raw = 1023; // shorted to GLV
+  car.dash_rtd_button(true);
+  car.run_for(3000);
+  CHECK_FALSE(car.ever_reached(TRACTIVE_SYSTEM_ENABLED));
+  CHECK_FALSE(car.ever_reached(READY_TO_DRIVE));
+}
+
 TEST_CASE("torque is power limited at speed") {
   Car car;
   car.drive_to_rtd();

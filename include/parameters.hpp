@@ -19,18 +19,30 @@
 
 //
 //// Hardcoded pedal values
+// Raw counts. MIN/MAX are fault thresholds: a reading outside them means the
+// sensor is open or shorted (T.4.2.10, T.4.3.4), so they sit between the
+// calibrated travel and what a short would read.
 #define MIN_BRAKE_PEDAL 25
 #define START_BRAKE_PEDAL 130
 #define END_BRAKE_PEDAL 922
-#define MAX_BRAKE_PEDAL 1025
+// A10's divider reads a short to 5 V as ~995 counts and a short to GLV is
+// clamped at ~1023 (docs/hardware.md), so this has to sit below 995. It was
+// 1025, which a 10-bit ADC can't reach. Check full press on the car stays
+// under it.
+#define MAX_BRAKE_PEDAL 960
 
 #define MIN_APPS_PEDAL 100
 
+// ADS1018 counts, 1 mV each at the +-2.048 V range the APPS channels use
+// (adc_new.hpp): a short to the sensor supply reads full scale, 2047. The
+// fault thresholds are ~10% of the travel above full press.
 #define START_ACCELERATOR_PEDAL_1 670
 #define END_ACCELERATOR_PEDAL_1 1100
+#define MAX_ACCELERATOR_PEDAL_1 1150
 
 #define START_ACCELERATOR_PEDAL_2 450
 #define END_ACCELERATOR_PEDAL_2 710
+#define MAX_ACCELERATOR_PEDAL_2 740
 
 //
 //// Default CAN settings

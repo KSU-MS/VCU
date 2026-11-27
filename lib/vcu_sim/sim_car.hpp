@@ -32,8 +32,9 @@ struct Car : ResetFirst {
   Pedals pedals{MIN_BRAKE_PEDAL,           START_BRAKE_PEDAL,
                 END_BRAKE_PEDAL,           MAX_BRAKE_PEDAL,
                 MIN_APPS_PEDAL,            START_ACCELERATOR_PEDAL_1,
-                END_ACCELERATOR_PEDAL_1,   START_ACCELERATOR_PEDAL_2,
-                END_ACCELERATOR_PEDAL_2};
+                END_ACCELERATOR_PEDAL_1,   MAX_ACCELERATOR_PEDAL_1,
+                START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2,
+                MAX_ACCELERATOR_PEDAL_2};
 
   Inverter inverter{SPIN_DIR, &inv_can, &daq_can, &dbc, -0.69314718056};
   Accumulator accumulator{&dbc, &acc_can};

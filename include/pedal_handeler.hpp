@@ -18,9 +18,11 @@ private:
 
   float apps1_ratio;
   uint16_t apps1_start;
+  uint16_t apps1_high_fault;
 
   float apps2_ratio;
   uint16_t apps2_start;
+  uint16_t apps2_high_fault;
 
   double brake_travel = 0;
   double apps1_travel = 0;
@@ -33,9 +35,12 @@ private:
   bool apps_bse_fault = false; // Screenshot (too much brake and gas (before BSPD))
 
 public:
+  // Each sensor: a fault below `low_fault` or above `high_fault` (open or
+  // shorted), travel 0..1 from `start` to `end`
   Pedals(uint16_t bse_low_fault, uint16_t brake_start, uint16_t brake_end,
          uint16_t bse_high_fault, uint16_t apps_low_fault, uint16_t apps1_start,
-         uint16_t apps1_end, uint16_t apps2_start, uint16_t apps2_end) {
+         uint16_t apps1_end, uint16_t apps1_high_fault, uint16_t apps2_start,
+         uint16_t apps2_end, uint16_t apps2_high_fault) {
 
     this->brake_ratio = 1 / float(brake_end - brake_start);
     this->brake_start = brake_start;
@@ -46,9 +51,11 @@ public:
 
     apps1_ratio = 1 / float(apps1_end - apps1_start);
     this->apps1_start = apps1_start;
+    this->apps1_high_fault = apps1_high_fault;
 
     apps2_ratio = 1 / float(apps2_end - apps2_start);
     this->apps2_start = apps2_start;
+    this->apps2_high_fault = apps2_high_fault;
   };
 
   // TODO: Add additional pedal maps with diffrent curves?
@@ -63,45 +70,27 @@ public:
     this->raw_apps2 = raw_apps2;
     this->raw_brake = raw_brake;
 
-    // Get the pedal percentage in its throw from 0 to 1
-    if (raw_apps1 < apps_low_fault) {
-      apps_fault = true;
-    } else {
-      apps1_travel = (raw_apps1 - apps1_start) * apps1_ratio;
-      if (apps1_travel < 0)
-        apps1_travel = 0;
-      else if (apps1_travel > 1)
-        apps1_travel = 1;
-    }
+    // T.4.2.10, T.4.3.4: a reading outside the sensor's range means it's
+    // open or shorted. Its travel then reads 0, not whatever it said last:
+    // a stale value used to clear the fault below and become the torque
+    // request with the driver's foot off the pedal.
+    const bool apps1_ok =
+        raw_apps1 >= apps_low_fault && raw_apps1 <= apps1_high_fault;
+    const bool apps2_ok =
+        raw_apps2 >= apps_low_fault && raw_apps2 <= apps2_high_fault;
+    bse_fault = raw_brake < bse_low_fault || raw_brake > bse_high_fault;
 
-    if (raw_apps2 < apps_low_fault) {
-      apps_fault = true;
-    } else {
-      apps2_travel = (raw_apps2 - apps2_start) * apps2_ratio;
-      if (apps2_travel < 0)
-        apps2_travel = 0;
-      else if (apps2_travel > 1)
-        apps2_travel = 1;
-    }
+    apps1_travel = apps1_ok ? clamp01((raw_apps1 - apps1_start) * apps1_ratio) : 0;
+    apps2_travel = apps2_ok ? clamp01((raw_apps2 - apps2_start) * apps2_ratio) : 0;
+    brake_travel = bse_fault ? 0 : clamp01((raw_brake - brake_start) * brake_ratio);
 
-    // T.4.3.4
-    // BSE check to make sure its not shorting
-    if (raw_brake > bse_high_fault || raw_brake < bse_low_fault) {
-      bse_fault = true;
-    } else {
-      bse_fault = false;
-      brake_travel = (raw_brake - brake_start) * brake_ratio;
-      if (brake_travel < 0)
-        brake_travel = 0;
-      else if (brake_travel > 1)
-        brake_travel = 1;
-    }
-
-    // Reset if the pedals are released
-    if (this->apps1_travel < 0.1 && this->apps2_travel < 0.1) {
+    // Reset if the pedals are released, and both sensors work
+    if (apps1_ok && apps2_ok && apps1_travel < 0.1 && apps2_travel < 0.1) {
       apps_fault = false;
       apps_bse_fault = false;
     }
+    if (!apps1_ok || !apps2_ok)
+      apps_fault = true;
 
     // T.4.2.4
     // Check that there is no apps related faults
@@ -124,6 +113,8 @@ public:
       travel = 0;
     }
   }
+  static double clamp01(double x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+
   void update_steering(uint16_t raw_steering) {
     this->raw_steering = raw_steering;
   }

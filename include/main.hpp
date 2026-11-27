@@ -42,8 +42,9 @@ adc bse(avr, A10);
 //// Critical components
 Pedals pedals(MIN_BRAKE_PEDAL, START_BRAKE_PEDAL, END_BRAKE_PEDAL,
               MAX_BRAKE_PEDAL, MIN_APPS_PEDAL, START_ACCELERATOR_PEDAL_1,
-              END_ACCELERATOR_PEDAL_1, START_ACCELERATOR_PEDAL_2,
-              END_ACCELERATOR_PEDAL_2);
+              END_ACCELERATOR_PEDAL_1, MAX_ACCELERATOR_PEDAL_1,
+              START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2,
+              MAX_ACCELERATOR_PEDAL_2);
 
 Inverter inverter(SPIN_DIR, &inv_can, &daq_can, &kms_can, -0.69314718056);
 
