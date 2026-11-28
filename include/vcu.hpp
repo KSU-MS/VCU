@@ -77,6 +77,10 @@ private:
   Freshness vn_heard;
   double vn_speed = 0, vn_accel = 0;
   double torque_nm = 0; // after traction control and the Pi's ceiling
+  // Regen (docs/regen.md): the BMS's charge limit heard, and the share of
+  // the most regen asked for this pass (0..1, after the speed rule)
+  Freshness charge_limit_heard;
+  double regen_share = 0;
 
   Periodic timer_1s = Periodic(1000);    // Used for VCU status message
   Periodic timer_10hz = Periodic(100);   // Used for inverter ping

@@ -42,7 +42,8 @@ public:
 
   // The torque the driver (or traction control) asks for: clamped to the
   // torque limit and the power limit, zero unless enabled and sane, then
-  // sent (send_torque). Drive only, no regen yet
+  // sent (send_torque). Negative (regen) only down to the regen limit, and
+  // none without one
   void command_torque(double torque_request);
 
   inline uint8_t get_torque_limit() { return uint8_t(torque_limit_nm); }
@@ -67,6 +68,9 @@ public:
   }
 
   inline void set_torque_limit(double limit) { torque_limit_nm = limit; }
+  // The most regen torque, N m (positive). 0: never any, the default
+  inline void set_regen_limit(double limit) { regen_limit_nm = limit; }
+  inline double get_regen_limit_nm() { return regen_limit_nm; }
   inline void set_speed_limit(uint16_t limit) { speed_limit = limit; }
   inline void set_power_limit_kw(double limit) { power_limit_kw = limit; }
   inline double get_power_limit_kw() { return power_limit_kw; }
@@ -100,6 +104,7 @@ protected:
   bool speed_mode = false;
   int16_t speed_limit = 0;
   double torque_limit_nm = 0;
+  double regen_limit_nm = 0;
 
   int16_t motor_rpm = 0;
   double motor_torque = 0;

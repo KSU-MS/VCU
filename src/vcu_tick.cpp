@@ -19,6 +19,7 @@ void VCU::begin() {
   hal::pin_mode(BUZZER, hal::PIN_OUTPUT);
 
   drivetrain->set_power_limit_kw(POWER_LIMIT_KW);
+  pedals->set_regen_travel(vehicle::THIS.regen_brake_travel);
   drivetrain->set_split(TORQUE_SPLIT_BY_LOAD ? torque_split::Mode::LOAD
                                              : torque_split::Mode::FIXED,
                         TORQUE_SPLIT_FRONT_BIAS);
@@ -59,8 +60,31 @@ void VCU::tick(uint32_t now) {
   const bool vn_fresh = vn_heard.fresh(now, TC_INPUT_TIMEOUT_MS);
   drivetrain->set_motion(vn_fresh ? vn_speed : 0, vn_fresh ? vn_accel : 0);
 
-  // Then the Pi's ceiling, if it's in control: it can only take more away
+  // Regen (docs/regen.md), on a car with regen brake travel: the brake
+  // pedal's share of the most, in ready to drive only. EV.3.3.3: none at
+  // 5 km/h or less, full from 8, on VectorNav's speed (none without it).
+  // The brake overrides the throttle: pressed at all, no drive torque
+  const double brake_regen =
+      current_state == READY_TO_DRIVE ? pedals->regen_fraction() : 0.0;
+  if (brake_regen > 0)
+    driver_nm = 0;
+  const double speed = vn_fresh ? vn_speed : 0;
+  const double fade = (speed - REGEN_MIN_SPEED_MS) /
+                      (REGEN_FULL_SPEED_MS - REGEN_MIN_SPEED_MS);
+  regen_share = brake_regen * (fade < 0 ? 0 : (fade > 1 ? 1 : fade));
+  // ...and the pack's limits on it: the BMS's charge current, only while
+  // it's being heard, and its maximum pack voltage
+  drivetrain->set_regen_limits(
+      charge_limit_heard.fresh(now, BMS_LIMIT_TIMEOUT_MS)
+          ? accumulator->get_charge_limit_a()
+          : 0,
+      accumulator->get_pack_voltage(), accumulator->get_max_pack_voltage());
+
+  // Then the Pi's ceiling, if it's in control: it can only take more away.
+  // Both only ever limit drive torque; regen is the brake pedal's
   torque_nm = pi.step(now, traction.step(now, driver_nm), !(driver_nm > 0));
+  if (regen_share > 0)
+    torque_nm = -regen_share * drivetrain->max_regen_request();
 
   if (timer_100hz.check(now))
     send_pi_status_message();
@@ -203,7 +227,7 @@ void VCU::tick(uint32_t now) {
     if (ts_safe()) {
       drivetrain->regulate_power(now);
       if (timer_200hz.check(now))
-        drivetrain->command(torque_nm);
+        drivetrain->command(torque_nm, now);
 
       if (timer_10hz_2.check(now)) {
         drivetrain->set_current_limits(INVERTER_CHARGE_LIMIT,

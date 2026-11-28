@@ -38,6 +38,31 @@
 #define TORQUE_SPLIT_FRONT_BIAS 0.45 // fixed: the front's share (kmslap's)
 
 //
+//// Regen (docs/regen.md). Which cars have it, and how much brake travel
+//// is regen only, is vehicle::THIS.regen_brake_travel
+// Brake travel before regen starts: the sensor's noise at rest
+#define REGEN_BRAKE_DEADBAND 0.03
+// EV.3.3.3: no regen at 5 km/h or less; full from 8 (kmslap's
+// regen_min_speed / regen_fade_speed), in between in proportion
+#define REGEN_MIN_SPEED_MS (5.0 / 3.6)
+#define REGEN_FULL_SPEED_MS (8.0 / 3.6)
+// EV.3.3.2 caps any voltage at 600 V, and regen raises the pack's: it
+// fades out between these, on the highest inverter DC voltage
+#define REGEN_BUS_V_FADE 585.0
+#define REGEN_BUS_V_MAX 595.0
+// Motor and inverter generating, for the power the pack takes (kmslap's
+// motor_eff x regen_inverter_eff)
+#define REGEN_EFFICIENCY 0.90
+// The BMS's charge current limit (Pack_CCL) older than this: no regen
+#define BMS_LIMIT_TIMEOUT_MS 1000
+// Per-wheel slip control on regen (kmslap RegenPolicy.slip_scale): a
+// wheel's regen backs off as its slip goes past the target, to none a band
+// beyond it, filtered
+#define REGEN_SLIP_TARGET 0.08
+#define REGEN_SLIP_BAND 0.06
+#define REGEN_SLIP_TAU_S 0.02
+
+//
 //// Traction control (docs/traction-control.md)
 // What it starts as: off until it's been checked on the car
 #define TC_DEFAULT_MODE 0

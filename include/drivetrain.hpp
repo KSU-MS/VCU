@@ -49,7 +49,8 @@ public:
 
   void set_enable(bool enable);
   bool any_enabled();
-  // Torque limits on (each motor's own) or off
+  // Torque limits on (each motor's own) or off; on the hub motors the same
+  // as their regen limits
   void set_torque_limits(bool on);
   // For the status frame: the first drive's
   uint8_t torque_limit_nm();
@@ -63,8 +64,15 @@ public:
   // allows now (rwd_emrax: the Cascadia's get_power_trim)
   double power_trim() const { return total_power.trim(); }
   // The power limit over the pack voltage, each inverter its share (in ready
-  // to drive)
+  // to drive). The charge (regen) limit: `charge_limit` on rwd_emrax; on the
+  // hub cars the BMS's (set_regen_limits), each inverter its share
   void set_current_limits(uint16_t charge_limit, float pack_voltage);
+  // Regen's limits: the BMS's charge current limit (A; 0 for none allowed,
+  // as when it's not heard), the pack voltage it's at, and the DC bus
+  // voltage regen fades out to (REGEN_BUS_V_MAX, or the BMS's maximum pack
+  // voltage if that's lower)
+  void set_regen_limits(double charge_limit_a, double pack_voltage,
+                        double bus_v_max);
   // A fixed pack discharge limit, amps, shared the same way
   void set_current_limit_amps(uint16_t charge_limit, uint16_t discharge_limit);
 
@@ -74,9 +82,15 @@ public:
 
   // Full pedal, in the drivetrain's units (above)
   double max_request();
+  // Full regen, the same way: what the regen-capable motors can take back
+  // at the wheels (positive; 0 on rwd_emrax)
+  double max_regen_request();
   // The driver's (or traction control's, or the Pi's) request, in those
-  // units, out to the motors: on the hub cars split by torque_split
-  void command(double request);
+  // units, out to the motors: on the hub cars split by torque_split.
+  // Negative is regen (docs/regen.md): split the same way, by axle load
+  // under braking, then held to the BMS's charge limit and under 600 V, and
+  // backed off on any wheel slipping. now_ms: for the slip filter
+  void command(double request, uint32_t now_ms);
   // For the split by axle load: speed (m/s) and acceleration (m/s^2)
   void set_motion(double vx, double ax);
   void set_split(torque_split::Mode mode, double front_bias);
@@ -116,6 +130,16 @@ private:
   PowerLoop total_power;
   Freshness dc_heard[MAX_DRIVES];
   bool dc_new = false;
+  // Regen: the BMS's limits, and each wheel's share of its regen kept by the
+  // slip control (1: all of it), filtered
+  double charge_limit_a = 0, regen_pack_v = 0, regen_v_max = REGEN_BUS_V_MAX;
+  double slip_keep[MAX_DRIVES] = {1, 1, 1, 1};
+  uint32_t last_command_ms = 0;
+  // What drive i can take back at its wheel(s) now, N m (0 if it can't)
+  double regen_wheel_cap(size_t i);
+  // Regen's limits on the motor torques in motor_nm (all negative or 0):
+  // the charge limit and the voltage, all alike, then each wheel's slip
+  void limit_regen(uint32_t now_ms);
   double vx = 0, ax = 0;
   torque_split::Mode split_mode = torque_split::Mode::LOAD;
   double front_bias = 0.45;

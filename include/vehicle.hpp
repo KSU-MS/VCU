@@ -34,6 +34,11 @@ struct Vehicle {
   const char *name;
   const Drive *drives;
   size_t drive_count;
+  // The brake pedal travel that's regen only, before the hydraulics
+  // (T.3.2.4a: up to 0.9), as a fraction. 0: no regen. Needs a brake
+  // pedal travel sensor and a pedal box with that free travel: today's car
+  // measures pressure, so it has none
+  double regen_brake_travel;
 };
 
 // kmslap's Car.hub_ratio and hub_gear_eff: ESTIMATES until the hub
@@ -84,16 +89,18 @@ constexpr Drive FOUR_WD_AMK_DRIVES[] = {
 };
 
 template <size_t N>
-constexpr Vehicle make(const char *name, const Drive (&drives)[N]) {
-  return {name, drives, N};
+constexpr Vehicle make(const char *name, const Drive (&drives)[N],
+                       double regen_brake_travel) {
+  return {name, drives, N, regen_brake_travel};
 }
 
 constexpr Vehicle ALL[] = {
-    make("rwd_emrax", RWD_EMRAX_DRIVES),
-    make("awd_emrax_dti", AWD_EMRAX_DTI_DRIVES),
-    make("awd_emrax_amk", AWD_EMRAX_AMK_DRIVES),
-    make("4wd_dti", FOUR_WD_DTI_DRIVES),
-    make("4wd_amk", FOUR_WD_AMK_DRIVES),
+    // The hub cars: kmslap's 0.9 (laptime.run's default with hub motors)
+    make("rwd_emrax", RWD_EMRAX_DRIVES, 0.0),
+    make("awd_emrax_dti", AWD_EMRAX_DTI_DRIVES, 0.9),
+    make("awd_emrax_amk", AWD_EMRAX_AMK_DRIVES, 0.9),
+    make("4wd_dti", FOUR_WD_DTI_DRIVES, 0.9),
+    make("4wd_amk", FOUR_WD_AMK_DRIVES, 0.9),
 };
 
 // The one this build is for, and which inverter code it needs

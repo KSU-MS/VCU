@@ -26,11 +26,16 @@
 // (--efficiency, 0.90 like the power tests), over the logged voltage.
 // --logged-dc uses the log's currents instead.
 //
+// The BMS's charge limit, which regen keeps to, isn't in kmslap's logs: the
+// replay's BMS says --charge-limit (A, default 234: the pack's peak charge
+// current in kmslap) and a 600 V maximum pack voltage throughout.
+//
 // The car is walked to ready to drive first, with the first row's values,
 // the way a driver would (sim::Car::drive_to_rtd), then the log runs.
 //
 //   pio run -e replay_4wd_dti
 //   .pio/build/replay_4wd_dti/program [--logged-dc] [--efficiency E] \
+//       [--charge-limit A] \
 //       in.csv out.csv
 #include <sim_car.hpp>
 
@@ -161,7 +166,8 @@ void model_dc(sim::Car &car, const Columns &c, const std::vector<double> &row,
 
 void usage(const char *argv0) {
   fprintf(stderr,
-          "usage: %s [--logged-dc] [--efficiency E] in.csv out.csv\n", argv0);
+          "usage: %s [--logged-dc] [--efficiency E] [--charge-limit A]\n"
+          "          in.csv out.csv\n", argv0);
   exit(2);
 }
 
@@ -169,6 +175,7 @@ void usage(const char *argv0) {
 
 int main(int argc, char **argv) {
   bool logged_dc = false;
+  double charge_limit_a = 234;
   double efficiency = 0.90;
   const char *paths[2] = {};
   size_t n_paths = 0;
@@ -177,6 +184,8 @@ int main(int argc, char **argv) {
       logged_dc = true;
     else if (!strcmp(argv[i], "--efficiency") && i + 1 < argc)
       efficiency = strtod(argv[++i], nullptr);
+    else if (!strcmp(argv[i], "--charge-limit") && i + 1 < argc)
+      charge_limit_a = strtod(argv[++i], nullptr);
     else if (argv[i][0] != '-' && n_paths < 2)
       paths[n_paths++] = argv[i];
     else
@@ -210,6 +219,7 @@ int main(int argc, char **argv) {
   car->run_for(10);
   car->acu_status(true, true);
   car->precharge_state(PRECHARGE_OK_STATE);
+  car->bms_charge_limit(charge_limit_a, 600);
   car->inverter_bus_voltage(first[c.pack_v]);
   apply(*car, c, first, true);
   car->set_throttle(0);

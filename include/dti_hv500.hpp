@@ -24,7 +24,10 @@ public:
   // DTI's map has no clear-faults command: a fault clears when its cause has
   // gone and drive enable is cycled, which ping() does
   void send_clear_faults() override {}
-  // SetMaxDcCurrent: the share of the pack's discharge limit it gets
+  // SetMaxDcCurrent: the share of the pack's discharge limit it gets, and
+  // SetMaxDcBrakeCurrent its share of the charge limit (regen), sent
+  // negative. (DTI's manual gives 0x0B's unit as % in its table but A in
+  // its example: A assumed)
   void set_current_limits(uint16_t charge_limit,
                           uint16_t discharge_limit) override;
 
@@ -40,7 +43,9 @@ public:
   enum packet : uint8_t {
     SET_AC_CURRENT = 0x01,
     SET_MAX_AC_CURRENT = 0x08,
+    SET_MAX_AC_BRAKE_CURRENT = 0x09,
     SET_MAX_DC_CURRENT = 0x0A,
+    SET_MAX_DC_BRAKE_CURRENT = 0x0B,
     SET_DRIVE_ENABLE = 0x0C,
     ERPM_DUTY_VOLTAGE = 0x20,
     AC_DC_CURRENT = 0x21,

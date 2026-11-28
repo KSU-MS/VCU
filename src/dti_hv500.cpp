@@ -19,6 +19,10 @@ DtiHv500::DtiHv500(uint8_t node, const MotorSpec &motor, double gear_ratio,
   send_i16(SET_MAX_AC_CURRENT, std::sqrt(2.0) * motor.peak_torque_nm /
                                    motor.kt_nm_per_arms,
            10, 2);
+  // ...and as regen, the same, negative (DTI takes only negative there)
+  send_i16(SET_MAX_AC_BRAKE_CURRENT,
+           -std::sqrt(2.0) * motor.peak_torque_nm / motor.kt_nm_per_arms, 10,
+           2);
   ping();
 }
 
@@ -84,8 +88,10 @@ void DtiHv500::ping() {
   send_i16(SET_AC_CURRENT, 0, 10, 8);
 }
 
-void DtiHv500::set_current_limits(uint16_t, uint16_t discharge_limit) {
+void DtiHv500::set_current_limits(uint16_t charge_limit,
+                                 uint16_t discharge_limit) {
   send_i16(SET_MAX_DC_CURRENT, discharge_limit, 10, 2);
+  send_i16(SET_MAX_DC_BRAKE_CURRENT, -double(charge_limit), 10, 2);
 }
 
 void DtiHv500::send_torque(double torque_nm) {

@@ -113,17 +113,19 @@ def read_csv(path: Path) -> dict[str, np.ndarray]:
 
 
 def run_vcu(inputs: dict, program: Path = PROGRAM, logged_dc: bool = False,
-            efficiency: float = 0.90) -> dict[str, np.ndarray]:
+            efficiency: float = 0.90, charge_limit: float = 234.0) -> dict[str, np.ndarray]:
     """The VCU through `inputs` (INPUTS' columns and t_s): its state, fault
     and each hub's torque (N m at the motor) and enable, row by row.
     logged_dc: the inverters report the log's DC currents, not ones made from
-    the VCU's own torques at `efficiency` (sil/replay_main.cpp)."""
+    the VCU's own torques at `efficiency` (sil/replay_main.cpp).
+    charge_limit: the BMS's charge current limit, A, which regen keeps to."""
     if not program.exists():
         raise FileNotFoundError(f"{program}: build it with `pio run -e replay_4wd_dti`")
     with tempfile.TemporaryDirectory() as tmp:
         src, dst = Path(tmp) / "in.csv", Path(tmp) / "out.csv"
         write_csv(src, {k: inputs[k] for k in ["t_s", *INPUTS]})
         flags = ["--logged-dc"] if logged_dc else ["--efficiency", str(efficiency)]
+        flags += ["--charge-limit", str(charge_limit)]
         subprocess.run([str(program), *flags, str(src), str(dst)], check=True)
         return read_csv(dst)
 
@@ -141,7 +143,12 @@ class Report:
     drive_front_ref: float
     regen_rows: int                # kmslap regenerating
     regen_ref_mean: float          # its mean total (negative), N m
-    vcu_negative_max: float        # the most regen the VCU asked for (should be 0)
+    regen_vcu_mean: float          # the VCU's over the same rows
+    regen_rms: float               # RMS of the difference there
+    regen_front_vcu: float         # the front axle's share of the regen
+    regen_front_ref: float
+    vcu_negative_max: float        # the most regen the VCU asked for at once
+    bus_v_max: float               # the highest DC voltage in the log
     vcu_torque_on_brake: float     # most total torque the VCU gave with the brake on
     overlap_rows: int              # throttle > 25 % with the brake on (EV.4.7)
     per_wheel_rms: dict
@@ -157,8 +164,12 @@ class Report:
             f"kmslap {self.drive_total_ref:.1f} N m, RMS difference {self.drive_total_rms:.1f} N m",
             f"  front axle's share: VCU {self.drive_front_vcu:.1%}, kmslap {self.drive_front_ref:.1%}",
             "  per motor RMS difference: " + ", ".join(f"{w} {v:.1f}" for w, v in self.per_wheel_rms.items()),
-            f"regen ({self.regen_rows} rows): kmslap averages {self.regen_ref_mean:.1f} N m; "
-            f"the VCU's most negative {self.vcu_negative_max:.1f} N m (no regen yet)",
+            f"regen ({self.regen_rows} rows): total motor torque VCU {self.regen_vcu_mean:.1f} N m, "
+            f"kmslap {self.regen_ref_mean:.1f} N m, RMS difference {self.regen_rms:.1f} N m; "
+            f"the VCU's most {self.vcu_negative_max:.1f} N m",
+            f"  front axle's share: VCU {self.regen_front_vcu:.1%}, kmslap {self.regen_front_ref:.1%}"
+            + (f"; the DC bus reaches {self.bus_v_max:.0f} V: regen stops at 595 V (EV.3.3.2)"
+               if self.bus_v_max >= 595 else ""),
             f"brake on: the most total torque the VCU gave {self.vcu_torque_on_brake:.1f} N m",
             f"throttle over 25 % with the brake on: {self.overlap_rows} rows",
             "power, most over 500 ms: hubs VCU "
@@ -181,7 +192,7 @@ def compare(inputs: dict, vcu: dict, efficiency: float = 0.90) -> Report:
 
     def front_share(t, rows):
         total = t[:, rows].sum()
-        return float(t[:2, rows].sum() / total) if total > 0 else float("nan")
+        return float(t[:2, rows].sum() / total) if total != 0 else float("nan")
 
     def mean(x):
         return float(x.mean()) if x.size else 0.0
@@ -210,7 +221,12 @@ def compare(inputs: dict, vcu: dict, efficiency: float = 0.90) -> Report:
         drive_front_ref=front_share(ref_t, driving),
         regen_rows=int(regen.sum()),
         regen_ref_mean=mean(ref_total[regen]),
-        vcu_negative_max=float(min(vcu_t.min(), 0.0)),
+        regen_vcu_mean=mean(vcu_total[regen]),
+        regen_rms=float(np.sqrt(mean((vcu_total - ref_total)[regen] ** 2))),
+        regen_front_vcu=front_share(vcu_t, regen),
+        regen_front_ref=front_share(ref_t, regen),
+        vcu_negative_max=float(min(vcu_total.min(), 0.0)),
+        bus_v_max=float(max(inputs[f"bus_v_{w}"].max() for w in WHEELS)),
         vcu_torque_on_brake=float(vcu_total[brake_on].max()) if brake_on.any() else 0.0,
         overlap_rows=int(((inputs["throttle"] > 0.25) & brake_on).sum()),
         per_wheel_rms={w: float(np.sqrt(mean((vcu_t[i] - ref_t[i])[driving] ** 2))) for i, w in enumerate(WHEELS)},
@@ -252,6 +268,8 @@ def main(argv=None) -> int:
                    help="the inverters report the log's DC currents (they don't answer the VCU's torques)")
     p.add_argument("--efficiency", type=float, default=0.90,
                    help="motor and inverter, for the DC currents made from the VCU's torques")
+    p.add_argument("--charge-limit", type=float, default=234.0,
+                   help="the BMS's charge current limit, A (not in kmslap's logs; its pack's peak)")
     args = p.parse_args(argv)
 
     if args.log.suffixes[-2:] == [".csv", ".gz"] or args.log.suffix == ".csv":
@@ -261,7 +279,8 @@ def main(argv=None) -> int:
     inputs = window(inputs, args.start, args.duration)
     if args.save_inputs:
         write_csv(args.save_inputs, inputs)
-    vcu = run_vcu(inputs, logged_dc=args.logged_dc, efficiency=args.efficiency)
+    vcu = run_vcu(inputs, logged_dc=args.logged_dc, efficiency=args.efficiency,
+                  charge_limit=args.charge_limit)
     if args.save_output:
         write_csv(args.save_output, vcu)
     if args.plot:

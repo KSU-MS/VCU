@@ -21,8 +21,9 @@ VCU::VCU(Pedals *pedals, Drivetrain *drivetrain, Accumulator *accumulator,
 }
 
 bool VCU::try_ts_enabled() {
+  // EV.10.6.2: the mechanical brakes engaged, so past any regen travel
   if (RTD_button_pressed &&
-      (pedals->get_brake_travel() > MINIMUM_BRAKE_FOR_RTD)) {
+      (pedals->hydraulic_travel() > MINIMUM_BRAKE_FOR_RTD)) {
     return true;
   } else {
     return false;
@@ -298,6 +299,11 @@ void VCU::update_acc_can() {
 
     case CAN_ID_MSGID_0X6B1:
       accumulator->update_pack_power(msg_in.buf.val, msg_in.length);
+      break;
+
+    case CAN_ID_MSGID_0X1806E5F4: // the BMS's limits for its charger
+      charge_limit_heard.heard(now_ms);
+      accumulator->update_charge_limits(msg_in.buf.val, msg_in.length);
       break;
 
     // We foward this to the inverter bus for the dash

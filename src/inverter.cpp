@@ -86,5 +86,14 @@ void Inverter::command_torque(double torque_request) {
     }
   }
 
+  // Regen: only on an inverter given a regen limit (the hub motors';
+  // the Cascadia never has one), down to it. Its power and current limits
+  // are the drivetrain's job (Drivetrain::command), the speed rule
+  // (EV.3.3.3) the VCU's
+  if (inverter_enable && regen_limit_nm > 0 && std::isfinite(torque_request) &&
+      torque_request < 0.0)
+    torque_target =
+        torque_request < -regen_limit_nm ? -regen_limit_nm : torque_request;
+
   send_torque(torque_target);
 }

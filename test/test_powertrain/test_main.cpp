@@ -234,6 +234,26 @@ TEST_CASE("[EV.3.3.3] never asks for regen, at any speed (x28: 7 speeds x 4 requ
 //
 //// Current limit
 
+TEST_CASE("[EV.3.3.3] rwd_emrax has no regen: the brake at speed asks for "
+          "nothing, the throttle still works off it") {
+  Car car;
+  car.bms_charge_limit(200, 600);
+  car.drive_to_rtd();
+  REQUIRE(vehicle::THIS.regen_brake_travel == 0);
+  CHECK(car.pedals.regen_fraction() == 0);
+  car.inverter_motor_rpm(3000);
+  for (double brake : {0.2, 0.5, 0.9}) {
+    car.set_brake(brake);
+    for (int t = 0; t < 10; t++) {
+      car.vectornav(20, 0, -8);
+      car.run_for(10);
+    }
+    Car::InverterCommand cmd;
+    REQUIRE(car.last_inverter_command(&cmd));
+    CHECK(cmd.torque_nm >= 0);
+  }
+}
+
 TEST_CASE("instant current limit is power over voltage") {
   Car car;
   car.inverter.set_power_limit_kw(80);

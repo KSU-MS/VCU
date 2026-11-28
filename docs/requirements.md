@@ -88,9 +88,11 @@ under 960 on the car)
 p.94. Monitor for the mechanical brakes being engaged (T.3.2.4: the
 hydraulic brakes, not regen travel) and the APPS signalling more than 25%.
 
-VCU: brake travel over `Pedals::BRAKE_ACTUATED_TRAVEL` (0.10) and the
-higher APPS over 0.25. **met**, **assumption** (0.10 of the brake pressure
-range is where the brakes engage: calibrate)
+VCU: the brake's hydraulic travel (`Pedals::hydraulic_travel`: all of it on
+rwd_emrax, the part past the regen travel on the hub cars) over
+`Pedals::BRAKE_ACTUATED_TRAVEL` (0.10) and the higher APPS over 0.25. The
+regen travel doesn't latch it (docs/regen.md). **met**, **assumption**
+(0.10 of the brake pressure range is where the brakes engage: calibrate)
 
 ### EV.4.7.2 — Cut motor power until the APPS is under 5%
 p.94. Both at once: power to the motor immediately and completely shut
@@ -157,10 +159,34 @@ VCU: how the power tests judge a run: the model drivetrain's electrical
 power, every ms, must never be over 80 kW for 100 ms straight or on any
 500 ms average. **met**
 
+## Regen (docs/regen.md)
+
+### T.3.2.4 — The first 90% of brake travel may be regen only
+p.65. On an EV the first 90% of the brake pedal's travel may regenerate
+without the hydraulic brakes; the rest must work the hydraulics directly,
+and regen may stay on.
+
+VCU: on the hub cars, regen rises over the first 0.9 of the travel (past a
+0.03 deadband) and stays at the most past it; rwd_emrax has none. The
+hydraulics are the pedal box's job. **met**, **assumption** (a brake pedal
+travel sensor, and a pedal box with that free travel)
+
 ### EV.3.3.3 — No regen between 0 and 5 km/h
 p.92. The powertrain must not regenerate energy at 0-5 km/h.
 
-VCU: never commands negative torque at all (no regen). **met**
+VCU: no regen at 5 km/h or less on VectorNav's speed, fading in to 8 km/h,
+and none without VectorNav. rwd_emrax never commands negative torque at
+all. **met**, **assumption** (VectorNav's speed is the car's)
+
+### EV.3.3.2 — No more than 600 V
+p.92. The maximum voltage between any two points must not exceed 600 V DC
+(a violation as for power, EV.3.4.1).
+
+VCU: regen fades out as the highest inverter DC voltage goes from 585 to
+595 V, or stops at the BMS's maximum pack voltage if lower, and needs the
+BMS's charge current limit to regenerate at all. **partial**: the pack's
+own voltage is the charger's and BMS's: a 144s pack at 4.2 V a cell is
+604.8 V before any regen
 
 ## Activation
 
@@ -174,9 +200,9 @@ p.111. Not possible until, at the same time: Tractive System Active, the
 brake pedal pressed and held to engage the mechanical brakes, and a manual
 driver action (a cockpit button).
 
-VCU: from TRACTIVE_SYSTEM_ENERGIZED only, with brake travel over
-`MINIMUM_BRAKE_FOR_RTD` (0.3) from a working BSE, and the dash RTD button.
-**met**
+VCU: from TRACTIVE_SYSTEM_ENERGIZED only, with the brake's hydraulic travel
+over `MINIMUM_BRAKE_FOR_RTD` (0.3; past the regen travel on the hub cars)
+from a working BSE, and the dash RTD button. **met**
 
 ### EV.10.7.2 — Ready to Drive sound for 1-3 s
 p.111. Sounded continuously for at least 1 s and at most 3 s (and at least

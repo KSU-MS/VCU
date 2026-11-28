@@ -147,12 +147,21 @@ struct Car : ResetFirst {
     brake_raw = uint16_t(START_BRAKE_PEDAL +
                          travel * (END_BRAKE_PEDAL - START_BRAKE_PEDAL));
   }
+  // The brake pressed past any regen travel, `fraction` (0..1) of the way
+  // through the hydraulic part (vehicle::THIS.regen_brake_travel)
+  void set_hydraulic_brake(double fraction) {
+    const double regen = vehicle::THIS.regen_brake_travel;
+    set_brake(regen + (1 - regen) * fraction);
+  }
 
   //
   //// Other boards on the car
   void acu_status(bool imd_ok, bool bms_ok);
   void precharge_state(uint8_t state);
   void pack_power(double volts, double amps);
+  // The BMS's charge limits (its charger message, 0x1806E5F4), from now on
+  // (repeated): regen's current limit, A, and the pack voltage it charges to
+  void bms_charge_limit(double amps, double max_pack_volts);
   // Every inverter reporting this DC voltage, from now on (repeated)
   void inverter_bus_voltage(double volts);
   void dash_rtd_button(bool pressed);

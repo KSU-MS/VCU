@@ -81,8 +81,13 @@ double Drivetrain::torque_limit_for(size_t i) const {
 }
 
 void Drivetrain::set_torque_limits(bool on) {
-  for (size_t i = 0; i < n; i++)
+  for (size_t i = 0; i < n; i++) {
     inverters[i]->set_torque_limit(on ? torque_limit_for(i) : 0);
+    // Regen on the hub motors only: the Cascadia's never been set up for
+    // it, so rwd_emrax (and the EMRAX on the awd cars) never regenerates
+    const bool can_regen = drives[i].inverter != InverterKind::CASCADIA_PM100;
+    inverters[i]->set_regen_limit(on && can_regen ? torque_limit_for(i) : 0);
+  }
 }
 
 uint8_t Drivetrain::torque_limit_nm() {
@@ -107,6 +112,15 @@ double Drivetrain::wheel_cap(size_t i) {
                 motors::max_torque_nm(*drives[i].motor,
                                       inverters[i]->get_motor_rpm()));
   return motor_nm * drives[i].gear_ratio * drives[i].gear_eff;
+}
+
+double Drivetrain::regen_wheel_cap(size_t i) {
+  // The same curve, generating; through the gears the other way
+  const double motor_nm =
+      std::fmin(inverters[i]->get_regen_limit_nm(),
+                motors::max_torque_nm(*drives[i].motor,
+                                      inverters[i]->get_motor_rpm()));
+  return motor_nm * drives[i].gear_ratio / drives[i].gear_eff;
 }
 
 void Drivetrain::set_motion(double vx_ms, double ax_ms2) {
@@ -145,7 +159,7 @@ double Drivetrain::power_share(size_t i) const {
   for (size_t j = 0; j < n; j++) {
     const double omega =
         std::fabs(double(inverters[j]->get_motor_rpm())) * RAD_S_PER_RPM;
-    asked[j] = motor_nm[j] > 0 ? motor_nm[j] * omega : 0;
+    asked[j] = std::fabs(motor_nm[j]) * omega; // driving or regenerating
     total += asked[j];
   }
   if (!(total > 0))
@@ -156,13 +170,28 @@ double Drivetrain::power_share(size_t i) const {
 void Drivetrain::set_current_limits(uint16_t charge_limit,
                                     float pack_voltage) {
   // The power limit over the pack voltage (get_instant_current_limit), each
-  // inverter its share: rwd_emrax's one gets all of it
+  // inverter its share: rwd_emrax's one gets all of it. And the hub cars'
+  // charge limit, the BMS's, shared the same way
   const double total =
       n ? inverters[0]->get_instant_current_limit(pack_voltage) : 0;
-  for (size_t i = 0; i < n; i++)
-    inverters[i]->set_current_limits(
-        charge_limit,
-        uint16_t(n == 1 ? total : std::floor(total * power_share(i))));
+  for (size_t i = 0; i < n; i++) {
+    if (n == 1) {
+      inverters[i]->set_current_limits(charge_limit, uint16_t(total));
+      continue;
+    }
+    const double s = power_share(i);
+    inverters[i]->set_current_limits(uint16_t(std::floor(charge_limit_a * s)),
+                                     uint16_t(std::floor(total * s)));
+  }
+}
+
+void Drivetrain::set_regen_limits(double charge_a, double pack_voltage,
+                                  double bus_v_max) {
+  charge_limit_a = charge_a > 0 && charge_a < UINT16_MAX ? charge_a : 0;
+  regen_pack_v = pack_voltage > 0 ? pack_voltage : 0;
+  regen_v_max = bus_v_max > 0 && bus_v_max < REGEN_BUS_V_MAX
+                    ? bus_v_max
+                    : REGEN_BUS_V_MAX;
 }
 
 void Drivetrain::set_current_limit_amps(uint16_t charge_limit,
@@ -211,17 +240,43 @@ double Drivetrain::max_request() {
   return total;
 }
 
-void Drivetrain::command(double request) {
+double Drivetrain::max_regen_request() {
+  double total = 0;
+  for (size_t i = 0; i < n; i++)
+    total += regen_wheel_cap(i);
+  return total;
+}
+
+void Drivetrain::command(double request, uint32_t now_ms) {
   if (n == 1) {
     inverters[0]->command_torque(request);
     return;
   }
+  const bool regen = request < 0;
   double cap[MAX_DRIVES];
   for (size_t i = 0; i < n; i++)
-    cap[i] = wheel_cap(i);
+    cap[i] = regen ? regen_wheel_cap(i) : wheel_cap(i);
+  // By axle load either way: braking moves it to the front
   const double front =
       torque_split::front_share(split_mode, front_bias, vx, ax);
-  torque_split::split(request, front, drives, cap, n, wheel);
+  torque_split::split(regen ? -request : request, front, drives, cap, n,
+                      wheel);
+
+  if (regen) {
+    for (size_t i = 0; i < n; i++) {
+      wheel[i] = -wheel[i];
+      motor_nm[i] = wheel[i] * drives[i].gear_eff / drives[i].gear_ratio;
+    }
+    limit_regen(now_ms);
+    for (size_t i = 0; i < n; i++)
+      inverters[i]->command_torque(motor_nm[i]);
+    last_command_ms = now_ms;
+    return;
+  }
+  // Not regenerating: the slip control starts afresh next time
+  for (size_t i = 0; i < n; i++)
+    slip_keep[i] = 1;
+  last_command_ms = now_ms;
 
   // Wheel torque back to the motor's, and the power it all takes at the
   // motors' speeds
@@ -243,6 +298,42 @@ void Drivetrain::command(double request) {
     motor_nm[i] *= scale;
     wheel[i] *= scale;
     inverters[i]->command_torque(motor_nm[i]);
+  }
+}
+
+void Drivetrain::limit_regen(uint32_t now_ms) {
+  auto clamp01 = [](double x) { return x < 0 ? 0 : (x > 1 ? 1 : x); };
+
+  // The power it all puts back into the pack, against what the BMS lets it
+  // take: every motor alike
+  double mech_w = 0;
+  for (size_t i = 0; i < n; i++)
+    mech_w += -motor_nm[i] *
+              std::fabs(double(inverters[i]->get_motor_rpm())) * RAD_S_PER_RPM;
+  const double elec_w = mech_w * REGEN_EFFICIENCY;
+  const double charge_w = charge_limit_a * regen_pack_v;
+  double scale = elec_w > charge_w ? charge_w / elec_w : 1;
+  // EV.3.3.2: fading out before the DC bus gets near 600 V
+  scale *= clamp01((regen_v_max - max_bus_voltage()) /
+                   (REGEN_BUS_V_MAX - REGEN_BUS_V_FADE));
+
+  // Each wheel: its regen backs off as it turns slower than the car
+  // (kmslap RegenPolicy.slip_scale), filtered
+  const double dt_s = (now_ms - last_command_ms) / 1000.0;
+  const double follow =
+      dt_s / REGEN_SLIP_TAU_S < 1 ? dt_s / REGEN_SLIP_TAU_S : 1;
+  for (size_t i = 0; i < n; i++) {
+    double target = 1;
+    if (vx > REGEN_MIN_SPEED_MS) {
+      const double wheel_ms =
+          std::fabs(double(inverters[i]->get_motor_rpm())) /
+          drives[i].gear_ratio * WHEEL_CIRCUMFRANCE_M / 60;
+      const double slip = (wheel_ms - vx) / vx;
+      target = clamp01(1 - (-slip - REGEN_SLIP_TARGET) / REGEN_SLIP_BAND);
+    }
+    slip_keep[i] += follow * (target - slip_keep[i]);
+    motor_nm[i] *= scale * slip_keep[i];
+    wheel[i] *= scale * slip_keep[i];
   }
 }
 

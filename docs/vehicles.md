@@ -86,6 +86,7 @@ The VCU drives a `Drivetrain` of inverters (`include/drivetrain.hpp`).
   - Every inverter must read the precharged voltage.
   - HV counts as present if any inverter is at 60 V or more, or any is
     silent.
+- **Regen** under the brake pedal, by the same split: docs/regen.md.
 - **Not yet on the hub cars:** traction control. It needs a rear-axle
   motor's speed, so on a 4wd car it steps aside. Per-wheel slip control is
   later.
@@ -109,9 +110,14 @@ makes the log from a `kmslap mcap --drivetrain 4wd_dti` file:
 
 It runs the VCU and reports how the two compare:
 
-    kmslap mcap michigan2026 --drivetrain 4wd_dti   # python-data-analysis
+    kmslap mcap michigan2026 --drivetrain 4wd_dti --soc 0.8 \
+        --out out/mcap/michigan2026_4wd_dti_soc80.mcap   # python-data-analysis
     pio run -e replay_4wd_dti
-    uv run tools/replay/replay.py ../python-data-analysis/out/mcap/michigan2026_4wd_dti.mcap
+    uv run tools/replay/replay.py ../python-data-analysis/out/mcap/michigan2026_4wd_dti_soc80.mcap
+
+At 80 % charge, so there's room under 600 V to regenerate: at 100 %
+kmslap's pack is already 604.8 V (docs/regen.md). The BMS's charge limit
+isn't in kmslap's logs; the replay's BMS says 234 A (`--charge-limit`).
 
 The inverters' DC currents are the one input that has to answer the VCU:
 its 80 kW loop closes on them. The log's currents answer kmslap's torques,
@@ -122,25 +128,31 @@ it can't reduce and winds its torque down to the floor.
 `tools/replay/test_replay.py` runs 31 s of that log
 (`tools/replay/data/`) in CI and checks:
 - ready to drive throughout, no faults;
-- no torque with the brake on, no regen;
-- every motor within its curve;
+- braking, regen and no drive torque; none at 5 km/h or less;
+- regen about as much as kmslap's, more on the front;
+- every motor within its curve, either way;
 - EV.3.4.1 across all four;
 - the front axle's share within 7 points of kmslap's;
 - a loaded hub past a quarter of 80 kW, and the total within it.
 
-**What the comparison shows** (michigan2026, the whole log):
-- The front axle's share is close: VCU 43 %, kmslap 48 %.
+**What the comparison shows** (michigan2026 at 80 % charge, the whole log):
+- The front axle's share is close: VCU 43 %, kmslap 49 %.
 - The torque curve brought the VCU nearer kmslap: the RMS difference in
-  total motor torque while driving went from 13.4 to 12.2 N·m.
+  total motor torque while driving went from 13.4 to 12.2 N·m (at 100 %
+  charge; 10.8 N·m on this log).
 - kmslap's log comes from its QP mode, which the VCU doesn't have. It
   vectors torque (outside wheels up to ~28 kW, inside ones regenerating)
   and holds wheels back near their grip limit, so per motor the two differ
   by ~10 N·m RMS. The VCU gives more torque at launch and out of slow
   corners, where the QP is grip limited.
-- About 18 % of the log is kmslap regenerating; the VCU gives nothing there.
+- **Regen:** where kmslap regenerates (about a fifth of the log) the VCU
+  averages −24.7 N·m of total motor torque to kmslap's −18.8, 14.5 N·m RMS
+  apart. Both put more on the front (VCU 57 %, kmslap 54 %). The VCU's is
+  more: kmslap's QP holds wheels back near their grip limit.
 - **The 80 kW now follows the split.** The rear hubs reach 23–24 kW over
   500 ms (they were held to 20 kW), the total 78 kW: the 97 % target.
-  kmslap's own reach 19–25 kW, with the outside wheels getting the most.
+  kmslap's own reach 20–22 kW (19–25 at full charge), with the outside
+  wheels getting the most.
 
 ## Still to do (from the hub motors handoff)
 
@@ -150,11 +162,10 @@ it can't reduce and winds its torque down to the floor.
    same checks as `pi_torque_command`.
 3. **AMK KW26:** the enable handshake, torque by saturating the speed loop,
    setpoints at least every 10 ms.
-4. **Regen:**
-   - pure-regen brake travel (T.3.2.4);
-   - none under 5 km/h (EV.3.3.3);
-   - capped by the BMS charge limit;
-   - rear-only regen only behind slip control.
+4. **Regen on rwd_emrax** (the hub cars have it, docs/regen.md): the
+   EMRAX alone regenerates the rear axle only, so it needs a brake travel
+   sensor and the Cascadia set up for it, and kmslap blends it with the
+   hydraulics.
 
 Open questions are in the handoff: the DTI's DC current accuracy and
 broadcast rate (set in DTI's CAN Tool), AMK current scaling, node IDs

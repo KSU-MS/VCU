@@ -3,6 +3,8 @@
 #include <cmath>
 #include <stdint.h>
 
+#include "parameters.hpp"
+
 class Pedals {
 private:
   uint16_t raw_apps1 = 0;
@@ -26,6 +28,9 @@ private:
   uint16_t apps2_high_fault;
 
   double brake_travel = 0;
+  // The first part of the brake travel that's regen only (T.3.2.4a), 0 if
+  // the car has no regen: set_regen_travel
+  double regen_travel = 0;
   double apps1_travel = 0;
   double apps2_travel = 0;
   double travel = 0;
@@ -49,8 +54,8 @@ public:
   // EV.4.7.2: until the APPS is under 5%, whatever the brake does.
   static constexpr double APPS_BSE_TRIP_TRAVEL = 0.25;
   static constexpr double PEDAL_RELEASED_TRAVEL = 0.05;
-  // Where the brakes start to bite. The brake input is a pressure sensor;
-  // calibrate this on the car.
+  // Where the brakes start to bite, in hydraulic_travel(). The brake input
+  // on today's car is a pressure sensor; calibrate this on the car.
   static constexpr double BRAKE_ACTUATED_TRAVEL = 0.10;
 
 public:
@@ -124,8 +129,10 @@ public:
     if (apps_disagree && now_ms - disagree_since > APPS_IMPLAUSIBLE_MS)
       apps_fault = true;
 
-    // EV.4.7.1: brake and throttle at once
-    if (brake_travel > BRAKE_ACTUATED_TRAVEL && apps_max > APPS_BSE_TRIP_TRAVEL)
+    // EV.4.7.1: the mechanical brakes and throttle at once (T.3.2.4: not
+    // the regen travel)
+    if (hydraulic_travel() > BRAKE_ACTUATED_TRAVEL &&
+        apps_max > APPS_BSE_TRIP_TRAVEL)
       apps_bse_fault = true;
 
     if (apps_fault || apps_disagree || bse_fault || apps_bse_fault)
@@ -134,6 +141,27 @@ public:
       travel = apps1_travel;
   }
   static double clamp01(double x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+
+  // The car's regen-only brake travel (vehicle::THIS.regen_brake_travel)
+  void set_regen_travel(double travel) {
+    regen_travel = travel > 0 && travel < 1 ? travel : 0;
+  }
+  // The brake travel past the regen travel, 0..1: how far the hydraulics
+  // are pushed. The whole travel on a car without regen
+  double hydraulic_travel() const {
+    if (!(regen_travel > 0))
+      return brake_travel;
+    return clamp01((brake_travel - regen_travel) / (1 - regen_travel));
+  }
+  // The regen the brake pedal asks for, 0..1 of the most: rising over the
+  // regen travel (past a deadband), then staying at the most while the
+  // hydraulics take over (T.3.2.4b). None with the sensor faulted
+  double regen_fraction() const {
+    if (!(regen_travel > REGEN_BRAKE_DEADBAND) || bse_fault)
+      return 0;
+    return clamp01((brake_travel - REGEN_BRAKE_DEADBAND) /
+                   (regen_travel - REGEN_BRAKE_DEADBAND));
+  }
 
   void update_steering(uint16_t raw_steering) {
     this->raw_steering = raw_steering;

@@ -19,6 +19,10 @@ private:
 
   double pack_voltage = 0;
   double pack_current = 0;
+  // The BMS's charge limits (its charger message): current, A, and the
+  // pack voltage it charges to
+  double charge_limit_a = 0;
+  double max_pack_voltage = 0;
 
   double consumed_power_wh = 0;
 
@@ -32,9 +36,13 @@ public:
   void update_acu_status(uint64_t msg, uint8_t length);
   void update_precharge_status(uint64_t msg, uint8_t length);
   void update_pack_power(uint64_t msg, uint8_t length);
+  // 0x1806E5F4: the limits the BMS gives its charger, which regen keeps to
+  void update_charge_limits(uint64_t msg, uint8_t length);
 
   inline double get_pack_voltage() { return pack_voltage; }
   inline double get_pack_current() { return pack_current; }
+  inline double get_charge_limit_a() { return charge_limit_a; }
+  inline double get_max_pack_voltage() { return max_pack_voltage; }
   inline uint32_t get_consumed_wh() { return consumed_power_wh; }
 
   void calculate_energy_consumed_wh(uint32_t time_msec);

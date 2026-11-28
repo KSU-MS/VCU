@@ -188,6 +188,7 @@ std::vector<uint8_t> make_image(const std::vector<uint8_t> &firmware,
 void Car::send(Bus &b, uint32_t id) {
   can_message msg;
   msg.id = id;
+  msg.is_extended = id > 0x7FF; // the BMS's charger message, say
   msg.length = pack_message(&other_boards, id, &msg.buf.val);
   b.inject(msg);
 
@@ -195,6 +196,7 @@ void Car::send(Bus &b, uint32_t id) {
   case CAN_ID_ACU_SHUTDOWN_STATUS:
   case CAN_ID_PRECHARGE_STATUS:
   case CAN_ID_MSGID_0X6B1:
+  case CAN_ID_MSGID_0X1806E5F4:
 #if VEHICLE_HAS_CASCADIA
   case CAN_ID_M167_VOLTAGE_INFO:
 #endif
@@ -238,6 +240,12 @@ void Car::acu_status(bool imd_ok, bool bms_ok) {
 void Car::precharge_state(uint8_t state) {
   encode_can_0x069_precharge_state(&other_boards, state);
   send(acc(), CAN_ID_PRECHARGE_STATUS);
+}
+
+void Car::bms_charge_limit(double amps, double max_pack_volts) {
+  encode_can_0x1806e5f4_Pack_CCL(&other_boards, amps);
+  encode_can_0x1806e5f4_Maximum_Pack_Voltage(&other_boards, max_pack_volts);
+  send(acc(), CAN_ID_MSGID_0X1806E5F4);
 }
 
 void Car::pack_power(double volts, double amps) {
@@ -325,7 +333,7 @@ void Car::drive_to_rtd() {
   run_for(10); // STARTUP -> TS_DISABLED
   make_ts_healthy();
   run_for(10); // -> TS_ENERGIZED
-  set_brake(0.5);
+  set_hydraulic_brake(0.5);
   dash_rtd_button(true);
   run_until(READY_TO_DRIVE, 3000); // -> TS_ENABLED, buzzer, -> READY_TO_DRIVE
   dash_rtd_button(false);

@@ -31,6 +31,13 @@ void Accumulator::update_pack_power(uint64_t msg, uint8_t length) {
   decode_can_0x6b1_Pack_Current(dbc, &pack_current);
 }
 
+void Accumulator::update_charge_limits(uint64_t msg, uint8_t length) {
+  unpack_message(dbc, CAN_ID_MSGID_0X1806E5F4, msg, length, 0);
+
+  decode_can_0x1806e5f4_Pack_CCL(dbc, &charge_limit_a);
+  decode_can_0x1806e5f4_Maximum_Pack_Voltage(dbc, &max_pack_voltage);
+}
+
 void Accumulator::calculate_energy_consumed_wh(uint32_t time_msec) {
   uint32_t time_elaped_msec = time_msec - time_last_msec;
 
