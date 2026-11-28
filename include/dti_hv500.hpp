@@ -27,7 +27,7 @@ public:
   // SetMaxDcCurrent: the share of the pack's discharge limit it gets, and
   // SetMaxDcBrakeCurrent its share of the charge limit (regen), sent
   // negative. (DTI's manual gives 0x0B's unit as % in its table but A in
-  // its example: A assumed)
+  // its example: A, decided)
   void set_current_limits(uint16_t charge_limit,
                           uint16_t discharge_limit) override;
 

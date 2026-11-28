@@ -163,9 +163,9 @@ it can't reduce and winds its torque down to the floor.
 3. **AMK KW26:** the enable handshake, torque by saturating the speed loop,
    setpoints at least every 10 ms.
 4. **Regen on rwd_emrax** (the hub cars have it, docs/regen.md): the
-   EMRAX alone regenerates the rear axle only, so it needs a brake travel
-   sensor and the Cascadia set up for it, and kmslap blends it with the
-   hydraulics.
+   EMRAX alone regenerates the rear axle only, so it needs the Cascadia
+   set up for it and a pedal box with free travel (or kmslap's blending
+   with the hydraulics).
 
 Open questions are in the handoff: the DTI's DC current accuracy and
 broadcast rate (set in DTI's CAN Tool), AMK current scaling, node IDs

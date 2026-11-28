@@ -54,8 +54,9 @@ public:
   // EV.4.7.2: until the APPS is under 5%, whatever the brake does.
   static constexpr double APPS_BSE_TRIP_TRAVEL = 0.25;
   static constexpr double PEDAL_RELEASED_TRAVEL = 0.05;
-  // Where the brakes start to bite, in hydraulic_travel(). The brake input
-  // on today's car is a pressure sensor; calibrate this on the car.
+  // Where the brakes start to bite, in hydraulic_travel(). The BSE is a
+  // rotary pot on the brake pedal, like the APPS: travel. Calibrate this on
+  // the car.
   static constexpr double BRAKE_ACTUATED_TRAVEL = 0.10;
 
 public:

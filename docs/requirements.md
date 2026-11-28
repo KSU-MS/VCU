@@ -92,7 +92,7 @@ VCU: the brake's hydraulic travel (`Pedals::hydraulic_travel`: all of it on
 rwd_emrax, the part past the regen travel on the hub cars) over
 `Pedals::BRAKE_ACTUATED_TRAVEL` (0.10) and the higher APPS over 0.25. The
 regen travel doesn't latch it (docs/regen.md). **met**, **assumption**
-(0.10 of the brake pressure range is where the brakes engage: calibrate)
+(0.10 of the brake pedal's travel is where the brakes engage: calibrate)
 
 ### EV.4.7.2 — Cut motor power until the APPS is under 5%
 p.94. Both at once: power to the motor immediately and completely shut
@@ -168,8 +168,8 @@ and regen may stay on.
 
 VCU: on the hub cars, regen rises over the first 0.9 of the travel (past a
 0.03 deadband) and stays at the most past it; rwd_emrax has none. The
-hydraulics are the pedal box's job. **met**, **assumption** (a brake pedal
-travel sensor, and a pedal box with that free travel)
+hydraulics are the pedal box's job. **met**, **assumption** (a pedal box with that
+free travel; the BSE, a rotary pot, measures travel)
 
 ### EV.3.3.3 — No regen between 0 and 5 km/h
 p.92. The powertrain must not regenerate energy at 0-5 km/h.

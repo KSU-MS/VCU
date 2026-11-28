@@ -35,9 +35,9 @@ struct Vehicle {
   const Drive *drives;
   size_t drive_count;
   // The brake pedal travel that's regen only, before the hydraulics
-  // (T.3.2.4a: up to 0.9), as a fraction. 0: no regen. Needs a brake
-  // pedal travel sensor and a pedal box with that free travel: today's car
-  // measures pressure, so it has none
+  // (T.3.2.4a: up to 0.9), as a fraction. 0: no regen. The BSE measures
+  // travel; the pedal box needs that free travel before the master
+  // cylinders
   double regen_brake_travel;
 };
 

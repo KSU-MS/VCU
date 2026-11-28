@@ -3,8 +3,8 @@
 The hub motor cars regenerate under the brake pedal, as kmslap's
 `RegenPolicy` and hub torque controller do (python-data-analysis
 `kmslap/driving/policies.py`, `kmslap/vcu/torque_control.py`). rwd_emrax
-doesn't: its Cascadia has never been set up for regen, and its brake
-sensor measures pressure, not travel.
+doesn't: its Cascadia has never been set up for regen, and its pedal box
+works the hydraulics from the start of the travel.
 
 - `vehicle::THIS.regen_brake_travel` (`include/vehicle.hpp`): which cars
   regenerate, and over how much brake travel.
@@ -33,10 +33,9 @@ The rules that mean "the mechanical brakes" use the hydraulic part only
 **The brake overrides the throttle:** with the pedal anywhere past the
 deadband, there's no drive torque.
 
-**Assumed:** the hub car has a brake pedal *travel* sensor and a pedal box
-with that free travel before the master cylinders. kmslap models it that
-way (its logs' `vcu_bse_travel` is pedal travel). Today's car measures
-brake pressure, which can't see travel that doesn't build pressure.
+The BSE is a rotary pot on the brake pedal, like the APPS: it measures
+travel, as kmslap's logs' `vcu_bse_travel` does. **Assumed:** the hub
+car's pedal box has that free travel before the master cylinders.
 
 ## How much, and where
 
@@ -87,11 +86,14 @@ locking wheel back, not an ABS: the hydraulics have none.
 
 ## To settle before the car
 
-- The brake pedal travel sensor and the free travel (above).
-- The BMS sending its charger message (0x1806E5F4) while driving. Orion
-  BMSs send it to the charger; check it's on the bus with no charger, or
-  there's no regen.
-- The DTI's 0x0B unit: its manual's table says %, its example A.
+- The pedal box's free travel (above).
+- Decided: the BMS sends its charger message (0x1806E5F4) all the time,
+  driving too. Without it there's no regen, so it's worth seeing on the
+  bus at the first power-up.
+- Decided: the DTI's 0x0B is in A (its manual's table says %, its example
+  A).
+- Decided: the pack is charged lower than 4.2 V a cell, to leave room
+  under 600 V to regenerate.
 - Calibrating the deadband, and the 0.90 regen efficiency.
 - The regen torque's sign at the DTI (negative AC current while moving
   forward), on the bench at low speed.
