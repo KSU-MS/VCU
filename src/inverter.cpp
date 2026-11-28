@@ -7,44 +7,9 @@ Inverter::Inverter(bool spin_forward, double gear_ratio)
     : spin_forward(spin_forward), gear_ratio(gear_ratio) {}
 
 void Inverter::regulate_power(uint32_t now_ms) {
-  // 1/0.90 undoes the open-loop efficiency guess: the full limit at the
-  // shaft, the most it could ever be with a lossless drivetrain
-  constexpr double max_trim = 1.0 / 0.90;
-  constexpr double min_trim = 0.1;
-  // Back up from a cut to the full limit in about two seconds
-  constexpr double recover_per_ms = (max_trim - min_trim) / 2000.0;
-  // Samples older than this don't count
-  constexpr uint32_t stale_ms = 100;
-
-  const double target_w = power_limit_kw * 1000.0 * POWER_LIMIT_TARGET;
-
-  if (power_sample_new) {
-    power_sample_new = false;
-    const uint32_t since = power_sample_ever ? now_ms - power_sample_ms : 0;
-    power_sample_ever = true;
-    power_sample_ms = now_ms;
-
-    const double measured_w = get_measured_power_w();
-    if (std::isfinite(measured_w) && measured_w > target_w) {
-      // Torque cap ~ trim, so this puts the next sample on the target. Only
-      // per new sample: the measurement lags, so cutting again every loop
-      // until it catches up would overshoot
-      power_trim *= target_w / measured_w;
-    } else if (std::isfinite(measured_w)) {
-      power_trim += recover_per_ms * since;
-    }
-  }
-
-  if (!power_sample_ever || now_ms - power_sample_ms > stale_ms) {
-    // Flying blind: no more than the open-loop cap
-    if (power_trim > 1.0)
-      power_trim = 1.0;
-  }
-
-  if (power_trim > max_trim)
-    power_trim = max_trim;
-  if (power_trim < min_trim || !std::isfinite(power_trim))
-    power_trim = min_trim;
+  power.update(now_ms, power_limit_kw * 1000.0, power_sample_new,
+               get_measured_power_w());
+  power_sample_new = false;
 }
 
 void Inverter::calculate_motor_distance_M(uint32_t time_msec) {
@@ -101,7 +66,7 @@ void Inverter::command_torque(double torque_request) {
   // avoiding div by zero
   if (angular_velocity > 0.0) {
     const double power_limited_torque =
-        (power_limit_w * efficiency * power_trim) / angular_velocity;
+        (power_limit_w * efficiency * power.trim()) / angular_velocity;
 
     if (power_limited_torque < allowed_torque) {
       allowed_torque = power_limited_torque;

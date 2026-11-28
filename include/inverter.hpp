@@ -9,6 +9,8 @@
 #include <cmath>
 #include <cstdint>
 
+#include "power_loop.hpp"
+
 class Inverter {
 public:
   // `spin_forward`: the direction command for positive torque.
@@ -72,16 +74,11 @@ public:
 
   void calculate_motor_distance_M(uint32_t time_msec);
 
-  // EV.3.3.1 limits the power the Energy Meter measures, V x I at the
-  // accumulator, not shaft power. command_torque caps torque at the power
-  // limit x 0.90 assumed drivetrain efficiency / motor speed; this trims that
-  // cap on the inverter's measured DC bus V x I: each new sample over
-  // POWER_LIMIT_TARGET of the limit scales it down so the next one lands on
-  // it, and below the target it creeps back up (to 1/0.90, the full limit
-  // at the shaft, if the drivetrain turns out lossless). Without fresh
-  // samples it never allows more than the open-loop cap. Call every loop.
+  // The power loop (power_loop.hpp) on this inverter's own measured DC
+  // power: on rwd_emrax, where it's the only one. Call every loop. (The hub
+  // motor cars run one loop on all their inverters instead, in Drivetrain.)
   void regulate_power(uint32_t now_ms);
-  inline double get_power_trim() { return power_trim; }
+  inline double get_power_trim() { return power.trim(); }
   inline double get_measured_power_w() { return bus_voltage * bus_current; }
 
 protected:
@@ -118,8 +115,6 @@ private:
 
   // Closed loop on measured power (regulate_power): a trim on the power the
   // open-loop torque cap allows
-  double power_trim = 1.0;
+  PowerLoop power;
   bool power_sample_new = false;
-  bool power_sample_ever = false;
-  uint32_t power_sample_ms = 0;
 };
