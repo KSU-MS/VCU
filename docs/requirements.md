@@ -145,7 +145,8 @@ theirs, so check it on the bench)
 parameter 0, kW) for testing the car past 80 kW. Only while parked (not
 in TS enabled or ready to drive), only up to the motors' summed peak power
 (EMRAX 100 kW; 4 × F-MOT 140 kW), and back to 80 kW at every power-up; 0
-puts it back too. The VCU logs it when it's set. **Never at
+puts it back too. The VCU logs it when it's set, and the status frame
+(`vcu_status`, 0x0C3) carries it as `vcu_power_limit_kw`. **Never at
 competition**: it's a violation of this rule.
 
 ### EV.3.4.1 — A violation is 100 ms over, or over on a 500 ms average

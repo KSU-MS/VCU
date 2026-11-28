@@ -273,6 +273,8 @@ TEST_CASE("[EV.3.3.1] power limit override: parked only, up to the motors' "
     car.set_parameter(POWER_LIMIT, 120);
     car.run_for(10);
     CHECK(car.vcu.power_limit_kw() == 120);
+    car.run_for(1100); // the status frame (1 Hz) says so
+    CHECK(car.last_reported_power_limit() == 120);
     CHECK(sim::log_output().find("OVER THE RULES") != std::string::npos);
 
     // And it's used: the total settles past 80 kW
@@ -290,6 +292,8 @@ TEST_CASE("[EV.3.3.1] power limit override: parked only, up to the motors' "
   }
   Car fresh; // a power cycle
   CHECK(fresh.vcu.power_limit_kw() == POWER_LIMIT_KW);
+  fresh.run_for(1100);
+  CHECK(fresh.last_reported_power_limit() == POWER_LIMIT_KW);
   fresh.run_for(10);
   fresh.set_parameter(POWER_LIMIT, 100);
   fresh.run_for(10);

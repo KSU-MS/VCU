@@ -214,6 +214,8 @@ struct Car : ResetFirst {
 #endif
   // State reported in the most recent 0x0C3 status frame on the DAQ bus
   int last_reported_state();
+  // The power limit (kW) in it
+  int last_reported_power_limit();
 
   //
   //// A laptop on the DAQ bus doing UDS over ISO-TP. Deliberately its own

@@ -196,6 +196,8 @@ TEST_CASE("[EV.3.3.1] power limit override over CAN: parked only, up to the "
     car.run_for(10);
     CHECK(car.vcu.power_limit_kw() == 95);
     CHECK(car.inverter.get_power_limit_kw() == 95);
+    car.run_for(1100); // the status frame (1 Hz) says so
+    CHECK(car.last_reported_power_limit() == 95);
 
     // The loop holds the new limit instead
     car.drive_to_rtd();
@@ -210,6 +212,8 @@ TEST_CASE("[EV.3.3.1] power limit override over CAN: parked only, up to the "
   }
   Car fresh; // a power cycle
   CHECK(fresh.vcu.power_limit_kw() == POWER_LIMIT_KW);
+  fresh.run_for(1100);
+  CHECK(fresh.last_reported_power_limit() == POWER_LIMIT_KW);
 }
 
 TEST_CASE("[EV.3.3.3] never asks for regen, at any speed (x28: 7 speeds x 4 requests)") {

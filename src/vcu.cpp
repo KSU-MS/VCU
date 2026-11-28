@@ -508,6 +508,10 @@ void VCU::send_status_message() {
   encode_can_0x0c3_vcu_bms_ok_high(dbc, accumulator->get_bms_ok_hs());
   encode_can_0x0c3_vcu_imd_ok_high(dbc, accumulator->get_imd_ok_hs());
   encode_can_0x0c3_vcu_max_torque(dbc, drivetrain->torque_limit_nm());
+  // Over 80 only while the test override is on (set_power_limit)
+  const double power_kw = drivetrain->power_limit_kw();
+  encode_can_0x0c3_vcu_power_limit_kw(
+      dbc, uint8_t(power_kw > 255 ? 255 : (power_kw > 0 ? power_kw : 0)));
   encode_can_0x0c3_vcu_statemachine_state(dbc, current_state);
 
   // Init and pack the message

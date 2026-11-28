@@ -366,6 +366,19 @@ int Car::last_reported_state() {
   return state;
 }
 
+int Car::last_reported_power_limit() {
+  const can_message *m = daq().last_sent(CAN_ID_VCU_STATUS);
+  if (!m)
+    return -1;
+
+  can_obj_car_h_t rx{};
+  unpack_message(&rx, m->id, m->buf.val, m->length, 0);
+
+  uint8_t kw;
+  decode_can_0x0c3_vcu_power_limit_kw(&rx, &kw);
+  return kw;
+}
+
 #if VEHICLE_HAS_CASCADIA
 int Car::last_discharge_limit() {
   const can_message *m = inv().last_sent(CAN_ID_BMS_CURRENT_LIMIT);
