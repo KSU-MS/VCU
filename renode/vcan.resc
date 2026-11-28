@@ -1,0 +1,24 @@
+# The emulated VCU on the host's virtual CAN buses, same names as the SIL
+# (tools/sil/setup_vcan.sh creates them), so candump / tools/ota/flash.py /
+# tools/sil tests work against the real firmware too.
+#
+#   renode --console --disable-gui -e "include @renode/vcan.resc; start"
+
+include $ORIGIN/teensy41.resc
+
+emulation CreateCANHub "acc_bus"
+emulation CreateCANHub "inv_bus"
+emulation CreateCANHub "daq_bus"
+
+# FlexCAN1/2/3 are acc/inv/daq in this firmware (main.hpp)
+connector Connect sysbus.can1 acc_bus
+connector Connect sysbus.can2 inv_bus
+connector Connect sysbus.can3 daq_bus
+
+machine CreateSocketCANBridge "acc_host" "vcan_acc"
+machine CreateSocketCANBridge "inv_host" "vcan_inv"
+machine CreateSocketCANBridge "daq_host" "vcan_daq"
+
+connector Connect acc_host acc_bus
+connector Connect inv_host inv_bus
+connector Connect daq_host daq_bus

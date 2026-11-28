@@ -1,13 +1,16 @@
 #pragma once
 
+#include <cmath>
 #include <stdint.h>
+
+#include "parameters.hpp"
 
 class Pedals {
 private:
-  uint16_t raw_apps1;
-  uint16_t raw_apps2;
-  uint16_t raw_brake;
-  uint16_t raw_steering;
+  uint16_t raw_apps1 = 0;
+  uint16_t raw_apps2 = 0;
+  uint16_t raw_brake = 0;
+  uint16_t raw_steering = 0;
 
   float brake_ratio;
   uint16_t brake_start;
@@ -18,24 +21,51 @@ private:
 
   float apps1_ratio;
   uint16_t apps1_start;
+  uint16_t apps1_high_fault;
 
   float apps2_ratio;
   uint16_t apps2_start;
+  uint16_t apps2_high_fault;
 
-  double brake_travel;
-  double apps1_travel;
-  double apps2_travel;
-  double travel;
+  double brake_travel = 0;
+  // The first part of the brake travel that's regen only (T.3.2.4a), 0 if
+  // the car has no regen: set_regen_travel
+  double regen_travel = 0;
+  double apps1_travel = 0;
+  double apps2_travel = 0;
+  double travel = 0;
 
   // EV.4.7
-  bool bse_fault;      // BSE is reading too high or too low
-  bool apps_fault;     // Not reading within 10% of each other
-  bool apps_bse_fault; // Screenshot (too much brake and gas (before BSPD))
+  bool bse_fault = false;      // BSE is reading too high or too low
+  bool apps_fault = false;     // Latched: an APPS broken, or implausible >100 ms
+  bool apps_bse_fault = false; // Screenshot (too much brake and gas (before BSPD))
+
+  // The two APPS disagreeing right now, and since when
+  bool apps_disagree = false;
+  uint32_t disagree_since = 0;
 
 public:
+  // T.4.2.4: more than 10 points of travel apart is an implausibility.
+  // T.4.2.5: if it lasts more than 100 ms, power to the motor must be cut.
+  static constexpr double APPS_IMPLAUSIBLE_TRAVEL = 0.10;
+  static constexpr uint32_t APPS_IMPLAUSIBLE_MS = 100;
+
+  // EV.4.7.1: mechanical brakes actuated and the APPS over 25%: cut power.
+  // EV.4.7.2: until the APPS is under 5%, whatever the brake does.
+  static constexpr double APPS_BSE_TRIP_TRAVEL = 0.25;
+  static constexpr double PEDAL_RELEASED_TRAVEL = 0.05;
+  // Where the brakes start to bite, in hydraulic_travel(). The BSE is a
+  // rotary pot on the brake pedal, like the APPS: travel. Calibrate this on
+  // the car.
+  static constexpr double BRAKE_ACTUATED_TRAVEL = 0.10;
+
+public:
+  // Each sensor: a fault below `low_fault` or above `high_fault` (open or
+  // shorted), travel 0..1 from `start` to `end`
   Pedals(uint16_t bse_low_fault, uint16_t brake_start, uint16_t brake_end,
          uint16_t bse_high_fault, uint16_t apps_low_fault, uint16_t apps1_start,
-         uint16_t apps1_end, uint16_t apps2_start, uint16_t apps2_end) {
+         uint16_t apps1_end, uint16_t apps1_high_fault, uint16_t apps2_start,
+         uint16_t apps2_end, uint16_t apps2_high_fault) {
 
     this->brake_ratio = 1 / float(brake_end - brake_start);
     this->brake_start = brake_start;
@@ -46,9 +76,11 @@ public:
 
     apps1_ratio = 1 / float(apps1_end - apps1_start);
     this->apps1_start = apps1_start;
+    this->apps1_high_fault = apps1_high_fault;
 
     apps2_ratio = 1 / float(apps2_end - apps2_start);
     this->apps2_start = apps2_start;
+    this->apps2_high_fault = apps2_high_fault;
   };
 
   // TODO: Add additional pedal maps with diffrent curves?
@@ -58,78 +90,87 @@ public:
 
   // TODO: Make the release and apps_bse values confgiurable
   void update_travel(uint16_t raw_apps1, uint16_t raw_apps2,
-                     uint16_t raw_brake) {
+                     uint16_t raw_brake, uint32_t now_ms) {
     this->raw_apps1 = raw_apps1;
     this->raw_apps2 = raw_apps2;
     this->raw_brake = raw_brake;
 
-    // Get the pedal percentage in its throw from 0 to 1
-    if (raw_apps1 < apps_low_fault) {
-      apps_fault = true;
-    } else {
-      apps1_travel = (raw_apps1 - apps1_start) * apps1_ratio;
-      if (apps1_travel < 0)
-        apps1_travel = 0;
-      else if (apps1_travel > 1)
-        apps1_travel = 1;
-    }
+    // T.4.2.10, T.4.3.4: a reading outside the sensor's range means it's
+    // open or shorted. Its travel then reads 0, not whatever it said last:
+    // a stale value used to clear the fault below and become the torque
+    // request with the driver's foot off the pedal.
+    const bool apps1_ok =
+        raw_apps1 >= apps_low_fault && raw_apps1 <= apps1_high_fault;
+    const bool apps2_ok =
+        raw_apps2 >= apps_low_fault && raw_apps2 <= apps2_high_fault;
+    bse_fault = raw_brake < bse_low_fault || raw_brake > bse_high_fault;
 
-    if (raw_apps2 < apps_low_fault) {
-      apps_fault = true;
-    } else {
-      apps2_travel = (raw_apps2 - apps2_start) * apps2_ratio;
-      if (apps2_travel < 0)
-        apps2_travel = 0;
-      else if (apps2_travel > 1)
-        apps2_travel = 1;
-    }
+    apps1_travel = apps1_ok ? clamp01((raw_apps1 - apps1_start) * apps1_ratio) : 0;
+    apps2_travel = apps2_ok ? clamp01((raw_apps2 - apps2_start) * apps2_ratio) : 0;
+    brake_travel = bse_fault ? 0 : clamp01((raw_brake - brake_start) * brake_ratio);
 
-    // T.4.3.4
-    // BSE check to make sure its not shorting
-    if (raw_brake > bse_high_fault || raw_brake < bse_low_fault) {
-      bse_fault = true;
-    } else {
-      bse_fault = false;
-      brake_travel = (raw_brake - brake_start) * brake_ratio;
-      if (brake_travel < 0)
-        brake_travel = 0;
-      else if (brake_travel > 1)
-        brake_travel = 1;
-    }
+    // Either sensor, so neither can hide the pedal being pressed
+    const double apps_max = std::fmax(apps1_travel, apps2_travel);
 
-    // Reset if the pedals are released
-    if (this->apps1_travel < 0.1 && this->apps2_travel < 0.1) {
+    // Reset if the pedals are released (EV.4.7.2), and both sensors work
+    if (apps1_ok && apps2_ok && apps_max < PEDAL_RELEASED_TRAVEL) {
       apps_fault = false;
       apps_bse_fault = false;
     }
+    if (!apps1_ok || !apps2_ok)
+      apps_fault = true;
 
-    // T.4.2.4
-    // Check that there is no apps related faults
-    if (apps_fault == false && bse_fault == false && apps_bse_fault == false) {
+    // T.4.2.4, T.4.2.5: the APPS disagreeing cuts throttle for as long as
+    // it lasts (stricter than the rule, so a glitch costs a dropout, not a
+    // fault); lasting more than 100 ms latches it until the pedal's released
+    const bool disagreed = apps_disagree;
+    apps_disagree = std::fabs(apps1_travel - apps2_travel) > APPS_IMPLAUSIBLE_TRAVEL;
+    if (apps_disagree && !disagreed)
+      disagree_since = now_ms;
+    if (apps_disagree && now_ms - disagree_since > APPS_IMPLAUSIBLE_MS)
+      apps_fault = true;
 
-      // Check that the pedals are reading within 10%
-      if ((fabs(apps1_travel - apps2_travel) < 0.3)) {
-        travel = apps1_travel;
+    // EV.4.7.1: the mechanical brakes and throttle at once (T.3.2.4: not
+    // the regen travel)
+    if (hydraulic_travel() > BRAKE_ACTUATED_TRAVEL &&
+        apps_max > APPS_BSE_TRIP_TRAVEL)
+      apps_bse_fault = true;
 
-        // Check that the driver isn't using both pedals at once
-        if ((travel > 0.3) && (brake_travel > 0.3)) {
-          apps_bse_fault = true;
-          travel = 0;
-        }
-      } else {
-        apps_fault = true;
-        travel = 0;
-      }
-    } else {
+    if (apps_fault || apps_disagree || bse_fault || apps_bse_fault)
       travel = 0;
-    }
+    else
+      travel = apps1_travel;
   }
+  static double clamp01(double x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+
+  // The car's regen-only brake travel (vehicle::THIS.regen_brake_travel)
+  void set_regen_travel(double travel) {
+    regen_travel = travel > 0 && travel < 1 ? travel : 0;
+  }
+  // The brake travel past the regen travel, 0..1: how far the hydraulics
+  // are pushed. The whole travel on a car without regen
+  double hydraulic_travel() const {
+    if (!(regen_travel > 0))
+      return brake_travel;
+    return clamp01((brake_travel - regen_travel) / (1 - regen_travel));
+  }
+  // The regen the brake pedal asks for, 0..1 of the most: rising over the
+  // regen travel (past a deadband), then staying at the most while the
+  // hydraulics take over (T.3.2.4b). None with the sensor faulted
+  double regen_fraction() const {
+    if (!(regen_travel > REGEN_BRAKE_DEADBAND) || bse_fault)
+      return 0;
+    return clamp01((brake_travel - REGEN_BRAKE_DEADBAND) /
+                   (regen_travel - REGEN_BRAKE_DEADBAND));
+  }
+
   void update_steering(uint16_t raw_steering) {
     this->raw_steering = raw_steering;
   }
 
   inline bool get_bse_fault_ok_low() { return bse_fault; }
-  inline bool get_apps_fault_ok_low() { return apps_fault; }
+  // Throttle is cut for either; only the latched one needs a pedal release
+  inline bool get_apps_fault_ok_low() { return apps_fault || apps_disagree; }
   inline bool get_apps_bse_fault_ok_low() { return apps_bse_fault; }
 
   inline uint16_t get_apps1_raw() { return raw_apps1; }

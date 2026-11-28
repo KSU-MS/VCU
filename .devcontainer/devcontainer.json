@@ -1,0 +1,26 @@
+{
+  // Same toolchain as `nix develop`, as an image built from flake.nix
+  // (packages.devcontainer). See .devcontainer/README.md.
+  "name": "KSU VCU",
+  "image": "ghcr.io/ksu-ms/vcu-dev:latest",
+
+  // Lets tools/run_e2e.sh create vcan buses inside the container (the
+  // host still needs the vcan kernel module loaded, Linux hosts only)
+  "runArgs": ["--cap-add=NET_ADMIN"],
+
+  // Keep PlatformIO's downloaded toolchains between rebuilds
+  "mounts": [
+    "source=kms-vcu-platformio,target=/root/.platformio,type=volume"
+  ],
+
+  "postCreateCommand": "uv sync && pio pkg install -e native -e teensy41 && pio run -e native -t compiledb",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "llvm-vs-code-extensions.vscode-clangd",
+        "ms-python.python"
+      ]
+    }
+  }
+}

@@ -1,0 +1,186 @@
+name: CI
+
+# PRs run on pull_request only; push covers the long-lived branches they
+# merge into. Pushing to a PR's branch therefore runs CI once, not twice.
+on:
+  push:
+    branches: [main, new-vcu]
+  pull_request:
+  workflow_dispatch:
+
+# A new push to the same PR/branch cancels the run it supersedes
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write # the test report
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+
+      # nixpkgs' platformio runs in a bubblewrap FHS sandbox, which needs
+      # unprivileged user namespaces; Ubuntu 24.04 blocks them via AppArmor
+      - name: Allow unprivileged user namespaces
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      # Toolchains and libdeps PlatformIO downloads on first run
+      - uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.ini', 'flake.lock') }}
+          restore-keys: ${{ runner.os }}-pio-
+
+      # Each test step writes JUnit XML into reports/, published at the end
+      - name: Software-in-the-loop tests
+        run: |
+          mkdir -p reports # pio doesn't make it
+          nix develop -c pio test -e native --junit-output-path reports/native.xml
+          nix develop -c pio test -e native_4wd_dti --junit-output-path reports/native_4wd_dti.xml
+
+      # The e2e tests in there skip without vcan; they run below. The
+      # replay (tools/replay) needs its program built
+      - name: Host tool tests
+        run: |
+          nix develop -c pio run -e replay_4wd_dti
+          nix develop -c uv run pytest -q --junitxml=reports/python.xml
+
+      # Which tests cover which FSAE rule (docs/requirements.md), on the
+      # run's summary page
+      - name: Requirements coverage
+        run: |
+          echo "## FSAE 2027 requirements coverage" >> "$GITHUB_STEP_SUMMARY"
+          nix develop -c uv run tools/requirements/reqtrace.py >> "$GITHUB_STEP_SUMMARY"
+
+      # Both A/B slots (signed with the dev key) and the bootloader, which
+      # slot A's build bundles into firmware.hex for a USB flash
+      - name: Build firmware
+        run: nix develop -c pio run -e teensy41 -e teensy41_b -e teensy41_4wd_dti
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: vcu-firmware-${{ github.sha }}
+          path: |
+            .pio/build/teensy41/firmware.hex
+            .pio/build/teensy41/firmware.elf
+            .pio/build/teensy41/vcu-a.ota
+            .pio/build/teensy41_b/firmware.elf
+            .pio/build/teensy41_b/vcu-b.ota
+            .pio/build/bootloader/firmware.elf
+
+      # The VCU as a Linux process on virtual CAN, flashed by tools/ota/flash.py.
+      # vcan lives in linux-modules-extra on the runner's Azure kernel.
+      - name: Set up virtual CAN
+        run: |
+          if ! sudo modprobe vcan 2>/dev/null; then
+            sudo apt-get update -q
+            sudo apt-get install -y -q linux-modules-extra-$(uname -r)
+          fi
+          sudo tools/sil/setup_vcan.sh
+
+      - name: End-to-end OTA over vcan
+        run: nix develop -c tools/run_e2e.sh tools/sil --junitxml=reports/sil.xml
+
+      - name: Test report
+        if: always()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: reports/*.xml
+          check_name: Test report (unit, SIL)
+          include_passed: true
+          detailed_summary: true
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ github.sha }}
+          path: reports/
+
+  # The real ARM firmware on an emulated Teensy 4.1 (renode/), updated A -> B
+  # over CAN with the W25Q64's datasheet timing. Slower than the SIL e2e, so
+  # it runs alongside test-and-build rather than after it.
+  renode-ota:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      checks: write # the test report
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+
+      - name: Allow unprivileged user namespaces
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.ini', 'flake.lock') }}
+          restore-keys: ${{ runner.os }}-pio-
+
+      # run_e2e.sh makes its own vcan buses in a network namespace; it only
+      # needs the module
+      - name: Load vcan
+        run: |
+          if ! sudo modprobe vcan 2>/dev/null; then
+            sudo apt-get update -q
+            sudo apt-get install -y -q linux-modules-extra-$(uname -r)
+            sudo modprobe vcan
+          fi
+
+      - name: OTA update and pedal bench in Renode
+        run: nix develop -c tools/run_e2e.sh renode --junitxml=reports/renode.xml
+
+      - name: Test report
+        if: always()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: reports/*.xml
+          check_name: Test report (Renode)
+          include_passed: true
+          detailed_summary: true
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: renode-test-reports-${{ github.sha }}
+          path: reports/
+
+  # Publish the dev container (flake.nix packages.devcontainer) for people
+  # without Nix. Only from main, so branches don't overwrite :latest.
+  devcontainer:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+
+      - name: Build image
+        run: nix build .#devcontainer
+
+      - name: Push to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker load < result
+          image=ghcr.io/$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')/vcu-dev
+          docker tag kms-vcu-dev:latest "$image:latest"
+          docker tag kms-vcu-dev:latest "$image:${GITHUB_SHA::7}"
+          docker push "$image:latest"
+          docker push "$image:${GITHUB_SHA::7}"

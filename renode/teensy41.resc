@@ -1,0 +1,80 @@
+# Boot the VCU on an emulated Teensy 4.1: the A/B bootloader, which starts
+# the firmware in slot A.
+#
+#   renode renode/teensy41.resc            (GUI/monitor)
+#   renode --console --disable-gui -e "include @renode/teensy41.resc; start"
+#
+# Loads what a USB flash would (`pio run -e teensy41` makes firmware.hex as
+# that bundle). Set $bundle before including to load another, and $elf to
+# the slot A firmware it holds, for its symbols.
+
+$bundle?=@.pio/build/teensy41/firmware.hex
+$elf?=@.pio/build/teensy41/firmware.elf
+
+# FlexCAN with the receive-ID fix; compiled before the platform uses it
+include $ORIGIN/NXP_FlexCAN_RxIdFix.cs
+
+mach create "teensy41"
+machine LoadPlatformDescription $ORIGIN/teensy41.repl
+
+# CCM_ANALOG PLLs: a model that remembers writes and reports lock, instead
+# of the 1064 platform's flipflop stub (which can't satisfy usb_pll_start)
+sysbus Unregister sysbus.analog01
+machine PyDevFromFile $ORIGIN/imxrt_analog.py 0x400D8000 0x30 True "analog_pll"
+
+# ADC1 (analogRead): Renode's IMXRT_ADC crashes on channels > 7, see
+# imxrt_adc.py
+sysbus Unregister sysbus.adc1
+machine PyDevFromFile $ORIGIN/imxrt_adc.py 0x400C4000 0x4000 True "adc1_vcu"
+
+# Don't hold virtual time back to the host clock when the CPU isn't doing
+# anything useful: busy waits are fast-forwarded (CortexM7_DWT.cs, and the
+# flash's busy bit in TeensyFlexSPI.cs), and that skipped time would
+# otherwise be paced to real time. With both, the firmware runs several
+# times faster than real time instead of ~10x slower. Tests set this
+# themselves: real time unless marked faster_than_realtime (conftest.py),
+# since fake boards on the host send by the wall clock.
+emulation SetAdvanceImmediately true
+
+# The RTWDOG the bootloader arms, and the SRC bit that says it reset us,
+# in place of the platform's ticker stub and tag (IMXRT_RTWDOG.cs)
+include $ORIGIN/IMXRT_RTWDOG.cs
+sysbus Unregister sysbus.wdog3
+machine LoadPlatformDescriptionFromString "rtwdog: Timers.IMXRT_RTWDOG @ sysbus 0x400BC000"
+machine LoadPlatformDescriptionFromString "src: Miscellaneous.IMXRT_SRC @ sysbus 0x400F8000 { rtwdog: rtwdog }"
+
+# Cortex-M7 DWT cycle counter, which delayMicroseconds()/micros() spin on
+include $ORIGIN/CortexM7_DWT.cs
+# 600 MHz / Renode's default 100 MIPS = 6 cycles per instruction
+machine LoadPlatformDescriptionFromString "dwt: Miscellaneous.CortexM7_DWT @ sysbus 0xE0001000 { cpu: cpu; cyclesPerInstruction: 6 }"
+
+# The ADS1018 pedal/steering ADC on LPSPI4, compiled from source by Renode
+include $ORIGIN/ADS1018.cs
+machine LoadPlatformDescriptionFromString "ads1018: SPI.ADS1018 @ lpspi4 0"
+
+# FlexSPI controllers that run the Teensy core's flash erase/program
+# commands against the flash memory (so OTA staging and flash_move work),
+# and an empty FlexSPI2 so the PSRAM probe finds none
+include $ORIGIN/TeensyFlexSPI.cs
+sysbus Unregister sysbus.flex_spi
+sysbus Unregister sysbus.flex_spi2
+machine LoadPlatformDescriptionFromString "flexspi1: SPI.TeensyFlexSPI @ sysbus 0x402A8000 { ahbBase: 0x60000000 }"
+machine LoadPlatformDescriptionFromString "flexspi2: SPI.TeensyFlexSPI @ sysbus 0x402A4000 { ahbBase: 0x70000000; hasDevice: false }"
+
+# A new chip reads 0xFF, not Renode's 0
+sysbus.flexspi1 ChipErase
+
+sysbus LoadHEX $bundle
+sysbus LoadSymbolsFrom $elf
+
+# configure_cache programs the MPU with a 4 GB no-access background region
+# and overlays on top; Renode's MPU resolves the overlap differently from
+# the silicon and everything faults. Renode has no caches to configure
+# anyway, so return straight away.
+cpu AddHook `sysbus GetSymbolAddress "configure_cache"` "cpu.PC = cpu.LR"
+
+# There's no boot ROM: it reads the IVT at 0x60001000 and jumps to its entry
+# point (the bootloader's Reset_Handler), so do that ourselves, on every
+# reset (a SYSRESETREQ from the firmware resets the machine).
+macro reset "cpu PC `sysbus ReadDoubleWord 0x60001004`"
+runMacro $reset

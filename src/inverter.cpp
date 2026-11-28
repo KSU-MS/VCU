@@ -1,96 +1,28 @@
 #include "inverter.hpp"
-#include "car.h"
-#include "core_pins.h"
 #include "parameters.hpp"
-#include <Arduino.h>
 #include <cmath>
 #include <cstdint>
 
-Inverter::Inverter(bool spin_direction, canMan *can, canMan *daq,
-                   can_obj_car_h_t *dbc, float over_power_decay_factor) {
-  this->spin_forward = spin_direction;
+Inverter::Inverter(bool spin_forward, double gear_ratio)
+    : spin_forward(spin_forward), gear_ratio(gear_ratio) {}
 
-  this->over_power_decay_factor = over_power_decay_factor;
-
-  this->can = can;
-  this->daq = daq;
-  this->dbc = dbc;
-
-  this->ping();
-}
-
-void Inverter::set_current_limits(uint16_t charge_limit,
-                                  uint16_t discharge_limit) {
-  encode_can_0x202_BMS_Max_Charge_Current(dbc, charge_limit);
-  encode_can_0x202_BMS_Max_Discharge_Current(dbc, discharge_limit);
-
-  can_message out_msg;
-  out_msg.id = CAN_ID_BMS_CURRENT_LIMIT;
-  out_msg.length =
-      pack_message(dbc, CAN_ID_BMS_CURRENT_LIMIT, &out_msg.buf.val);
-
-  can->send_controller_message(out_msg);
-  daq->send_controller_message(out_msg);
-}
-
-void Inverter::update_bus_current(uint64_t msg_in, uint8_t length) {
-  unpack_message(dbc, CAN_ID_M166_CURRENT_INFO, msg_in, length, 0);
-
-  decode_can_0x0a6_INV_DC_Bus_Current(dbc, &bus_current);
-}
-
-void Inverter::update_bus_voltage(uint64_t msg_in, uint8_t length) {
-  unpack_message(dbc, CAN_ID_M167_VOLTAGE_INFO, msg_in, length, 0);
-
-  decode_can_0x0a7_INV_DC_Bus_Voltage(dbc, &bus_voltage);
-}
-
-void Inverter::update_motor_feedback(uint64_t msg_in, uint8_t length) {
-  unpack_message(dbc, CAN_ID_M165_MOTOR_POSITION_INFO, msg_in, length, 0);
-
-  decode_can_0x0a5_INV_Motor_Speed(dbc, &motor_rpm);
+void Inverter::regulate_power(uint32_t now_ms) {
+  power.update(now_ms, power_limit_kw * 1000.0, power_sample_new,
+               get_measured_power_w());
+  power_sample_new = false;
 }
 
 void Inverter::calculate_motor_distance_M(uint32_t time_msec) {
   uint32_t time_elaped_msec = time_msec - time_last_msec;
 
+  // Lifetime distance is an odometer, so reversing counts too. A negative
+  // total would also be UB when get_motor_distance_M casts it to uint32_t
   double velocity_Msec =
-      (double(motor_rpm) / 60 / GEAR_RATIO) * WHEEL_CIRCUMFRANCE_M;
+      (std::abs(double(motor_rpm)) / 60 / gear_ratio) * WHEEL_CIRCUMFRANCE_M;
 
   distance_M += (double(time_elaped_msec) / 1000) * velocity_Msec;
 
   time_last_msec = time_msec;
-}
-
-void Inverter::ping() {
-  encode_can_0x0c0_VCU_INV_Torque_Command(dbc, 0.0);
-  encode_can_0x0c0_VCU_INV_Torque_Limit_Command(dbc, 0.0);
-  encode_can_0x0c0_VCU_INV_Speed_Command(dbc, 0);
-  encode_can_0x0c0_VCU_INV_Speed_Mode_Enable(dbc, 0);
-  encode_can_0x0c0_VCU_INV_Direction_Command(dbc, spin_forward);
-  encode_can_0x0c0_VCU_INV_Inverter_Discharge(dbc, inverter_discharge);
-  encode_can_0x0c0_VCU_INV_Inverter_Enable(dbc, inverter_enable);
-
-  can_message out_msg;
-  out_msg.id = CAN_ID_M192_COMMAND_MESSAGE;
-  out_msg.length =
-      pack_message(dbc, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
-
-  can->send_controller_message(out_msg);
-  daq->send_controller_message(out_msg);
-}
-
-void Inverter::send_clear_faults() {
-  encode_can_0x0c1_VCU_INV_Parameter_Address(dbc, 0x0014);
-  encode_can_0x0c1_VCU_INV_Parameter_RW_Command(dbc, 1);
-  encode_can_0x0c1_VCU_INV_Parameter_Data(dbc, 0);
-
-  can_message out_msg;
-  out_msg.id = CAN_ID_M193_READ_WRITE_PARAM_COMMAND;
-  out_msg.length = pack_message(dbc, out_msg.id, &out_msg.buf.val);
-
-  can->send_controller_message(out_msg);
-  daq->send_controller_message(out_msg);
 }
 
 void Inverter::command_torque(double torque_request) {
@@ -134,7 +66,7 @@ void Inverter::command_torque(double torque_request) {
   // avoiding div by zero
   if (angular_velocity > 0.0) {
     const double power_limited_torque =
-        (power_limit_w * efficiency) / angular_velocity;
+        (power_limit_w * efficiency * power.trim()) / angular_velocity;
 
     if (power_limited_torque < allowed_torque) {
       allowed_torque = power_limited_torque;
@@ -154,37 +86,14 @@ void Inverter::command_torque(double torque_request) {
     }
   }
 
-  encode_can_0x0c0_VCU_INV_Torque_Command(dbc, torque_target);
-  encode_can_0x0c0_VCU_INV_Torque_Limit_Command(dbc, torque_limit_nm);
-  encode_can_0x0c0_VCU_INV_Speed_Command(dbc, 0);
-  encode_can_0x0c0_VCU_INV_Speed_Mode_Enable(dbc, 0);
-  encode_can_0x0c0_VCU_INV_Direction_Command(dbc, spin_forward);
-  encode_can_0x0c0_VCU_INV_Inverter_Discharge(dbc, inverter_discharge);
-  encode_can_0x0c0_VCU_INV_Inverter_Enable(dbc, inverter_enable);
+  // Regen: only on an inverter given a regen limit (the hub motors';
+  // the Cascadia never has one), down to it. Its power and current limits
+  // are the drivetrain's job (Drivetrain::command), the speed rule
+  // (EV.3.3.3) the VCU's
+  if (inverter_enable && regen_limit_nm > 0 && std::isfinite(torque_request) &&
+      torque_request < 0.0)
+    torque_target =
+        torque_request < -regen_limit_nm ? -regen_limit_nm : torque_request;
 
-  can_message out_msg;
-  out_msg.id = CAN_ID_M192_COMMAND_MESSAGE;
-  out_msg.length =
-      pack_message(dbc, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
-
-  can->send_controller_message(out_msg);
-  daq->send_controller_message(out_msg);
-}
-
-void Inverter::command_speed(int16_t speed_request) {
-  encode_can_0x0c0_VCU_INV_Torque_Command(dbc, 0.0);
-  encode_can_0x0c0_VCU_INV_Torque_Limit_Command(dbc, torque_limit_nm);
-  encode_can_0x0c0_VCU_INV_Speed_Command(dbc, speed_request);
-  encode_can_0x0c0_VCU_INV_Speed_Mode_Enable(dbc, speed_mode);
-  encode_can_0x0c0_VCU_INV_Direction_Command(dbc, spin_forward);
-  encode_can_0x0c0_VCU_INV_Inverter_Discharge(dbc, inverter_discharge);
-  encode_can_0x0c0_VCU_INV_Inverter_Enable(dbc, inverter_enable);
-
-  can_message out_msg;
-  out_msg.id = CAN_ID_M192_COMMAND_MESSAGE;
-  out_msg.length =
-      pack_message(dbc, CAN_ID_M192_COMMAND_MESSAGE, &out_msg.buf.val);
-
-  can->send_controller_message(out_msg);
-  daq->send_controller_message(out_msg);
+  send_torque(torque_target);
 }

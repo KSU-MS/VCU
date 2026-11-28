@@ -7,3 +7,14 @@ compile_commands.json
 .vscode/c_cpp_properties.json
 .vscode/extensions.json
 .vscode/launch.json
+__pycache__/
+.pytest_cache/
+result
+.venv/
+
+# OTA signing keys, except the public dev key
+keys/*.key
+!keys/ota-dev.key
+
+# JUnit test reports (CI publishes them)
+reports/

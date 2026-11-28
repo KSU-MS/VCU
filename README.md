@@ -1,6 +1,27 @@
 # VCU
 The control logic for our electric car's vehicle control unit, the thing that commands the inverter to spin the motor
 
+## Developing and testing without the car
+Everything below runs on a laptop. None of it has run on a real Teensy yet.
+
+```sh
+nix develop                  # or the dev container in .devcontainer/
+pio test -e native           # the VCU logic against a simulated car (ASan/UBSan)
+pio run -e teensy41 -t upload  # over USB, as before: now bootloader + firmware (slot A)
+uv run pytest                # host tool tests (e2e ones skip without vcan)
+tools/run_e2e.sh tools/sil   # VCU as a Linux program on virtual CAN, updated over CAN
+tools/run_e2e.sh renode      # the real ARM firmware on an emulated Teensy, updated over CAN
+```
+
+- **Tests**: `test/` drives `VCU::tick()` through a fake car (`lib/vcu_sim`): pedals, state machine, torque/power limits, OTA. Tests named `KNOWN ISSUE` print a warning instead of failing; they mark behaviour that looks wrong but needs a decision.
+- **Requirements**: the FSAE 2027 rules the firmware must meet are in [docs/requirements.md](docs/requirements.md); tests cite them in their names (`[EV.4.7.2] ...`) and CI fails if one has no test. `uv run tools/requirements/reqtrace.py` shows which tests cover what.
+- **Traction control** (launches too), kmslap's controller between the pedals and the inverter; off by default, dash button 6 or CAN turns it on: [docs/traction-control.md](docs/traction-control.md).
+- **Firmware update over CAN** (UDS on the DAQ bus, only while parked): signed images, A/B slots with a bootloader that rolls back an update nobody confirmed. [docs/ota.md](docs/ota.md), [bootloader/](bootloader/README.md), [keys/](keys/README.md).
+- **Renode** (emulated Teensy 4.1, flash with the W25Q64's datasheet timing): [renode/README.md](renode/README.md).
+- **CI** runs on every PR: the tests, the firmware build, and both OTA end-to-end tests (SIL and Renode).
+- **Schematic vs firmware** (pump pins, brake sensor input): [docs/hardware.md](docs/hardware.md).
+- **Raspberry Pi as the controller, VCU as the safety authority**: the VCU side is done (the Pi's torque ceiling, checked, with fallback and handover); nothing on the Pi yet. [docs/pi-supervisor.md](docs/pi-supervisor.md).
+
 ## Main Branch
 This should be stable code that you can push to the car at any point, if it doesn't work go yell at @Chance
 
@@ -50,6 +71,13 @@ This should be stable code that you can push to the car at any point, if it does
   - CAN message from the 8CU saying its bad 
   - DC bus voltage < 360
 
+### ``TRACTIVE_SYSTEM_FAULT = 7`` <- Gate
+  - Something's wrong while there may still be high voltage: the IMD or BMS tripped, or the ACU or inverter stopped talking for `SAFETY_DATA_TIMEOUT_MS`. Not TRACTIVE_SYSTEM_DISABLED, which would say the car isn't live.
+  - Inverter disabled, no torque, no way to READY_TO_DRIVE. Pumps stay on. `fault_code()` says why (`FAULT_*` in vcu.hpp).
+  - An ordinary shutdown (precharge undone, voltage falling, no fault) still goes straight to TRACTIVE_SYSTEM_DISABLED.
+
+  `Next state -> TRACTIVE_SYSTEM_DISABLED` once the fault clears, or the inverter reads under 60 V (`HIGH_VOLTAGE_PRESENT`) so it's not live any more. READY_TO_DRIVE then needs the driver all over again.
+
 
 ## Some structure things
 ### src
@@ -93,7 +121,7 @@ This should be stable code that you can push to the car at any point, if it does
 - [ ] Get distance tracking back with EEPROM memory (maybe add to the logger implementation)
 - [ ] Make the BSPD fella more real
 - [ ] Finish wheel speed implementation
-- [ ] Drop in the launch control algo
+- [x] Drop in the launch control algo (traction control, [docs/traction-control.md](docs/traction-control.md))
 - [ ] Get power effeciency math back in there
 - [ ] Add support for digitalWrite to ADC.hpp or find some way to wrap it that isn't aids, same thing with the one delay
 - [ ] Make pretty flow charts for everything
