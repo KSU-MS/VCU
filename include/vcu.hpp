@@ -152,6 +152,13 @@ public:
   bool safe_to_program();
 
   void set_parameter(uint64_t msg, uint8_t length);
+  // The power limit for all the motors together, kW: POWER_LIMIT_KW at
+  // every power-up. Over CAN (vcu_set_parameter POWER_LIMIT) it can be set
+  // anywhere from 1 kW to the motors' summed peak power, for testing the
+  // car past the rules' 80 kW (EV.3.3.1: never at competition); 0 puts it
+  // back. Only while parked, and it's refused otherwise. True if taken
+  bool set_power_limit(uint32_t kw);
+  double power_limit_kw() { return drivetrain->power_limit_kw(); }
   void update_dash_buttons(uint64_t msg, uint8_t length);
   void update_bspd(uint16_t raw_relay, uint16_t raw_current,
                    uint16_t raw_brake);

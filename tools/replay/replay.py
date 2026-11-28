@@ -145,6 +145,9 @@ class Report:
     vcu_torque_on_brake: float     # most total torque the VCU gave with the brake on
     overlap_rows: int              # throttle > 25 % with the brake on (EV.4.7)
     per_wheel_rms: dict
+    hub_kw_vcu: dict               # each hub's most electrical power, 500 ms average
+    hub_kw_ref: dict               # the same from the log's DC currents (kmslap's)
+    total_kw_vcu: float            # the most total, 500 ms average
 
     def text(self) -> str:
         lines = [
@@ -158,11 +161,17 @@ class Report:
             f"the VCU's most negative {self.vcu_negative_max:.1f} N m (no regen yet)",
             f"brake on: the most total torque the VCU gave {self.vcu_torque_on_brake:.1f} N m",
             f"throttle over 25 % with the brake on: {self.overlap_rows} rows",
+            "power, most over 500 ms: hubs VCU "
+            + ", ".join(f"{w} {v:.1f}" for w, v in self.hub_kw_vcu.items())
+            + " kW; kmslap " + ", ".join(f"{w} {v:.1f}" for w, v in self.hub_kw_ref.items())
+            + f" kW; the VCU's total {self.total_kw_vcu:.1f} kW",
         ]
         return "\n".join(lines)
 
 
-def compare(inputs: dict, vcu: dict) -> Report:
+def compare(inputs: dict, vcu: dict, efficiency: float = 0.90) -> Report:
+    """efficiency: what the replay's DC currents assumed (run_vcu), for the
+    VCU's electrical power"""
     vcu_t = np.stack([vcu[f"torque_{w}"] for w in WHEELS])
     ref_t = np.stack([inputs[f"ref_{w}"] for w in WHEELS])
     vcu_total, ref_total = vcu_t.sum(0), ref_t.sum(0)
@@ -176,6 +185,18 @@ def compare(inputs: dict, vcu: dict) -> Report:
 
     def mean(x):
         return float(x.mean()) if x.size else 0.0
+
+    period = float(np.median(np.diff(inputs["t_s"]))) if len(inputs["t_s"]) > 1 else 0.01
+    n_avg = max(int(round(0.5 / period)), 1)
+
+    def most_kw(watts):
+        if watts.size < n_avg:
+            return float(watts.mean() / 1e3) if watts.size else 0.0
+        return float(np.convolve(watts, np.ones(n_avg) / n_avg, "valid").max() / 1e3)
+
+    omega = np.stack([inputs[f"rpm_{w}"] for w in WHEELS]) * 2 * np.pi / 60
+    vcu_w = vcu_t * omega / efficiency
+    ref_w = np.stack([inputs[f"dc_a_{w}"] * inputs[f"bus_v_{w}"] for w in WHEELS])
 
     return Report(
         rows=len(vcu_total),
@@ -193,6 +214,9 @@ def compare(inputs: dict, vcu: dict) -> Report:
         vcu_torque_on_brake=float(vcu_total[brake_on].max()) if brake_on.any() else 0.0,
         overlap_rows=int(((inputs["throttle"] > 0.25) & brake_on).sum()),
         per_wheel_rms={w: float(np.sqrt(mean((vcu_t[i] - ref_t[i])[driving] ** 2))) for i, w in enumerate(WHEELS)},
+        hub_kw_vcu={w: most_kw(vcu_w[i]) for i, w in enumerate(WHEELS)},
+        hub_kw_ref={w: most_kw(ref_w[i]) for i, w in enumerate(WHEELS)},
+        total_kw_vcu=most_kw(vcu_w.sum(0)),
     )
 
 
@@ -242,7 +266,7 @@ def main(argv=None) -> int:
         write_csv(args.save_output, vcu)
     if args.plot:
         plot(inputs, vcu, args.plot)
-    print(compare(inputs, vcu).text())
+    print(compare(inputs, vcu, args.efficiency).text())
     return 0
 
 

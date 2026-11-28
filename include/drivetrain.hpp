@@ -8,14 +8,20 @@
 // control and the Pi's ceiling are unchanged), N m at the wheels, all of
 // them together, on the hub cars.
 //
-// The 80 kW limit is shared out by wheel-torque capability, each inverter
-// keeping to its share on its own measured power, so the total stays
-// under the limit; the pack's current limits are shared the same way.
+// The 80 kW limit: on rwd_emrax, the Cascadia's own loop on its measured
+// power, as it always was. On the hub cars, one loop on all the inverters'
+// measured power together (power_loop.hpp); when it binds, every motor's
+// torque is scaled by the same factor, so the split stands and the power
+// goes wherever the split puts the torque. Each inverter's DC current limit
+// (the pack's discharge limit, or the power limit over the pack voltage)
+// follows its share of the commanded power, so the inverters themselves
+// also hold the total.
 #include <stddef.h>
 #include <stdint.h>
 
 #include "freshness.hpp"
 #include "inverter.hpp"
+#include "power_loop.hpp"
 #include "torque_split.hpp"
 #include "vehicle.hpp"
 
@@ -47,9 +53,17 @@ public:
   void set_torque_limits(bool on);
   // For the status frame: the first drive's
   uint8_t torque_limit_nm();
+  // The total, for all the motors together
   void set_power_limit_kw(double total_kw);
-  // The pack's discharge limit as power over its voltage, each inverter its
-  // share (in ready to drive)
+  double power_limit_kw() const { return limit_kw; }
+  // The motors' peak powers added up: the most the power limit may be set
+  // to. POWER_LIMIT_KW if any motor's isn't known
+  double peak_power_kw() const;
+  // On the hub cars: the share of the open-loop power cap the total's loop
+  // allows now (rwd_emrax: the Cascadia's get_power_trim)
+  double power_trim() const { return total_power.trim(); }
+  // The power limit over the pack voltage, each inverter its share (in ready
+  // to drive)
   void set_current_limits(uint16_t charge_limit, float pack_voltage);
   // A fixed pack discharge limit, amps, shared the same way
   void set_current_limit_amps(uint16_t charge_limit, uint16_t discharge_limit);
@@ -82,6 +96,9 @@ public:
 private:
   // Each drive's wheel-torque capability as a share of the total
   double share(size_t i) const;
+  // Each drive's share of the power the last command asked for, mixed with
+  // its capability share so none is ever left with nothing
+  double power_share(size_t i) const;
   double torque_limit_for(size_t i) const;
   // What drive i can put on its wheel(s) now: its torque limit, or its
   // motor's torque curve at its speed if that's less
@@ -92,6 +109,13 @@ private:
   size_t n;
   Freshness voltage_heard[MAX_DRIVES];
   double wheel[MAX_DRIVES] = {};
+  double motor_nm[MAX_DRIVES] = {}; // what the last command sent each motor
+  double limit_kw = 0;
+  // The hub cars' loop on their total DC power, and when each inverter's
+  // DC current was last heard (all of them fresh, or it's flying blind)
+  PowerLoop total_power;
+  Freshness dc_heard[MAX_DRIVES];
+  bool dc_new = false;
   double vx = 0, ax = 0;
   torque_split::Mode split_mode = torque_split::Mode::LOAD;
   double front_bias = 0.45;

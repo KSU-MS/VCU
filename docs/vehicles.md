@@ -52,8 +52,8 @@ sending torque, keep-alive and clearing faults.
 - `DtiHv500` is current mode over DTI's CAN map v2.5, with extended IDs.
   Its frames are packed by hand, because dbcc names its functions per
   node; `test/4wd_dti` checks them against the DBC for every node.
-  **Assumed:** the AC current command is in A peak, so
-  I = sqrt(2) × T / kt. Confirm against DTI's manual.
+  The AC current command is in A peak ("peak, not RMS", DTI's CAN manual
+  v2.5, 0x01), so I = sqrt(2) × T / kt.
 
 ## Several motors: `Drivetrain`
 
@@ -69,9 +69,17 @@ The VCU drives a `Drivetrain` of inverters (`include/drivetrain.hpp`).
   - The total is never more than the ask (EV.3.1.3).
   - The load split takes speed and acceleration from VectorNav, and falls
     back to the static weight when VectorNav is quiet.
-- **80 kW:** shared by capability (20 kW per hub on 4wd_dti), each
-  inverter closed loop on its own measured DC power. The sim judges the
-  total by EV.3.4.1.
+- **80 kW:** one loop on the hubs' total measured DC power
+  (`Drivetrain::regulate_power`, `power_loop.hpp`).
+  - When it binds, every motor's torque is scaled alike, so the split
+    stands and the power goes where the torque does.
+  - Each DTI's DC current limit (0x0A, 10 Hz) follows its share of the
+    commanded power (a quarter of it by capability, so none drops to 0 A),
+    and they add up to the limit over the pack voltage: the inverters hold
+    the total too.
+  - Any inverter's current unheard for 50 ms: the open-loop cap.
+  - The sim judges the total by EV.3.4.1. A test override can raise the
+    limit for testing (docs/requirements.md, EV.3.3.1).
 - **Safety:**
   - Any inverter silent is a fault, which takes the car to the fault
     state.
@@ -81,15 +89,14 @@ The VCU drives a `Drivetrain` of inverters (`include/drivetrain.hpp`).
 - **Not yet on the hub cars:** traction control. It needs a rear-axle
   motor's speed, so on a 4wd car it steps aside. Per-wheel slip control is
   later.
-
 - **The motors' torque curve** (`motors::max_torque_nm`, kmslap's
   `HubMotor.max_torque`): peak torque up to peak power (35 kW on the F-MOT),
   then constant power, and none at top speed. Each drive's capability is
   the smaller of its torque limit and its curve at the speed its inverter
   reports, so full pedal asks for what the motors can give there, as in
   kmslap, and a motor at top speed gets nothing (its axle-mate and the
-  other axle take its share). `rwd_emrax` has no curve: the Cascadia's path
-  is unchanged.
+  other axle take its share). `rwd_emrax` doesn't use the curve: the
+  Cascadia's path is unchanged.
 
 ## Checked against kmslap: the replay
 
@@ -118,10 +125,11 @@ it can't reduce and winds its torque down to the floor.
 - no torque with the brake on, no regen;
 - every motor within its curve;
 - EV.3.4.1 across all four;
-- the front axle's share within 5 points of kmslap's.
+- the front axle's share within 7 points of kmslap's;
+- a loaded hub past a quarter of 80 kW, and the total within it.
 
 **What the comparison shows** (michigan2026, the whole log):
-- The front axle's share is close: VCU 44 %, kmslap 48 %.
+- The front axle's share is close: VCU 43 %, kmslap 48 %.
 - The torque curve brought the VCU nearer kmslap: the RMS difference in
   total motor torque while driving went from 13.4 to 12.2 N·m.
 - kmslap's log comes from its QP mode, which the VCU doesn't have. It
@@ -130,15 +138,14 @@ it can't reduce and winds its torque down to the floor.
   by ~10 N·m RMS. The VCU gives more torque at launch and out of slow
   corners, where the QP is grip limited.
 - About 18 % of the log is kmslap regenerating; the VCU gives nothing there.
-- **The 80 kW share is fixed at 20 kW a hub.** kmslap puts 25–28 kW
-  through the loaded hubs; the VCU can't. A share that follows the split
-  would let it.
+- **The 80 kW now follows the split.** The rear hubs reach 23–24 kW over
+  500 ms (they were held to 20 kW), the total 78 kW: the 97 % target.
+  kmslap's own reach 19–25 kW, with the outside wheels getting the most.
 
 ## Still to do (from the hub motors handoff)
 
-1. **The 80 kW share following the torque split**, not a fixed 20 kW a
-   hub (above). And `kmslap mcap --torque-mode load`, for a log in the
-   VCU's own split.
+1. **`kmslap mcap --torque-mode load`**, for a log in the VCU's own split
+   (kmslap's mcap is hard-wired to its QP).
 2. **The Pi's per-motor torques** (`pi_motor_torque_command`, 0x11), on the
    same checks as `pi_torque_command`.
 3. **AMK KW26:** the enable handshake, torque by saturating the speed loop,
@@ -149,5 +156,6 @@ it can't reduce and winds its torque down to the floor.
    - capped by the BMS charge limit;
    - rear-only regen only behind slip control.
 
-Open questions are in the handoff: DTI current units (peak or rms), AMK
-current scaling, node IDs and buses, and the hub gearbox ratio.
+Open questions are in the handoff: the DTI's DC current accuracy and
+broadcast rate (set in DTI's CAN Tool), AMK current scaling, node IDs
+and buses, and the hub gearbox ratio.

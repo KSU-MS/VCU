@@ -245,7 +245,7 @@ void VCU::set_parameter(uint64_t msg, uint8_t length) {
 
   switch (parameter(target_parameter)) {
   case POWER_LIMIT:
-    // inverter->set_power_limit_kw(parameter_value);
+    set_power_limit(parameter_value);
     break;
 
   case TORQUE_LIMIT:
@@ -414,6 +414,27 @@ bool VCU::safe_to_program() {
   return (current_state == STARTUP ||
           current_state == TRACTIVE_SYSTEM_DISABLED) &&
          !drivetrain->any_enabled();
+}
+
+bool VCU::set_power_limit(uint32_t kw) {
+  const bool parked = current_state != TRACTIVE_SYSTEM_ENABLED &&
+                      current_state != READY_TO_DRIVE &&
+                      !drivetrain->any_enabled();
+  const double ceiling = drivetrain->peak_power_kw();
+  if (!parked || kw > ceiling) {
+    hal::log(parked ? "Power limit refused, over the motors' peak kW: "
+                    : "Power limit refused, not parked: ");
+    hal::log(long(kw));
+    hal::logln("");
+    return false;
+  }
+  const double limit = kw ? double(kw) : double(POWER_LIMIT_KW);
+  drivetrain->set_power_limit_kw(limit);
+  hal::log("Power limit kW: ");
+  hal::log(long(limit));
+  hal::logln(limit > POWER_LIMIT_KW ? " (OVER THE RULES' LIMIT: testing only)"
+                                    : "");
+  return true;
 }
 
 void VCU::send_pedal_travel_message() {

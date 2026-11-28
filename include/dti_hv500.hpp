@@ -7,9 +7,9 @@
 // class that works for any node can't use them. test/4wd_dti checks these
 // frames against the generated decoders for every node.
 //
-// Torque is sent as AC current. ASSUMPTION, to confirm against DTI's CAN
-// manual before the car: the command is in A peak (the DBC labels its
-// actuals "Apk"), so I_pk = sqrt(2) x torque / kt, with kt in N m per A rms.
+// Torque is sent as AC current, in A peak ("peak, not RMS": DTI's CAN
+// manual v2.5, Set AC current 0x01), so I_pk = sqrt(2) x torque / kt, with
+// kt in N m per A rms.
 #include "inverter.hpp"
 #include "motors.hpp"
 
@@ -28,7 +28,7 @@ public:
   void set_current_limits(uint16_t charge_limit,
                           uint16_t discharge_limit) override;
 
-  // The AC current a torque takes, A peak (the assumption above)
+  // The AC current a torque takes, A peak (above)
   double current_for_torque(double nm) const;
 
   double controller_temp_c() const { return temp_controller; }

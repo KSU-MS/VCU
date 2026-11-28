@@ -6,6 +6,13 @@
 using vehicle::InverterKind;
 using vehicle::Position;
 
+namespace {
+// rad/s per rpm (not PI: Arduino defines that)
+constexpr double RAD_S_PER_RPM = 2 * 3.141592653589793 / 60;
+// The open-loop cap's guess at motor and inverter efficiency, as Inverter's
+constexpr double EFFICIENCY = 0.90;
+} // namespace
+
 Drivetrain::Drivetrain(Inverter *const *inv, const vehicle::Drive *drives,
                        size_t count)
     : drives(drives), n(count < MAX_DRIVES ? count : MAX_DRIVES) {
@@ -21,6 +28,10 @@ Drivetrain::Heard Drivetrain::on_frame(const can_message &msg,
       continue;
     if (got & Inverter::DC_VOLTAGE)
       voltage_heard[i].heard(now_ms);
+    if (got & Inverter::DC_CURRENT) {
+      dc_heard[i].heard(now_ms);
+      dc_new = true;
+    }
     return {got, i};
   }
   return {Inverter::NOT_MINE, 0};
@@ -109,16 +120,49 @@ void Drivetrain::set_split(torque_split::Mode mode, double bias) {
 }
 
 void Drivetrain::set_power_limit_kw(double total_kw) {
+  limit_kw = total_kw;
+  // On the hub cars each inverter's own open-loop cap is set to the total,
+  // so it never binds before the total's loop does
   for (size_t i = 0; i < n; i++)
-    inverters[i]->set_power_limit_kw(total_kw * share(i));
+    inverters[i]->set_power_limit_kw(total_kw);
+}
+
+double Drivetrain::peak_power_kw() const {
+  double total = 0;
+  for (size_t i = 0; i < n; i++) {
+    if (!(drives[i].motor->peak_power_kw > 0))
+      return POWER_LIMIT_KW;
+    total += drives[i].motor->peak_power_kw;
+  }
+  return total > POWER_LIMIT_KW ? total : POWER_LIMIT_KW;
+}
+
+double Drivetrain::power_share(size_t i) const {
+  // A quarter by capability, so a motor asked for nothing now still has
+  // some current when it's asked for more, before the next update
+  constexpr double by_capability = 0.25;
+  double asked[MAX_DRIVES], total = 0;
+  for (size_t j = 0; j < n; j++) {
+    const double omega =
+        std::fabs(double(inverters[j]->get_motor_rpm())) * RAD_S_PER_RPM;
+    asked[j] = motor_nm[j] > 0 ? motor_nm[j] * omega : 0;
+    total += asked[j];
+  }
+  if (!(total > 0))
+    return share(i);
+  return by_capability * share(i) + (1 - by_capability) * asked[i] / total;
 }
 
 void Drivetrain::set_current_limits(uint16_t charge_limit,
                                     float pack_voltage) {
-  // Each inverter's discharge limit is its power share over the pack voltage
+  // The power limit over the pack voltage (get_instant_current_limit), each
+  // inverter its share: rwd_emrax's one gets all of it
+  const double total =
+      n ? inverters[0]->get_instant_current_limit(pack_voltage) : 0;
   for (size_t i = 0; i < n; i++)
     inverters[i]->set_current_limits(
-        charge_limit, inverters[i]->get_instant_current_limit(pack_voltage));
+        charge_limit,
+        uint16_t(n == 1 ? total : std::floor(total * power_share(i))));
 }
 
 void Drivetrain::set_current_limit_amps(uint16_t charge_limit,
@@ -139,8 +183,23 @@ void Drivetrain::send_clear_faults() {
 }
 
 void Drivetrain::regulate_power(uint32_t now_ms) {
-  for (size_t i = 0; i < n; i++)
-    inverters[i]->regulate_power(now_ms);
+  if (n == 1) {
+    inverters[0]->regulate_power(now_ms);
+    return;
+  }
+  // The total, from each inverter's latest V x I: a sample only when they
+  // all have a fresh one, or the loop flies blind (the open-loop cap). Half
+  // the loop's own staleness each, so it's blind within 1.5 x STALE_MS of
+  // one going quiet
+  bool all_fresh = true;
+  double measured_w = 0;
+  for (size_t i = 0; i < n; i++) {
+    all_fresh &= dc_heard[i].fresh(now_ms, PowerLoop::STALE_MS / 2);
+    measured_w += inverters[i]->get_measured_power_w();
+  }
+  total_power.update(now_ms, limit_kw * 1000.0, dc_new && all_fresh,
+                     measured_w);
+  dc_new = false;
 }
 
 double Drivetrain::max_request() {
@@ -163,11 +222,28 @@ void Drivetrain::command(double request) {
   const double front =
       torque_split::front_share(split_mode, front_bias, vx, ax);
   torque_split::split(request, front, drives, cap, n, wheel);
-  // Wheel torque back to the motor's; the inverter still applies its own
-  // torque and power limits on top
-  for (size_t i = 0; i < n; i++)
-    inverters[i]->command_torque(
-        wheel[i] / (drives[i].gear_ratio * drives[i].gear_eff));
+
+  // Wheel torque back to the motor's, and the power it all takes at the
+  // motors' speeds
+  double mech_w = 0;
+  for (size_t i = 0; i < n; i++) {
+    motor_nm[i] = wheel[i] / (drives[i].gear_ratio * drives[i].gear_eff);
+    const double omega =
+        std::fabs(double(inverters[i]->get_motor_rpm())) * RAD_S_PER_RPM;
+    mech_w += motor_nm[i] > 0 ? motor_nm[i] * omega : 0;
+  }
+  // Over what the power limit allows (the open-loop cap, trimmed on the
+  // measured total): every motor scaled back alike, the split kept
+  const double allowed_w =
+      limit_kw * 1000.0 * EFFICIENCY * total_power.trim();
+  const double scale =
+      !(limit_kw > 0) ? 0 : (mech_w > allowed_w ? allowed_w / mech_w : 1);
+  // The inverter still applies its own torque limit on top
+  for (size_t i = 0; i < n; i++) {
+    motor_nm[i] *= scale;
+    wheel[i] *= scale;
+    inverters[i]->command_torque(motor_nm[i]);
+  }
 }
 
 Inverter *Drivetrain::rear_axle() {

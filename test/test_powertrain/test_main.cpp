@@ -183,6 +183,35 @@ TEST_CASE("[EV.3.3.1] measured power going stale falls back to the open-loop cap
   CHECK(p.settled_kw * 0.99 <= POWER_LIMIT_KW * 0.90 + 0.1); // shaft power
 }
 
+TEST_CASE("[EV.3.3.1] power limit override over CAN: parked only, up to the "
+          "EMRAX's 100 kW, 80 kW again at power up") {
+  {
+    Car car;
+    car.run_for(10);
+    CHECK(car.drivetrain.peak_power_kw() == 100);
+    car.set_parameter(POWER_LIMIT, 101);
+    car.run_for(10);
+    CHECK(car.vcu.power_limit_kw() == POWER_LIMIT_KW);
+    car.set_parameter(POWER_LIMIT, 95);
+    car.run_for(10);
+    CHECK(car.vcu.power_limit_kw() == 95);
+    CHECK(car.inverter.get_power_limit_kw() == 95);
+
+    // The loop holds the new limit instead
+    car.drive_to_rtd();
+    PowerTrace p = flat_out(car, 0.90, 6000, 5000);
+    CHECK(p.settled_kw > 95 * POWER_LIMIT_TARGET * 0.97);
+    CHECK(p.settled_kw <= 95);
+
+    // Not while it could drive
+    car.set_parameter(POWER_LIMIT, 0);
+    car.run_for(10);
+    CHECK(car.vcu.power_limit_kw() == 95);
+  }
+  Car fresh; // a power cycle
+  CHECK(fresh.vcu.power_limit_kw() == POWER_LIMIT_KW);
+}
+
 TEST_CASE("[EV.3.3.3] never asks for regen, at any speed (x28: 7 speeds x 4 requests)") {
   // No regen at all, so none between 0 and 5 km/h either
   Car car;

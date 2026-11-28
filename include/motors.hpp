@@ -19,11 +19,12 @@ struct MotorSpec {
 
 namespace motors {
 
-// The car today, through the chain. kmslap: PEAK_TORQUE, Motor('228HV').
-// No curve here: the Cascadia has always been run on its torque limit and
-// the 80 kW loop, and that's unchanged
+// The car today, through the chain. kmslap: PEAK_TORQUE, Motor('228HV');
+// peak power from EMRAX's technical data 4.5 (100 kW). rwd_emrax doesn't
+// use the curve (the Cascadia is run on its torque limit and the power loop,
+// as it always was); the peak power is the ceiling for the power limit
 constexpr MotorSpec EMRAX_228_HV{"EMRAX 228 HV", 230.0, 0.0, 6500.0, 10, 0.0,
-                                 0.0};
+                                 100.0};
 
 // DTI F-MOT hub motor (datasheets/dti_fmot.toml)
 constexpr MotorSpec DTI_FMOT{"DTI F-MOT", 31.6, 11.1, 20000.0, 4, 0.492, 35.0};

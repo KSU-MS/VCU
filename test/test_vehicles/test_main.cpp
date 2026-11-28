@@ -99,6 +99,6 @@ TEST_CASE("a hub motor's torque curve is kmslap's: peak torque to peak power, "
   CHECK(motors::max_torque_nm(m, -15000) == doctest::Approx(35000 / omega));
   CHECK(motors::max_torque_nm(m, 20000) == 0);
   CHECK(motors::max_torque_nm(m, 25000) == 0);
-  // The EMRAX has no curve here: the Cascadia's path is unchanged
+  // The EMRAX's 100 kW is over its 230 N m until past 4150 rpm
   CHECK(motors::max_torque_nm(motors::EMRAX_228_HV, 4000) == 230.0);
 }

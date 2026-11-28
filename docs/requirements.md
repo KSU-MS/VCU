@@ -122,13 +122,31 @@ p.92. The power measured by the Energy Meter must not exceed 80 kW
 EV.3.4.1).
 
 VCU: torque is capped at `POWER_LIMIT_KW` × 0.90 / motor speed (shaft
-power), trimmed in closed loop on the inverter's measured DC bus V × I
-(`Inverter::regulate_power`): each sample over 97% of the limit scales the
-cap to land on it, and below it creeps back up. So it holds whatever the
-drivetrain loses (tested at 70-99% efficiency), and uses the budget rather
-than stopping at 72 kW. With no fresh measurement it falls back to the
-open-loop cap. **met**, **assumption** (the inverter's DC current and
-voltage read within ~3% of the Energy Meter)
+power), trimmed in closed loop on measured DC bus V × I (`PowerLoop`):
+each sample over 97% of the limit scales the cap to land on it, and below
+it creeps back up. So it holds whatever the drivetrain loses (tested at
+70-99% efficiency), and uses the budget rather than stopping at 72 kW.
+With no fresh measurement it falls back to the open-loop cap.
+- rwd_emrax: on the Cascadia's own measurement
+  (`Inverter::regulate_power`).
+- The hub motor cars: one loop on all the inverters' measured power added
+  up (`Drivetrain::regulate_power`). When it binds, every motor's torque
+  is scaled alike, so the power goes where the torque split puts it, not a
+  fixed quarter each. Each DTI's DC current limit (0x0A) follows its share
+  as well, and they add up to the limit over the pack voltage. One
+  inverter's current not heard for 50 ms: the open-loop cap.
+
+The car has no HV→LV converter, so the inverters are all the Energy Meter
+sees. **met**, **assumption** (the inverters' DC current and voltage read
+within ~3% of the Energy Meter; DTI's documents give no accuracy for
+theirs, so check it on the bench)
+
+**Test override:** the limit can be set over CAN (`vcu_set_parameter`,
+parameter 0, kW) for testing the car past 80 kW. Only while parked (not
+in TS enabled or ready to drive), only up to the motors' summed peak power
+(EMRAX 100 kW; 4 × F-MOT 140 kW), and back to 80 kW at every power-up; 0
+puts it back too. The VCU logs it when it's set. **Never at
+competition**: it's a violation of this rule.
 
 ### EV.3.4.1 — A violation is 100 ms over, or over on a 500 ms average
 p.92. Using more than the maximum power is a violation if it lasts 100 ms
